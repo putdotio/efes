@@ -1,3 +1,4 @@
 [tracker]
 debug = true
 db_dsn = "guest@/efes?multiStatements=true"
+listen_address = "0.0.0.0:8080"
