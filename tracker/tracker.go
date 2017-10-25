@@ -94,7 +94,8 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Paths = make([]string, 0)
 	key := r.FormValue("key")
-	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=?", key)
+	// TODO remove dmid
+	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=? and f.dmid=1", key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
