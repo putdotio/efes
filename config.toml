@@ -1,0 +1,3 @@
+[tracker]
+debug = true
+db_dsn = "guest@/efes?multiStatements=true"
