@@ -1,11 +1,14 @@
 package tracker
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
+	"time"
 
 	// Register MySQL database driver.
 	_ "github.com/go-sql-driver/mysql"
@@ -24,6 +27,7 @@ type Tracker struct {
 	listener net.Listener
 	server   http.Server
 	mux      *http.ServeMux
+	shutdown sync.WaitGroup
 }
 
 // New returns a new Tracker instance.
@@ -59,20 +63,32 @@ func (t *Tracker) Run() error {
 		}
 	}()
 	err := t.server.Serve(t.listener)
+	if err == http.ErrServerClosed {
+		t.log.Debug("Tracker is shutting down.")
+		t.shutdown.Wait()
+	}
 	t.log.Debug("Tracker is closed.")
 	return err
 }
 
 // Close the tracker.
 func (t *Tracker) Close() {
-	// TODO
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	t.server.Shutdown(ctx)
 }
 
 func (t *Tracker) ping(w http.ResponseWriter, r *http.Request) {
+	t.shutdown.Add(1)
+	defer t.shutdown.Done()
+
 	w.Write([]byte("pong"))
 }
 
 func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
+	t.shutdown.Add(1)
+	defer t.shutdown.Done()
+
 	var response struct {
 		Paths []string `json:"paths"`
 	}
