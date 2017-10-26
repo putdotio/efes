@@ -71,7 +71,8 @@ func (t *Tracker) Run() error {
 
 // Shutdown the tracker.
 func (t *Tracker) Shutdown() error {
-	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
+	timeout := time.Duration(t.config.Tracker.ShutdownTimeout) * time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	_ = cancel
 	err := t.server.Shutdown(ctx)
 	if err != nil {

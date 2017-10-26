@@ -4,8 +4,9 @@ import "github.com/BurntSushi/toml"
 
 // TrackerConfig holds configuration values for Tracker.
 type TrackerConfig struct {
-	Debug         bool   `toml:"debug"`
-	ListenAddress string `toml:"listen_address"`
+	Debug           bool   `toml:"debug"`
+	ListenAddress   string `toml:"listen_address"`
+	ShutdownTimeout uint32 `toml:"shutdown_timeout"`
 }
 
 // DatabaseConfig holds configuration values for database.
