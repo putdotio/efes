@@ -9,9 +9,21 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/StackExchange/wmi"
+  packages = ["."]
+  revision = "ea383cf3ba6ec950874b8486cd72356d007c768f"
+
+[[projects]]
+  branch = "master"
   name = "github.com/cenkalti/log"
   packages = ["."]
   revision = "958ee7afc008e65fe479a565819a25b30af0ec65"
+
+[[projects]]
+  name = "github.com/go-ole/go-ole"
+  packages = [".","oleutil"]
+  revision = "0e87ea779d9deb219633b828a023b32e1244dd57"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -38,6 +50,12 @@
   version = "v0.0.3"
 
 [[projects]]
+  name = "github.com/shirou/gopsutil"
+  packages = ["disk","internal/common"]
+  revision = "6e221c482653ef05c9f6a7bf71ddceea0e40bac5"
+  version = "v2.17.09"
+
+[[projects]]
   name = "github.com/urfave/cli"
   packages = ["."]
   revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
@@ -46,12 +64,12 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
-  revision = "176de7413414c01569163271c745672ff04a7267"
+  packages = ["unix","windows"]
+  revision = "3e3646d2c706c21b222a5dbcaa6db12b3e0cc765"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0c99995cd3ab406121ebafd3b8dd36c01945f1742ef1c1bda8095ed04f69eb01"
+  inputs-digest = "b729cb6b69a24759832b87df0cbb93f20d19628d44ba71e54fcf9884a7e6bd53"
   solver-name = "gps-cdcl"
   solver-version = 1

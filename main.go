@@ -19,6 +19,7 @@ const version = "0.0.0"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+	log.DefaultHandler.SetLevel(log.DEBUG)
 }
 
 func main() {
@@ -56,7 +57,8 @@ func main() {
 				if err != nil {
 					log.Fatal("Error while loading configuration. ", err)
 				}
-				s, err := server.New(cfg)
+				dir := c.Args().Get(0)
+				s, err := server.New(cfg, dir)
 				if err != nil {
 					log.Fatal("Error while initializing tracker. ", err)
 				}
