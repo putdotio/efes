@@ -12,8 +12,8 @@ import (
 	// Register MySQL database driver.
 	_ "github.com/go-sql-driver/mysql"
 
+	"github.com/cenkalti/log"
 	"github.com/putdotio/efes/config"
-	"github.com/putdotio/efes/logger"
 )
 
 // ShutdownTimeout is the duration to wait for active requests before
@@ -26,7 +26,7 @@ const ShutdownTimeout = 5 * time.Second
 type Tracker struct {
 	config   *config.TrackerConfig
 	db       *sql.DB
-	log      *logger.Logger
+	log      log.Logger
 	listener net.Listener
 	server   http.Server
 	mux      *http.ServeMux
@@ -36,19 +36,7 @@ type Tracker struct {
 func New(c *config.TrackerConfig) (*Tracker, error) {
 	t := &Tracker{
 		config: c,
-		log:    logger.New("tracker"),
-	}
-	if c.Debug {
-		t.log.EnableDebug()
-	}
-	var err error
-	t.db, err = sql.Open("mysql", c.DBDSN)
-	if err != nil {
-		return nil, err
-	}
-	t.listener, err = net.Listen("tcp", c.ListenAddress)
-	if err != nil {
-		return nil, err
+		log:    log.NewLogger("tracker"),
 	}
 	t.mux = http.NewServeMux()
 	t.mux.HandleFunc("/ping", t.ping)
@@ -59,7 +47,21 @@ func New(c *config.TrackerConfig) (*Tracker, error) {
 
 // Run this tracker in a blocking manner. Running tracker can be stopped with Close().
 func (t *Tracker) Run() error {
-	err := t.server.Serve(t.listener)
+	if t.config.Debug {
+		t.log.SetLevel(log.DEBUG)
+	}
+	var err error
+	t.db, err = sql.Open("mysql", t.config.DBDSN)
+	if err != nil {
+		return err
+	}
+	t.listener, err = net.Listen("tcp", t.config.ListenAddress)
+	if err != nil {
+		return err
+	}
+	t.log.Notice("Tracker is started.")
+
+	err = t.server.Serve(t.listener)
 	if err == http.ErrServerClosed {
 		t.log.Notice("Tracker is shutting down.")
 		return nil
