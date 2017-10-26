@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	// Register MySQL database driver.
@@ -16,6 +15,10 @@ import (
 	"github.com/putdotio/efes/config"
 	"github.com/putdotio/efes/logger"
 )
+
+// ShutdownTimeout is the duration to wait for active requests before
+// closing the server.
+const ShutdownTimeout = 5 * time.Second
 
 // Tracker tracks the info of files in database.
 // Tracker responds to client requests.
@@ -27,7 +30,6 @@ type Tracker struct {
 	listener net.Listener
 	server   http.Server
 	mux      *http.ServeMux
-	shutdown sync.WaitGroup
 }
 
 // New returns a new Tracker instance.
@@ -57,38 +59,36 @@ func New(c *config.TrackerConfig) (*Tracker, error) {
 
 // Run this tracker in a blocking manner. Running tracker can be stopped with Close().
 func (t *Tracker) Run() error {
-	defer func() {
-		if err := t.db.Close(); err != nil {
-			t.log.Error("Error while closing database connection")
-		}
-	}()
 	err := t.server.Serve(t.listener)
 	if err == http.ErrServerClosed {
-		t.log.Debug("Tracker is shutting down.")
-		t.shutdown.Wait()
+		t.log.Notice("Tracker is shutting down.")
+		return nil
 	}
-	t.log.Debug("Tracker is closed.")
 	return err
 }
 
-// Close the tracker.
-func (t *Tracker) Close() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	t.server.Shutdown(ctx)
+// Shutdown the tracker.
+func (t *Tracker) Shutdown() error {
+	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
+	_ = cancel
+	err := t.server.Shutdown(ctx)
+	if err != nil {
+		t.log.Error("Error while shutting down HTTP server")
+		return err
+	}
+	err = t.db.Close()
+	if err != nil {
+		t.log.Error("Error while closing database connection")
+		return err
+	}
+	return nil
 }
 
 func (t *Tracker) ping(w http.ResponseWriter, r *http.Request) {
-	t.shutdown.Add(1)
-	defer t.shutdown.Done()
-
 	w.Write([]byte("pong"))
 }
 
 func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
-	t.shutdown.Add(1)
-	defer t.shutdown.Done()
-
 	var response struct {
 		Paths []string `json:"paths"`
 	}

@@ -3,9 +3,9 @@ package command
 import (
 	"log"
 
-	"github.com/codegangsta/cli"
 	"github.com/putdotio/efes/config"
 	"github.com/putdotio/efes/tracker"
+	"github.com/urfave/cli"
 )
 
 // NewTracker returns a new cli.Command for running Efes Tracker process.

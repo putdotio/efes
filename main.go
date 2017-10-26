@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/cenkalti/log"
-	"github.com/codegangsta/cli"
 	"github.com/putdotio/efes/command"
+	"github.com/urfave/cli"
 )
 
 const version = "0.0.0"
