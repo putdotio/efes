@@ -88,6 +88,7 @@ func runUntilInterrupt(p process) {
 	}
 	// Run returned with no error. Wait process.Shutdown to return before exit.
 	<-shutdown
+	log.Notice("Process shut down successfully.")
 }
 
 func handleSignals(p process, shutdown chan struct{}) {

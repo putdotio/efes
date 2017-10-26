@@ -19,11 +19,13 @@ import (
 
 // Server runs on storage servers.
 type Server struct {
-	config *config.Config
-	dir    string
-	devid  uint64
-	db     *sql.DB
-	log    log.Logger
+	config   *config.Config
+	dir      string
+	devid    uint64
+	db       *sql.DB
+	log      log.Logger
+	stop     chan struct{}
+	shutdown chan struct{}
 }
 
 // New returns a new Server instance.
@@ -33,10 +35,12 @@ func New(c *config.Config, dir string) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		config: c,
-		dir:    dir,
-		devid:  devid,
-		log:    log.NewLogger("server"),
+		config:   c,
+		dir:      dir,
+		devid:    devid,
+		log:      log.NewLogger("server"),
+		stop:     make(chan struct{}),
+		shutdown: make(chan struct{}),
 	}
 	return s, nil
 }
@@ -58,6 +62,8 @@ func (s *Server) Run() error {
 
 // Shutdown the server.
 func (s *Server) Shutdown() error {
+	close(s.stop)
+	<-s.shutdown
 	err := s.db.Close()
 	if err != nil {
 		s.log.Error("Error while closing database connection")
@@ -101,7 +107,9 @@ func (s *Server) work() {
 				s.log.Errorln("Cannot update device stats:", err.Error())
 				continue
 			}
-			// TODO implement graceful Shutdown
+		case <-s.stop:
+			close(s.shutdown)
+			return
 		}
 	}
 }
