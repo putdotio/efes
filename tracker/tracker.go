@@ -108,9 +108,10 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		var httpPort int64
 		var devid int64
 		var fid int64
-		err := rows.Scan(&hostip, &httpPort, &devid, &fid)
+		err = rows.Scan(&hostip, &httpPort, &devid, &fid)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		sfid := fmt.Sprintf("%010d", fid)
 		path := fmt.Sprintf("http://%s:%d/dev%d/%s/%s/%s/%s.fid", hostip, httpPort, devid, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
@@ -119,6 +120,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 	err = rows.Err()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response)
