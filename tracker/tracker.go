@@ -24,7 +24,7 @@ const ShutdownTimeout = 5 * time.Second
 // Tracker responds to client requests.
 // Tracker sends jobs to servers.
 type Tracker struct {
-	config   *config.TrackerConfig
+	config   *config.Config
 	db       *sql.DB
 	log      log.Logger
 	listener net.Listener
@@ -33,7 +33,7 @@ type Tracker struct {
 }
 
 // New returns a new Tracker instance.
-func New(c *config.TrackerConfig) (*Tracker, error) {
+func New(c *config.Config) (*Tracker, error) {
 	t := &Tracker{
 		config: c,
 		log:    log.NewLogger("tracker"),
@@ -45,17 +45,17 @@ func New(c *config.TrackerConfig) (*Tracker, error) {
 	return t, nil
 }
 
-// Run this tracker in a blocking manner. Running tracker can be stopped with Close().
+// Run this tracker in a blocking manner. Running tracker can be stopped with Shutdown().
 func (t *Tracker) Run() error {
-	if t.config.Debug {
+	if t.config.Tracker.Debug {
 		t.log.SetLevel(log.DEBUG)
 	}
 	var err error
-	t.db, err = sql.Open("mysql", t.config.DBDSN)
+	t.db, err = sql.Open("mysql", t.config.Database.DSN)
 	if err != nil {
 		return err
 	}
-	t.listener, err = net.Listen("tcp", t.config.ListenAddress)
+	t.listener, err = net.Listen("tcp", t.config.Tracker.ListenAddress)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (t *Tracker) Shutdown() error {
 }
 
 func (t *Tracker) ping(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("pong"))
+	w.Write([]byte("pong")) // nolint: errcheck
 }
 
 func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +102,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
+	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var hostip string
 		var httpPort int64
@@ -123,5 +123,5 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	encoder := json.NewEncoder(w)
-	encoder.Encode(response)
+	encoder.Encode(response) // nolint: errcheck
 }

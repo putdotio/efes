@@ -11,6 +11,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/putdotio/efes/config"
+	"github.com/putdotio/efes/server"
 	"github.com/putdotio/efes/tracker"
 )
 
@@ -40,11 +41,26 @@ func main() {
 				if err != nil {
 					log.Fatal("Error while loading configuration. ", err)
 				}
-				t, err := tracker.New(&cfg.Tracker)
+				t, err := tracker.New(cfg)
 				if err != nil {
 					log.Fatal("Error while initializing tracker. ", err)
 				}
 				runUntilInterrupt(t)
+			},
+		},
+		{
+			Name:  "server",
+			Usage: "Runs Server process",
+			Action: func(c *cli.Context) {
+				cfg, err := config.New(c.GlobalString("config"))
+				if err != nil {
+					log.Fatal("Error while loading configuration. ", err)
+				}
+				s, err := server.New(cfg)
+				if err != nil {
+					log.Fatal("Error while initializing tracker. ", err)
+				}
+				runUntilInterrupt(s)
 			},
 		},
 	}

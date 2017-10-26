@@ -5,13 +5,24 @@ import "github.com/BurntSushi/toml"
 // TrackerConfig holds configuration values for Tracker.
 type TrackerConfig struct {
 	Debug         bool   `toml:"debug"`
-	DBDSN         string `toml:"db_dsn"`
 	ListenAddress string `toml:"listen_address"`
+}
+
+// DatabaseConfig holds configuration values for database.
+type DatabaseConfig struct {
+	DSN string `toml:"dsn"`
+}
+
+// ServerConfig holds configuration values for Server.
+type ServerConfig struct {
+	Debug bool `toml:"debug"`
 }
 
 // Config holds configuration values for all Efes components.
 type Config struct {
-	Tracker TrackerConfig
+	Tracker  TrackerConfig
+	Server   ServerConfig
+	Database DatabaseConfig
 }
 
 // New parses a TOML file and returns new Config.
