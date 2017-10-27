@@ -60,7 +60,7 @@ func main() {
 				dir := c.Args().Get(0)
 				s, err := server.New(cfg, dir)
 				if err != nil {
-					log.Fatal("Error while initializing tracker. ", err)
+					log.Fatal("Error while initializing server. ", err)
 				}
 				runUntilInterrupt(s)
 			},
