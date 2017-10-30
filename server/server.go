@@ -2,8 +2,8 @@ package server
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -19,51 +19,56 @@ import (
 
 // Server runs on storage servers.
 type Server struct {
-	config   *config.Config
-	dir      string
-	devid    uint64
-	db       *sql.DB
-	log      log.Logger
-	stop     chan struct{}
-	shutdown chan struct{}
+	config           *config.Config
+	dir              string
+	devid            uint64
+	db               *sql.DB
+	log              log.Logger
+	shutdown         chan struct{}
+	diskStatsStopped chan struct{}
 }
 
 // New returns a new Server instance.
 func New(c *config.Config, dir string) (*Server, error) {
-	devid, err := strconv.ParseUint(strings.TrimPrefix(filepath.Base(dir), "dev"), 10, 32)
+	fi, err := os.Stat(dir)
 	if err != nil {
 		return nil, err
 	}
+	if !fi.IsDir() {
+		return nil, fmt.Errorf("Path must be a directory: %s", dir)
+	}
 	s := &Server{
-		config:   c,
-		dir:      dir,
-		devid:    devid,
-		log:      log.NewLogger("server"),
-		stop:     make(chan struct{}),
-		shutdown: make(chan struct{}),
+		config:           c,
+		dir:              dir,
+		log:              log.NewLogger("server"),
+		shutdown:         make(chan struct{}),
+		diskStatsStopped: make(chan struct{}),
+	}
+	if s.config.Server.Debug {
+		s.log.SetLevel(log.DEBUG)
+	}
+	s.devid, err = strconv.ParseUint(strings.TrimPrefix(filepath.Base(dir), "dev"), 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", dir)
+	}
+	s.db, err = sql.Open("mysql", s.config.Database.DSN)
+	if err != nil {
+		return nil, err
 	}
 	return s, nil
 }
 
 // Run this server in a blocking manner. Running server can be stopped with Shutdown().
 func (s *Server) Run() error {
-	if s.config.Server.Debug {
-		s.log.SetLevel(log.DEBUG)
-	}
-	var err error
-	s.db, err = sql.Open("mysql", s.config.Database.DSN)
-	if err != nil {
-		return err
-	}
 	s.log.Notice("Server is started.")
-	s.work()
+	s.updateDiskStats()
 	return nil
 }
 
 // Shutdown the server.
 func (s *Server) Shutdown() error {
-	close(s.stop)
-	<-s.shutdown
+	close(s.shutdown)
+	<-s.diskStatsStopped
 	err := s.db.Close()
 	if err != nil {
 		s.log.Error("Error while closing database connection")
@@ -72,97 +77,58 @@ func (s *Server) Shutdown() error {
 	return nil
 }
 
-func (s *Server) work() {
+func (s *Server) updateDiskStats() {
 	ticker := time.NewTicker(time.Second)
-	var du diskUtilization
+	iostat, err := newIOStat(s.dir)
+	if err != nil {
+		s.log.Warningln("Cannot get stats for dir:", s.dir)
+	}
 	for {
 		select {
-		case t := <-ticker.C:
-			var dbUtil sql.NullInt64
-			utilization, err := du.get(s.dir, t)
-			if err != nil {
-				s.log.Errorln("Cannot get disk IO utilization:", err.Error())
-			} else {
-				dbUtil.Valid = true
-				dbUtil.Int64 = int64(utilization)
-			}
-			s.log.Debugf("dev%d IO utilization: %d", s.devid, utilization)
-
-			var dbUsed, dbTotal sql.NullInt64
-			usage, err := disk.Usage(s.dir)
-			if err == errFirstRun {
-				// We don't know the utilization level on the first call.
-			} else if err != nil {
-				s.log.Errorln("Cannot get disk usage:", err.Error())
-			} else {
-				const mb = 1 << 20
-				dbUsed.Valid = true
-				dbUsed.Int64 = int64(usage.Used) / mb
-				dbTotal.Valid = true
-				dbTotal.Int64 = int64(usage.Total) / mb
-			}
-
-			_, err = s.db.Exec("update device set io_utilization=?, mb_used=?, mb_total=?, mb_asof=? where devid=?", dbUtil, dbUsed, dbTotal, time.Now().UTC().Unix(), s.devid)
+		case <-ticker.C:
+			used, total := s.getDiskUsage()
+			utilization := s.getDiskUtilization(iostat)
+			_, err = s.db.Exec("update device set io_utilization=?, mb_used=?, mb_total=?, mb_asof=? where devid=?", utilization, used, total, time.Now().UTC().Unix(), s.devid)
 			if err != nil {
 				s.log.Errorln("Cannot update device stats:", err.Error())
 				continue
 			}
-		case <-s.stop:
-			close(s.shutdown)
+		case <-s.shutdown:
+			close(s.diskStatsStopped)
 			return
 		}
 	}
 }
 
-type diskUtilization struct {
-	io0 uint64
-	t0  time.Time
-}
-
-var errFirstRun = errors.New("first utilization call")
-
-func (d *diskUtilization) get(dir string, t time.Time) (percent uint8, err error) {
-	dev, err := findDevice(dir)
+func (s *Server) getDiskUsage() (used, total sql.NullInt64) {
+	usage, err := disk.Usage(s.dir)
 	if err != nil {
+		s.log.Errorln("Cannot get disk usage:", err.Error())
 		return
 	}
-
-	r, err := disk.IOCounters()
-	if err != nil {
-		return
-	}
-
-	c, ok := r[filepath.Base(dev)]
-	if !ok {
-		return
-	}
-	if d.t0.IsZero() {
-		d.io0 = c.IoTime
-		d.t0 = t
-		err = errFirstRun
-		return
-	}
-	diffIO := time.Duration(c.IoTime-d.io0) * time.Millisecond
-	d.io0 = c.IoTime
-
-	diffTime := t.Sub(d.t0)
-	d.t0 = t
-
-	percent = uint8((100 * diffIO) / diffTime)
+	const mb = 1 << 20
+	used.Valid = true
+	used.Int64 = int64(usage.Used) / mb
+	total.Valid = true
+	total.Int64 = int64(usage.Total) / mb
+	s.log.Debugf("Disk usage: %d/%d", used.Int64, total.Int64)
 	return
 }
 
-func findDevice(path string) (string, error) {
-	partitions, err := disk.Partitions(false)
-	if err != nil {
-		return "", err
+func (s *Server) getDiskUtilization(iostat *IOStat) (utilization sql.NullInt64) {
+	if iostat == nil {
+		return
 	}
-	// fmt.Println("partitions:", partitions)
-	for _, p := range partitions {
-		_, err = filepath.Rel(p.Mountpoint, path)
-		if err == nil {
-			return p.Device, nil
-		}
+	value, err := iostat.Utilization()
+	if err == errFirstRun {
+		// We don't know the utilization level on the first call.
+		return
+	} else if err != nil {
+		s.log.Errorln("Cannot get disk IO utilization:", err.Error())
+		return
 	}
-	return "", fmt.Errorf("Device could not be found: %s", path)
+	utilization.Valid = true
+	utilization.Int64 = int64(value)
+	s.log.Debugf("IO utilization: %d", utilization)
+	return
 }

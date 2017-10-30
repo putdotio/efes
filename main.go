@@ -73,7 +73,11 @@ func main() {
 }
 
 type process interface {
+	// Run does the main work for the process.
+	// Run must return nil when Shutdown is called.
 	Run() error
+	// Shutdown stops the running Run method.
+	// After shutdown is called Run must return.
 	Shutdown() error
 }
 

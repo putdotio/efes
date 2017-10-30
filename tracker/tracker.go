@@ -24,12 +24,10 @@ const ShutdownTimeout = 5 * time.Second
 // Tracker responds to client requests.
 // Tracker sends jobs to servers.
 type Tracker struct {
-	config   *config.Config
-	db       *sql.DB
-	log      log.Logger
-	listener net.Listener
-	server   http.Server
-	mux      *http.ServeMux
+	config *config.Config
+	db     *sql.DB
+	log    log.Logger
+	server http.Server
 }
 
 // New returns a new Tracker instance.
@@ -38,30 +36,29 @@ func New(c *config.Config) (*Tracker, error) {
 		config: c,
 		log:    log.NewLogger("tracker"),
 	}
-	t.mux = http.NewServeMux()
-	t.mux.HandleFunc("/ping", t.ping)
-	t.mux.HandleFunc("/get-paths", t.getPaths)
-	t.server.Handler = t.mux
-	return t, nil
-}
-
-// Run this tracker in a blocking manner. Running tracker can be stopped with Shutdown().
-func (t *Tracker) Run() error {
+	m := http.NewServeMux()
+	m.HandleFunc("/ping", t.ping)
+	m.HandleFunc("/get-paths", t.getPaths)
+	t.server.Handler = m
 	if t.config.Tracker.Debug {
 		t.log.SetLevel(log.DEBUG)
 	}
 	var err error
 	t.db, err = sql.Open("mysql", t.config.Database.DSN)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	t.listener, err = net.Listen("tcp", t.config.Tracker.ListenAddress)
+	return t, nil
+}
+
+// Run this tracker in a blocking manner. Running tracker can be stopped with Shutdown().
+func (t *Tracker) Run() error {
+	listener, err := net.Listen("tcp", t.config.Tracker.ListenAddress)
 	if err != nil {
 		return err
 	}
 	t.log.Notice("Tracker is started.")
-
-	err = t.server.Serve(t.listener)
+	err = t.server.Serve(listener)
 	if err == http.ErrServerClosed {
 		t.log.Notice("Tracker is shutting down.")
 		return nil
