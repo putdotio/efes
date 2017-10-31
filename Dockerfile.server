@@ -1,0 +1,2 @@
+FROM efes
+ENTRYPOINT ["/bin/bash", "-c", "mkdir -p $datadir && /usr/local/bin/efes server $datadir"]
