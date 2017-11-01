@@ -81,7 +81,7 @@ func (s *Server) updateDiskStats() {
 	ticker := time.NewTicker(time.Second)
 	iostat, err := newIOStat(s.dir)
 	if err != nil {
-		s.log.Warningln("Cannot get stats for dir:", s.dir)
+		s.log.Warningln("Cannot get stats for dir:", s.dir, "err:", err.Error())
 	}
 	for {
 		select {
@@ -111,7 +111,6 @@ func (s *Server) getDiskUsage() (used, total sql.NullInt64) {
 	used.Int64 = int64(usage.Used) / mb
 	total.Valid = true
 	total.Int64 = int64(usage.Total) / mb
-	s.log.Debugf("Disk usage: %d/%d", used.Int64, total.Int64)
 	return
 }
 
@@ -129,6 +128,5 @@ func (s *Server) getDiskUtilization(iostat *IOStat) (utilization sql.NullInt64) 
 	}
 	utilization.Valid = true
 	utilization.Int64 = int64(value)
-	s.log.Debugf("IO utilization: %d", utilization)
 	return
 }
