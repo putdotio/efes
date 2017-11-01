@@ -4,6 +4,11 @@ services:
     build:
       dockerfile: Dockerfile.db
       context: .
+  db_setup:
+    command: ["./docker-wait-for-db.sh", "efes_db_1", "mogilefs", "123", "mogilefs", "INSERT INTO host (host_id, status, hostname, hostip) VALUES (1, 'alive', 's1', $EXTERNAL_IP)"]
+    image: mysql:5.7.20
+    depends_on:
+      - db
   tracker:
     build:
       dockerfile: Dockerfile.tracker
