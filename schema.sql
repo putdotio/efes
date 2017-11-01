@@ -37,9 +37,6 @@ CREATE TABLE `host` (
   `altip` varchar(15) DEFAULT NULL,
   `altmask` varchar(18) DEFAULT NULL,
   PRIMARY KEY (`hostid`),
-  UNIQUE KEY `hostname` (`hostname`),
-  UNIQUE KEY `hostip` (`hostip`),
-  UNIQUE KEY `altip` (`altip`)
 ) ENGINE=InnoDB;
 CREATE TABLE `tempfile` (
   `fid` bigint(20) unsigned NOT NULL AUTO_INCREMENT,

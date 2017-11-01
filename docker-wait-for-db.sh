@@ -5,12 +5,18 @@ host="$1"
 user="$2"
 password="$3"
 db="$4"
-query="$5"
+shift
+shift
+shift
+shift
+query="$@"
 
-until mysql -h $host -u $user -p$password -c '\q'; do
+until mysql -h $host -u $user -p$password -e 'select version();'; do
   >&2 echo "MySQL is unavailable - sleeping"
   sleep 1
 done
 
->&2 echo "MySQL is up - executing command"
-mysql -h $host -u $user -p$password $db -e "$query"
+for q in "$@"; do
+  echo "Executing: " $q
+  mysql -h $host -u $user -p$password $db -e "$q"
+done

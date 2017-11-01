@@ -5,6 +5,7 @@ build:
 	GOOS=linux GOARCH=amd64 go build -o $(NAME)
 up:
 	docker build -t efes -f Dockerfile .
+	docker-compose rm -f
 	EXTERNAL_IP=$(shell docker-machine ip) docker-compose up --build
 upload: build
 	@md5 $(NAME) > $(NAME).md5
