@@ -36,7 +36,7 @@ CREATE TABLE `host` (
   `hostip` varchar(40) DEFAULT NULL,
   `altip` varchar(15) DEFAULT NULL,
   `altmask` varchar(18) DEFAULT NULL,
-  PRIMARY KEY (`hostid`),
+  PRIMARY KEY (`hostid`)
 ) ENGINE=InnoDB;
 CREATE TABLE `tempfile` (
   `fid` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
