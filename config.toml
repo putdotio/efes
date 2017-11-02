@@ -3,6 +3,6 @@ debug = true
 listen_address = "0.0.0.0:8001"
 shutdown_timeout = 5000
 [database]
-dsn = "mogilefs:123@(db:3306)/mogilefs"
+dsn = "mogilefs:123@(efes_db_1:3306)/mogilefs"
 [server]
 debug = true
