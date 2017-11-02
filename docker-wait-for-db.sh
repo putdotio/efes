@@ -9,7 +9,7 @@ shift 4
 query="$@"
 
 until mysql -h $host -u $user -p$password -e 'select version()' &>/dev/null ; do
-  # echo "MySQL is unavailable - sleeping"
+  echo "MySQL is not ready yet, waiting..."
   sleep 1
 done
 
