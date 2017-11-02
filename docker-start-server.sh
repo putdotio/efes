@@ -7,4 +7,4 @@ sqlhost="INSERT INTO host (hostid, status, hostname, hostip) VALUES ($devid, 'al
 sqldevice="INSERT INTO device (devid, hostid, status) VALUES ($devid, $devid, 'alive') ON DUPLICATE KEY UPDATE hostid=$devid, status='alive'"
 bash /root/wait-for-db.sh efes_db_1 mogilefs 123 mogilefs "$sqlhost"
 bash /root/wait-for-db.sh efes_db_1 mogilefs 123 mogilefs "$sqldevice"
-efes server $datadir
+exec efes server $datadir
