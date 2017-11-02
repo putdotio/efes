@@ -18,12 +18,23 @@ type IOStat struct {
 }
 
 func newIOStat(path string) (*IOStat, error) {
+	r, err := disk.IOCounters()
+	if err != nil {
+		return nil, err
+	}
 	device, err := findDevice(path)
 	if err != nil {
 		return nil, err
 	}
+	device = filepath.Base(device)
+	c, ok := r[device]
+	if !ok {
+		return nil, fmt.Errorf("Cannot find stats for device: %s", device)
+	}
 	return &IOStat{
 		device: device,
+		ioTime: c.IoTime,
+		t:      time.Now(),
 	}, nil
 }
 
@@ -36,15 +47,9 @@ func (d *IOStat) Utilization() (percent uint8, err error) {
 	if err != nil {
 		return
 	}
-	c, ok := r[filepath.Base(d.device)]
+	c, ok := r[d.device]
 	if !ok {
 		err = fmt.Errorf("Cannot find stats for device: %s", d.device)
-		return
-	}
-	if d.t.IsZero() {
-		d.ioTime = c.IoTime
-		d.t = now
-		err = errFirstRun
 		return
 	}
 	diffIO := time.Duration(c.IoTime-d.ioTime) * time.Millisecond
@@ -62,7 +67,7 @@ func findDevice(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	partitions, err := disk.Partitions(false)
+	partitions, err := disk.Partitions(true)
 	if err != nil {
 		return "", err
 	}

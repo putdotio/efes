@@ -1,4 +1,0 @@
-FROM mysql:5.7.20
-
-ADD docker-wait-for-db.sh /root/
-RUN chmod +x /root/docker-wait-for-db.sh

@@ -1,2 +1,5 @@
 FROM efes
-ENTRYPOINT ["/bin/bash", "-c", "mkdir -p $datadir && /usr/local/bin/efes server $datadir"]
+RUN apt-get update && apt-get install -y mysql-client
+ADD docker-start-server.sh /root/start-server.sh
+ADD docker-wait-for-db.sh /root/wait-for-db.sh
+ENTRYPOINT ["/bin/bash", "/root/start-server.sh"]
