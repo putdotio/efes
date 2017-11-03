@@ -45,6 +45,7 @@ func New(c *config.Config) (*Tracker, error) {
 	m.HandleFunc("/get-paths", t.getPaths)
 	m.HandleFunc("/create-open", t.createOpen)
 	m.HandleFunc("/create-close", t.createClose)
+	m.HandleFunc("/delete", t.deleteFile)
 	t.server.Handler = m
 	if t.config.Tracker.Debug {
 		t.log.SetLevel(log.DEBUG)
@@ -265,4 +266,45 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	key := r.FormValue("key")
+	if key == "" {
+		http.Error(w, "required parameter: key", http.StatusBadRequest)
+		return
+	}
+	tx, err := t.db.Begin()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
+	row := tx.QueryRow("select fid from file where dkey=? for update", key)
+	var fid int64
+	err = row.Scan(&fid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	_, err = tx.Exec("delete from file where fid=?", fid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	_, err = tx.Exec("delete from file_on where fid=?", fid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = tx.Commit()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// TODO send task to host for removing from disk
 }
