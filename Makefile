@@ -1,3 +1,5 @@
+.PHONY: build up test upload lint
+
 NAME := efes
 
 build:
@@ -10,7 +12,7 @@ up:
 
 test:
 	docker-compose -p efestest rm -f
-	docker-compose -p efestest -f docker-compose-test.yml up --build --abort-on-container-exit --exit-code-from test
+	docker-compose -p efestest -f docker-compose-test.yml up --build --exit-code-from test
 
 upload: build
 	@md5 $(NAME) > $(NAME).md5

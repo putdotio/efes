@@ -10,6 +10,4 @@ services:
     build:
       dockerfile: Dockerfile-test
       context: .
-    depends_on:
-      - db
     tty: true
