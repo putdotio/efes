@@ -16,10 +16,6 @@ import (
 	"github.com/putdotio/efes/config"
 )
 
-// ShutdownTimeout is the duration to wait for active requests before
-// closing the server.
-const ShutdownTimeout = 5 * time.Second
-
 // Tracker tracks the info of files in database.
 // Tracker responds to client requests.
 // Tracker sends jobs to servers.
