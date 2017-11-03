@@ -44,6 +44,7 @@ func New(c *config.Config) (*Tracker, error) {
 	m.HandleFunc("/ping", t.ping)
 	m.HandleFunc("/get-paths", t.getPaths)
 	m.HandleFunc("/create-open", t.createOpen)
+	m.HandleFunc("/create-close", t.createClose)
 	t.server.Handler = m
 	if t.config.Tracker.Debug {
 		t.log.SetLevel(log.DEBUG)
@@ -198,4 +199,62 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 	}
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
+}
+
+func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
+	fid, err := strconv.ParseInt(r.FormValue("fid"), 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	devid, err := strconv.ParseInt(r.FormValue("devid"), 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	size, err := strconv.ParseUint(r.FormValue("size"), 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	key := r.FormValue("key")
+	if key == "" {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	tx, err := t.db.Begin()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
+	res, err := tx.Exec("delete from tempfile where fid=?", fid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	count, err := res.RowsAffected()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if count == 0 {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	_, err = tx.Exec("insert into file(fid, dkey, length, dmid, classid, devcount) values(?, ?, ?, ?, ?, 1)", fid, key, size, dmid, classid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	_, err = tx.Exec("insert into file_on(fid, devid) values(?, ?)", fid, devid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = tx.Commit()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
