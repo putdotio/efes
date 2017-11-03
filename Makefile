@@ -9,8 +9,8 @@ up:
 	docker-compose up --build
 
 test:
-	docker-compose rm -f
-	docker-compose -p efes_test -f docker-compose-test.yml up --build --abort-on-container-exit --exit-code-from test
+	docker-compose -p efestest rm -f
+	docker-compose -p efestest -f docker-compose-test.yml up --build --abort-on-container-exit --exit-code-from test
 
 upload: build
 	@md5 $(NAME) > $(NAME).md5

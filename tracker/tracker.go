@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	// Register MySQL database driver.
@@ -14,6 +16,12 @@ import (
 
 	"github.com/cenkalti/log"
 	"github.com/putdotio/efes/config"
+)
+
+// TODO remove hardcoded constants
+const (
+	dmid    = 1
+	classid = 1
 )
 
 // Tracker tracks the info of files in database.
@@ -35,6 +43,7 @@ func New(c *config.Config) (*Tracker, error) {
 	m := http.NewServeMux()
 	m.HandleFunc("/ping", t.ping)
 	m.HandleFunc("/get-paths", t.getPaths)
+	m.HandleFunc("/create-open", t.createOpen)
 	t.server.Handler = m
 	if t.config.Tracker.Debug {
 		t.log.SetLevel(log.DEBUG)
@@ -90,8 +99,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Paths = make([]string, 0)
 	key := r.FormValue("key")
-	// TODO remove dmid
-	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=? and f.dmid=1", key)
+	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=? and f.dmid=?", key, dmid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -116,6 +124,73 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	encoder := json.NewEncoder(w)
+	encoder.Encode(response) // nolint: errcheck
+}
+
+func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
+	var response struct {
+		Path string `json:"path"`
+	}
+	var size uint64
+	sizeStr := r.FormValue("size")
+	if sizeStr == "" {
+		size = 0
+	} else {
+		var err error
+		size, err = strconv.ParseUint(r.FormValue("size"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	res, err := t.db.Exec("insert into tempfile(createtime, classid, dmid) values(?, ?, ?)", time.Now().UTC().Unix(), classid, dmid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and mb_asof > ? order by mb_free desc", size, time.Now().UTC().Unix()-10)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	type device struct {
+		hostip   string
+		httpPort int64
+		devid    int64
+		mbFree   int64
+	}
+	devices := make([]device, 0)
+	defer rows.Close() // nolint: errcheck
+	for rows.Next() {
+		var d device
+		err = rows.Scan(&d.hostip, &d.httpPort, &d.devid, &d.mbFree)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		devices = append(devices, d)
+	}
+	err = rows.Err()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fid, err := res.LastInsertId()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sfid := fmt.Sprintf("%010d", fid)
+	if len(devices) == 0 {
+		http.Error(w, "no device available", http.StatusNotFound)
+		return
+	}
+	if len(devices) > 1 {
+		devices = devices[:len(devices)/2]
+	}
+	d := devices[rand.Intn(len(devices))]
+	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s/%s/%s/%s.fid", d.hostip, d.httpPort, d.devid, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
 }
