@@ -66,7 +66,7 @@ func TestCreateOpen(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := "{\"path\":\"http://1.2.3.4:7500/dev2/0/000/000/0000000005.fid\"}\n"
+	expected := "{\"path\":\"http://1.2.3.4:7500/dev2/0/000/000/0000000005.fid\",\"fid\":5,\"devid\":2}\n"
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)

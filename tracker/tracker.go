@@ -129,9 +129,6 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
-	var response struct {
-		Path string `json:"path"`
-	}
 	var size uint64
 	sizeStr := r.FormValue("size")
 	if sizeStr == "" {
@@ -190,7 +187,15 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		devices = devices[:len(devices)/2]
 	}
 	d := devices[rand.Intn(len(devices))]
-	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s/%s/%s/%s.fid", d.hostip, d.httpPort, d.devid, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
+	response := struct {
+		Path  string `json:"path"`
+		Fid   int64  `json:"fid"`
+		Devid int64  `json:"devid"`
+	}{
+		Path:  fmt.Sprintf("http://%s:%d/dev%d/%s/%s/%s/%s.fid", d.hostip, d.httpPort, d.devid, sfid[0:1], sfid[1:4], sfid[4:7], sfid),
+		Fid:   fid,
+		Devid: d.devid,
+	}
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
 }
