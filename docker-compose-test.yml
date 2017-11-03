@@ -2,13 +2,13 @@ version: '3.3'
 services:
   db:
     build:
-      dockerfile: Dockerfile.db
+      dockerfile: Dockerfile-db
       context: .
     logging:
       driver: none
   test:
     build:
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile-test
       context: .
     depends_on:
       - db
