@@ -3,11 +3,14 @@ NAME := efes
 build:
 	GOOS=linux GOARCH=amd64 go build -o $(NAME)
 
-up: export EXTERNAL_IP=$(shell docker-machine ip)
 up:
 	docker build -t $(NAME) -f Dockerfile .
 	docker-compose rm -f
 	docker-compose up --build
+
+test:
+	docker-compose rm -f
+	docker-compose -p efes_test -f docker-compose-test.yml up --build --abort-on-container-exit --exit-code-from test
 
 upload: build
 	@md5 $(NAME) > $(NAME).md5

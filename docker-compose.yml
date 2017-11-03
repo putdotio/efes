@@ -10,8 +10,6 @@ services:
     build:
       dockerfile: Dockerfile.tracker
       context: .
-    ports:
-      - "8001:8001"
     depends_on:
       - db
     tty: true

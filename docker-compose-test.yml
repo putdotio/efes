@@ -1,0 +1,15 @@
+version: '3.3'
+services:
+  db:
+    build:
+      dockerfile: Dockerfile.db
+      context: .
+    logging:
+      driver: none
+  test:
+    build:
+      dockerfile: Dockerfile.test
+      context: .
+    depends_on:
+      - db
+    tty: true
