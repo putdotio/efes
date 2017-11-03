@@ -67,7 +67,7 @@ func TestCreateOpen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req, err := http.NewRequest("GET", "/create-open", nil)
+	req, err := http.NewRequest("POST", "/create-open", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func TestCreateClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req, err := http.NewRequest("GET", "/create-close?fid=9&devid=2&key=foo&size=42", nil)
+	req, err := http.NewRequest("POST", "/create-close?fid=9&devid=2&key=foo&size=42", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

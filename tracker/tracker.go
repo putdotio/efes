@@ -130,6 +130,10 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
 	var size uint64
 	sizeStr := r.FormValue("size")
 	if sizeStr == "" {
@@ -202,6 +206,10 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
 	fid, err := strconv.ParseInt(r.FormValue("fid"), 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
