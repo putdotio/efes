@@ -227,7 +227,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 	}
 	key := r.FormValue("key")
 	if key == "" {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "required parameter: key", http.StatusBadRequest)
 		return
 	}
 	tx, err := t.db.Begin()
