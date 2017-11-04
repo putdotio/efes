@@ -10,9 +10,10 @@ up:
 	docker-compose rm -f
 	docker-compose up --build
 
+test: export COMPOSE_PROJECT_NAME=$(NAME)test
 test:
-	docker-compose -p efestest rm -f
-	docker-compose -p efestest -f docker-compose-test.yml up --build --exit-code-from test
+	docker-compose rm -f
+	docker-compose -f docker-compose-test.yml up --build --exit-code-from test
 
 upload: build
 	@md5 $(NAME) > $(NAME).md5
