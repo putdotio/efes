@@ -21,11 +21,3 @@ services:
     depends_on:
       - db
     tty: true
-  server2:
-    build:
-      dockerfile: Dockerfile-server
-      context: .
-    command: ["2"]
-    depends_on:
-      - db
-    tty: true
