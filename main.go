@@ -9,10 +9,8 @@ import (
 
 	"github.com/cenkalti/log"
 	"github.com/urfave/cli"
-
-	"github.com/putdotio/efes/config"
-	"github.com/putdotio/efes/server"
-	"github.com/putdotio/efes/tracker"
+	// Register MySQL database driver.
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const version = "0.0.0"
@@ -38,11 +36,11 @@ func main() {
 			Name:  "tracker",
 			Usage: "Runs Tracker process",
 			Action: func(c *cli.Context) {
-				cfg, err := config.New(c.GlobalString("config"))
+				cfg, err := ReadConfig(c.GlobalString("config"))
 				if err != nil {
 					log.Fatal("Error while loading configuration. ", err)
 				}
-				t, err := tracker.New(cfg)
+				t, err := NewTracker(cfg)
 				if err != nil {
 					log.Fatal("Error while initializing tracker. ", err)
 				}
@@ -53,12 +51,12 @@ func main() {
 			Name:  "server",
 			Usage: "Runs Server process",
 			Action: func(c *cli.Context) {
-				cfg, err := config.New(c.GlobalString("config"))
+				cfg, err := ReadConfig(c.GlobalString("config"))
 				if err != nil {
 					log.Fatal("Error while loading configuration. ", err)
 				}
 				dir := c.Args().Get(0)
-				s, err := server.New(cfg, dir)
+				s, err := NewServer(cfg, dir)
 				if err != nil {
 					log.Fatal("Error while initializing server. ", err)
 				}

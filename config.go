@@ -1,4 +1,4 @@
-package config
+package main
 
 import "github.com/BurntSushi/toml"
 
@@ -26,8 +26,8 @@ type Config struct {
 	Database DatabaseConfig
 }
 
-// New parses a TOML file and returns new Config.
-func New(configFile string) (*Config, error) {
+// ReadConfig parses a TOML file and returns new Config.
+func ReadConfig(configFile string) (*Config, error) {
 	var c Config
 	_, err := toml.DecodeFile(configFile, &c)
 	return &c, err

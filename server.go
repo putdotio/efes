@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"database/sql"
@@ -9,17 +9,13 @@ import (
 	"strings"
 	"time"
 
-	// Register MySQL database driver.
-	_ "github.com/go-sql-driver/mysql"
-
 	"github.com/cenkalti/log"
-	"github.com/putdotio/efes/config"
 	"github.com/shirou/gopsutil/disk"
 )
 
 // Server runs on storage servers.
 type Server struct {
-	config           *config.Config
+	config           *Config
 	dir              string
 	devid            uint64
 	db               *sql.DB
@@ -28,8 +24,8 @@ type Server struct {
 	diskStatsStopped chan struct{}
 }
 
-// New returns a new Server instance.
-func New(c *config.Config, dir string) (*Server, error) {
+// NewServer returns a new Server instance.
+func NewServer(c *Config, dir string) (*Server, error) {
 	fi, err := os.Stat(dir)
 	if err != nil {
 		return nil, err

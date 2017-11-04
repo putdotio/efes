@@ -1,4 +1,4 @@
-package tracker
+package main
 
 import (
 	"context"
@@ -11,11 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	// Register MySQL database driver.
-	_ "github.com/go-sql-driver/mysql"
-
 	"github.com/cenkalti/log"
-	"github.com/putdotio/efes/config"
 )
 
 // TODO remove hardcoded constants
@@ -28,14 +24,14 @@ const (
 // Tracker responds to client requests.
 // Tracker sends jobs to servers.
 type Tracker struct {
-	config *config.Config
+	config *Config
 	db     *sql.DB
 	log    log.Logger
 	server http.Server
 }
 
-// New returns a new Tracker instance.
-func New(c *config.Config) (*Tracker, error) {
+// NewTracker returns a new Tracker instance.
+func NewTracker(c *Config) (*Tracker, error) {
 	t := &Tracker{
 		config: c,
 		log:    log.NewLogger("tracker"),

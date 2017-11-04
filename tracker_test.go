@@ -1,4 +1,4 @@
-package tracker
+package main
 
 import (
 	"database/sql"
@@ -6,12 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/putdotio/efes/config"
 )
 
 func TestPing(t *testing.T) {
-	cfg := &config.Config{}
+	cfg := &Config{}
 	tr, err := New(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -45,8 +43,8 @@ func cleanDB(t *testing.T, db *sql.DB) {
 }
 
 func TestGetPaths(t *testing.T) {
-	cfg := &config.Config{
-		Database: config.DatabaseConfig{
+	cfg := &Config{
+		Database: DatabaseConfig{
 			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
 		},
 	}
@@ -90,8 +88,8 @@ func TestGetPaths(t *testing.T) {
 }
 
 func TestCreateOpen(t *testing.T) {
-	cfg := &config.Config{
-		Database: config.DatabaseConfig{
+	cfg := &Config{
+		Database: DatabaseConfig{
 			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
 		},
 	}
@@ -131,8 +129,8 @@ func TestCreateOpen(t *testing.T) {
 }
 
 func TestCreateClose(t *testing.T) {
-	cfg := &config.Config{
-		Database: config.DatabaseConfig{
+	cfg := &Config{
+		Database: DatabaseConfig{
 			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
 		},
 	}
@@ -172,8 +170,8 @@ func TestCreateClose(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	cfg := &config.Config{
-		Database: config.DatabaseConfig{
+	cfg := &Config{
+		Database: DatabaseConfig{
 			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
 		},
 	}
