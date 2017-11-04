@@ -10,7 +10,7 @@ import (
 
 func TestPing(t *testing.T) {
 	cfg := &Config{}
-	tr, err := New(cfg)
+	tr, err := NewTracker(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestGetPaths(t *testing.T) {
 			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
 		},
 	}
-	tr, err := New(cfg)
+	tr, err := NewTracker(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestCreateOpen(t *testing.T) {
 			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
 		},
 	}
-	tr, err := New(cfg)
+	tr, err := NewTracker(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestCreateClose(t *testing.T) {
 			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
 		},
 	}
-	tr, err := New(cfg)
+	tr, err := NewTracker(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +175,7 @@ func TestDelete(t *testing.T) {
 			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
 		},
 	}
-	tr, err := New(cfg)
+	tr, err := NewTracker(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
