@@ -26,9 +26,16 @@ type Config struct {
 	Database DatabaseConfig
 }
 
+var defaultConfig = Config{
+	Tracker: TrackerConfig{
+		ListenAddress:   "0.0.0.0:8001",
+		ShutdownTimeout: 3000,
+	},
+}
+
 // ReadConfig parses a TOML file and returns new Config.
 func ReadConfig(configFile string) (*Config, error) {
-	var c Config
+	c := defaultConfig
 	_, err := toml.DecodeFile(configFile, &c)
 	return &c, err
 }
