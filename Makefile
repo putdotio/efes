@@ -12,6 +12,7 @@ up:
 
 test: export COMPOSE_PROJECT_NAME=$(NAME)test
 test:
+	docker build -t $(NAME) -f Dockerfile .
 	docker-compose rm -f
 	docker-compose -f docker-compose-test.yml up --build --exit-code-from test
 
