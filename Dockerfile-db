@@ -1,10 +1,14 @@
 FROM mysql:5.7.20
 
-ENV MYSQL_ROOT_PASSWORD=toor \
-    MYSQL_USER=mogilefs \
-    MYSQL_PASSWORD=123 \
-    MYSQL_DATABASE=mogilefs
+ARG MYSQL_USER=mogilefs
+ARG MYSQL_PASSWORD=123
+ARG MYSQL_DATABASE=mogilefs
 
-ADD schema.sql /docker-entrypoint-initdb.d
+ADD docker-init-db.sh /tmp/
+ADD schema.sql /tmp/
+
+RUN ["bash", "/tmp/docker-init-db.sh"]
+
+ENTRYPOINT ["mysqld", "--user=root", "--datadir=/var/lib/mysql2"]
 
 EXPOSE 3306
