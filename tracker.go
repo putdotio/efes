@@ -61,6 +61,7 @@ func (t *Tracker) Run() error {
 		return err
 	}
 	t.log.Notice("Tracker is started.")
+	// TODO clean old tempfiles
 	err = t.server.Serve(listener)
 	if err == http.ErrServerClosed {
 		t.log.Notice("Tracker is shutting down.")
