@@ -233,7 +233,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() // nolint: errcheck
 	res, err := tx.Exec("delete from tempfile where fid=?", fid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -280,7 +280,7 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() // nolint: errcheck
 	row := tx.QueryRow("select fid from file where dkey=? for update", key)
 	var fid int64
 	err = row.Scan(&fid)
