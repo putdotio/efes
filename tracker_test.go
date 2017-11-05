@@ -8,9 +8,17 @@ import (
 	"time"
 )
 
+var testConfig = &Config{
+	Database: DatabaseConfig{
+		DSN: "mogilefs:123@(efestest_mysql_1:3306)/mogilefs",
+	},
+	AMQP: AMQPConfig{
+		URL: "amqp://guest:guest@efestest_rabbitmq_1:5672/",
+	},
+}
+
 func TestPing(t *testing.T) {
-	cfg := &Config{}
-	tr, err := NewTracker(cfg)
+	tr, err := NewTracker(testConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,12 +51,7 @@ func cleanDB(t *testing.T, db *sql.DB) {
 }
 
 func TestGetPaths(t *testing.T) {
-	cfg := &Config{
-		Database: DatabaseConfig{
-			DSN: "mogilefs:123@(efestest_mysql_1:3306)/mogilefs",
-		},
-	}
-	tr, err := NewTracker(cfg)
+	tr, err := NewTracker(testConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,12 +91,7 @@ func TestGetPaths(t *testing.T) {
 }
 
 func TestCreateOpen(t *testing.T) {
-	cfg := &Config{
-		Database: DatabaseConfig{
-			DSN: "mogilefs:123@(efestest_mysql_1:3306)/mogilefs",
-		},
-	}
-	tr, err := NewTracker(cfg)
+	tr, err := NewTracker(testConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,12 +127,7 @@ func TestCreateOpen(t *testing.T) {
 }
 
 func TestCreateClose(t *testing.T) {
-	cfg := &Config{
-		Database: DatabaseConfig{
-			DSN: "mogilefs:123@(efestest_mysql_1:3306)/mogilefs",
-		},
-	}
-	tr, err := NewTracker(cfg)
+	tr, err := NewTracker(testConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,12 +163,7 @@ func TestCreateClose(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	cfg := &Config{
-		Database: DatabaseConfig{
-			DSN: "mogilefs:123@(efestest_mysql_1:3306)/mogilefs",
-		},
-	}
-	tr, err := NewTracker(cfg)
+	tr, err := NewTracker(testConfig)
 	if err != nil {
 		t.Fatal(err)
 	}

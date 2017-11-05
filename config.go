@@ -15,6 +15,11 @@ type DatabaseConfig struct {
 	DSN string `toml:"dsn"`
 }
 
+// AMQPConfig holds configuration values for message broker.
+type AMQPConfig struct {
+	URL string `toml:"url"`
+}
+
 // ServerConfig holds configuration values for Server.
 type ServerConfig struct {
 	Debug bool `toml:"debug"`
@@ -25,6 +30,7 @@ type Config struct {
 	Tracker  TrackerConfig
 	Server   ServerConfig
 	Database DatabaseConfig
+	AMQP     AMQPConfig
 }
 
 var defaultConfig = Config{

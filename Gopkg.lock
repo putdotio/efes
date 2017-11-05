@@ -20,6 +20,12 @@
   revision = "958ee7afc008e65fe479a565819a25b30af0ec65"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/cenkalti/redialer"
+  packages = [".","amqpredialer"]
+  revision = "a6cc66445f9211e313b633cff591883030fac97a"
+
+[[projects]]
   name = "github.com/go-ole/go-ole"
   packages = [".","oleutil"]
   revision = "0e87ea779d9deb219633b828a023b32e1244dd57"
@@ -56,6 +62,12 @@
   version = "v2.17.09"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/streadway/amqp"
+  packages = ["."]
+  revision = "ff791c2d22d3f1588b4e2cc71a9fba5e1da90654"
+
+[[projects]]
   name = "github.com/urfave/cli"
   packages = ["."]
   revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
@@ -70,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b729cb6b69a24759832b87df0cbb93f20d19628d44ba71e54fcf9884a7e6bd53"
+  inputs-digest = "eb81223bc5a7a40308e92f006aa8e48b4b178545e76a8ba158077ed2cbe0e8ab"
   solver-name = "gps-cdcl"
   solver-version = 1

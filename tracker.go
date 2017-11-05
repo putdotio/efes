@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/log"
+	"github.com/cenkalti/redialer/amqpredialer"
 )
 
 // TODO remove hardcoded constants
@@ -28,8 +29,10 @@ type Tracker struct {
 	db                        *sql.DB
 	log                       log.Logger
 	server                    http.Server
+	amqp                      *amqpredialer.AMQPRedialer
 	shutdown                  chan struct{}
 	removeOldTempfilesStopped chan struct{}
+	amqpRedialerStopped       chan struct{}
 }
 
 // NewTracker returns a new Tracker instance.
@@ -39,6 +42,7 @@ func NewTracker(c *Config) (*Tracker, error) {
 		log:                       log.NewLogger("tracker"),
 		shutdown:                  make(chan struct{}),
 		removeOldTempfilesStopped: make(chan struct{}),
+		amqpRedialerStopped:       make(chan struct{}),
 	}
 	m := http.NewServeMux()
 	m.HandleFunc("/ping", t.ping)
@@ -55,6 +59,10 @@ func NewTracker(c *Config) (*Tracker, error) {
 	if err != nil {
 		return nil, err
 	}
+	t.amqp, err = amqpredialer.New(c.AMQP.URL)
+	if err != nil {
+		return nil, err
+	}
 	return t, nil
 }
 
@@ -66,6 +74,10 @@ func (t *Tracker) Run() error {
 	}
 	t.log.Notice("Tracker is started.")
 	go t.removeOldTempfiles()
+	go func() {
+		t.amqp.Run()
+		close(t.amqpRedialerStopped)
+	}()
 	err = t.server.Serve(listener)
 	if err == http.ErrServerClosed {
 		t.log.Notice("Tracker is shutting down.")
@@ -77,7 +89,6 @@ func (t *Tracker) Run() error {
 // Shutdown the tracker.
 func (t *Tracker) Shutdown() error {
 	close(t.shutdown)
-	<-t.removeOldTempfilesStopped
 
 	timeout := time.Duration(t.config.Tracker.ShutdownTimeout) * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -87,11 +98,18 @@ func (t *Tracker) Shutdown() error {
 		t.log.Error("Error while shutting down HTTP server")
 		return err
 	}
+
+	<-t.removeOldTempfilesStopped
 	err = t.db.Close()
 	if err != nil {
 		t.log.Error("Error while closing database connection")
 		return err
 	}
+	err = t.amqp.Close()
+	if err != nil {
+		return err
+	}
+	<-t.amqpRedialerStopped
 	return nil
 }
 
