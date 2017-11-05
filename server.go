@@ -75,6 +75,7 @@ func (s *Server) Shutdown() error {
 
 func (s *Server) updateDiskStats() {
 	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 	iostat, err := newIOStat(s.dir)
 	if err != nil {
 		s.log.Warningln("Cannot get stats for dir:", s.dir, "err:", err.Error())

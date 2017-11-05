@@ -24,17 +24,21 @@ const (
 // Tracker responds to client requests.
 // Tracker sends jobs to servers.
 type Tracker struct {
-	config *Config
-	db     *sql.DB
-	log    log.Logger
-	server http.Server
+	config                    *Config
+	db                        *sql.DB
+	log                       log.Logger
+	server                    http.Server
+	shutdown                  chan struct{}
+	removeOldTempfilesStopped chan struct{}
 }
 
 // NewTracker returns a new Tracker instance.
 func NewTracker(c *Config) (*Tracker, error) {
 	t := &Tracker{
-		config: c,
-		log:    log.NewLogger("tracker"),
+		config:                    c,
+		log:                       log.NewLogger("tracker"),
+		shutdown:                  make(chan struct{}),
+		removeOldTempfilesStopped: make(chan struct{}),
 	}
 	m := http.NewServeMux()
 	m.HandleFunc("/ping", t.ping)
@@ -72,6 +76,9 @@ func (t *Tracker) Run() error {
 
 // Shutdown the tracker.
 func (t *Tracker) Shutdown() error {
+	close(t.shutdown)
+	<-t.removeOldTempfilesStopped
+
 	timeout := time.Duration(t.config.Tracker.ShutdownTimeout) * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	_ = cancel
@@ -304,4 +311,28 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// TODO send task to host for removing from disk
+}
+
+func (t *Tracker) removeOldTempfiles() {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case now := <-ticker.C:
+			tooOld := time.Duration(t.config.Tracker.TempfileTooOld) * time.Millisecond
+			deadline := now.Add(-tooOld)
+			res, err := t.db.Exec("delete from tempfile where createtime < ?", deadline)
+			if err != nil {
+				t.log.Errorln("cannot delete old tempfile records:", err.Error())
+				continue
+			}
+			count, err := res.RowsAffected()
+			if err != nil {
+				t.log.Infoln(count, "old tempfile records are deleted")
+			}
+		case <-t.shutdown:
+			close(t.removeOldTempfilesStopped)
+			return
+		}
+	}
 }

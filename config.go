@@ -7,6 +7,7 @@ type TrackerConfig struct {
 	Debug           bool   `toml:"debug"`
 	ListenAddress   string `toml:"listen_address"`
 	ShutdownTimeout uint32 `toml:"shutdown_timeout"`
+	TempfileTooOld  uint32 `toml:"tempfile_too_old"`
 }
 
 // DatabaseConfig holds configuration values for database.
@@ -30,6 +31,7 @@ var defaultConfig = Config{
 	Tracker: TrackerConfig{
 		ListenAddress:   "0.0.0.0:8001",
 		ShutdownTimeout: 3000,
+		TempfileTooOld:  86400000,
 	},
 }
 
