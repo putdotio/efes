@@ -4,10 +4,10 @@ ARG MYSQL_USER=mogilefs
 ARG MYSQL_PASSWORD=123
 ARG MYSQL_DATABASE=mogilefs
 
-ADD docker-init-db.sh /tmp/
+ADD docker-init-mysql.sh /tmp/
 ADD schema.sql /tmp/
 
-RUN ["bash", "/tmp/docker-init-db.sh"]
+RUN ["bash", "/tmp/docker-init-mysql.sh"]
 
 ENTRYPOINT ["mysqld", "--user=root", "--datadir=/var/lib/mysql2"]
 

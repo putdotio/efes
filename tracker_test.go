@@ -45,7 +45,7 @@ func cleanDB(t *testing.T, db *sql.DB) {
 func TestGetPaths(t *testing.T) {
 	cfg := &Config{
 		Database: DatabaseConfig{
-			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
+			DSN: "mogilefs:123@(efestest_mysql_1:3306)/mogilefs",
 		},
 	}
 	tr, err := NewTracker(cfg)
@@ -90,7 +90,7 @@ func TestGetPaths(t *testing.T) {
 func TestCreateOpen(t *testing.T) {
 	cfg := &Config{
 		Database: DatabaseConfig{
-			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
+			DSN: "mogilefs:123@(efestest_mysql_1:3306)/mogilefs",
 		},
 	}
 	tr, err := NewTracker(cfg)
@@ -131,7 +131,7 @@ func TestCreateOpen(t *testing.T) {
 func TestCreateClose(t *testing.T) {
 	cfg := &Config{
 		Database: DatabaseConfig{
-			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
+			DSN: "mogilefs:123@(efestest_mysql_1:3306)/mogilefs",
 		},
 	}
 	tr, err := NewTracker(cfg)
@@ -172,7 +172,7 @@ func TestCreateClose(t *testing.T) {
 func TestDelete(t *testing.T) {
 	cfg := &Config{
 		Database: DatabaseConfig{
-			DSN: "mogilefs:123@(efestest_db_1:3306)/mogilefs",
+			DSN: "mogilefs:123@(efestest_mysql_1:3306)/mogilefs",
 		},
 	}
 	tr, err := NewTracker(cfg)

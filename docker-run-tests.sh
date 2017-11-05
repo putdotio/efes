@@ -1,3 +1,3 @@
 #!/bin/bash -ex
-bash /root/wait-for-db.sh efestest_db_1 mogilefs 123 mogilefs
+bash /root/wait-for-mysql.sh efestest_mysql_1 mogilefs 123 mogilefs
 exec go test -v ./...

@@ -1,8 +1,8 @@
 version: '3.3'
 services:
-  db:
+  mysql:
     build:
-      dockerfile: Dockerfile-db
+      dockerfile: Dockerfile-mysql
       context: .
     logging:
       driver: none
@@ -11,7 +11,7 @@ services:
       dockerfile: Dockerfile-tracker
       context: .
     depends_on:
-      - db
+      - mysql
     tty: true
   server1:
     build:
@@ -19,5 +19,5 @@ services:
       context: .
     command: ["1"]
     depends_on:
-      - db
+      - mysql
     tty: true

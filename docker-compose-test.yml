@@ -1,8 +1,8 @@
 version: '3.3'
 services:
-  db:
+  mysql:
     build:
-      dockerfile: Dockerfile-db
+      dockerfile: Dockerfile-mysql
       context: .
     logging:
       driver: none
