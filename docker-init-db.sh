@@ -1,17 +1,22 @@
 #!/bin/bash
 set -e
 
+# This file will be executed after intializing the database.
 MYSQL_SQL_FILE=/tmp/schema.sql
 
-DATADIR=/var/lib/mysql2
-mkdir -p "$DATADIR"
+# Use a datadir other than /var/lib/mysql to persist data in image.
+# It is not possible with the original datadir location because
+# it is defined as VOLUME in base "mysql" image.
+MYSQL_DATADIR=/var/lib/mysql2
+
+mkdir -p "$MYSQL_DATADIR"
 
 echo 'Initializing database'
-mysqld --initialize-insecure --datadir=$DATADIR
+mysqld --initialize-insecure --datadir=$MYSQL_DATADIR
 echo 'Database initialized'
 
 SOCKET=/var/run/mysqld/mysqld.sock
-mysqld --user=root --datadir=$DATADIR --skip-networking --socket="${SOCKET}" &
+mysqld --user=root --datadir=$MYSQL_DATADIR --skip-networking --socket="${SOCKET}" &
 pid="$!"
 
 mysql=( mysql --protocol=socket -uroot -hlocalhost --socket="${SOCKET}" )
