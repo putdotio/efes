@@ -6,6 +6,13 @@ services:
       context: .
     logging:
       driver: none
+  rabbitmq:
+    image: "rabbitmq:3.6"
+    entrypoint: rabbitmq-server
+    environment:
+      HOME: /root
+    logging:
+      driver: none
   test:
     build:
       dockerfile: Dockerfile-test
