@@ -117,6 +117,12 @@ func (t *Tracker) ping(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("pong")) // nolint: errcheck
 }
 
+func (t *Tracker) internalServerError(message string, err error, r *http.Request, w http.ResponseWriter) {
+	message = message + ": " + err.Error()
+	t.log.Error(message + "; " + r.URL.Path)
+	http.Error(w, message, http.StatusInternalServerError)
+}
+
 func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 	var response struct {
 		Paths []string `json:"paths"`
@@ -125,7 +131,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("key")
 	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=? and f.dmid=?", key, dmid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot select rows", err, r, w)
 		return
 	}
 	defer rows.Close() // nolint: errcheck
@@ -136,7 +142,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		var fid int64
 		err = rows.Scan(&hostip, &httpPort, &devid, &fid)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			t.internalServerError("cannot scan rows", err, r, w)
 			return
 		}
 		sfid := fmt.Sprintf("%010d", fid)
@@ -145,7 +151,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 	}
 	err = rows.Err()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("error while fetching rows", err, r, w)
 		return
 	}
 	encoder := json.NewEncoder(w)
@@ -171,12 +177,12 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := t.db.Exec("insert into tempfile(createtime, classid, dmid) values(?, ?, ?)", time.Now().UTC().Unix(), classid, dmid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot insert tempfile", err, r, w)
 		return
 	}
 	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and mb_asof > ? order by mb_free desc", size, time.Now().UTC().Unix()-10)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot select rows", err, r, w)
 		return
 	}
 	type device struct {
@@ -191,19 +197,19 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		var d device
 		err = rows.Scan(&d.hostip, &d.httpPort, &d.devid, &d.mbFree)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			t.internalServerError("cannot scan rows", err, r, w)
 			return
 		}
 		devices = append(devices, d)
 	}
 	err = rows.Err()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("error while fetching rows", err, r, w)
 		return
 	}
 	fid, err := res.LastInsertId()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot get last insert id", err, r, w)
 		return
 	}
 	sfid := fmt.Sprintf("%010d", fid)
@@ -255,18 +261,18 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 	}
 	tx, err := t.db.Begin()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot begin transaction", err, r, w)
 		return
 	}
 	defer tx.Rollback() // nolint: errcheck
 	res, err := tx.Exec("delete from tempfile where fid=?", fid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot delete tempfile", err, r, w)
 		return
 	}
 	count, err := res.RowsAffected()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot get rows affected", err, r, w)
 		return
 	}
 	if count == 0 {
@@ -275,17 +281,17 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = tx.Exec("insert into file(fid, dkey, length, dmid, classid, devcount) values(?, ?, ?, ?, ?, 1)", fid, key, size, dmid, classid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot insert file", err, r, w)
 		return
 	}
 	_, err = tx.Exec("insert into file_on(fid, devid) values(?, ?)", fid, devid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot insert file_on record", err, r, w)
 		return
 	}
 	err = tx.Commit()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot commit transaction", err, r, w)
 		return
 	}
 }
@@ -302,7 +308,7 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 	tx, err := t.db.Begin()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot begin transaction", err, r, w)
 		return
 	}
 	defer tx.Rollback() // nolint: errcheck
@@ -310,22 +316,22 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 	var fid int64
 	err = row.Scan(&fid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot select rows", err, r, w)
 		return
 	}
 	_, err = tx.Exec("delete from file where fid=?", fid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot delete file", err, r, w)
 		return
 	}
 	_, err = tx.Exec("delete from file_on where fid=?", fid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot delete file_on records", err, r, w)
 		return
 	}
 	err = tx.Commit()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.internalServerError("cannot commit transaction", err, r, w)
 		return
 	}
 	// TODO send task to host for removing from disk
