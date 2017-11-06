@@ -306,7 +306,7 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer tx.Rollback() // nolint: errcheck
-	row := tx.QueryRow("select fid from file where dkey=? for update", key)
+	row := tx.QueryRow("select fid from file where dkey=? and dmid=? for update", key, dmid)
 	var fid int64
 	err = row.Scan(&fid)
 	if err != nil {
