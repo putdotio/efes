@@ -316,6 +316,9 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 	row := tx.QueryRow("select fid from file where dkey=? and dmid=? for update", key, dmid)
 	var fid int64
 	err = row.Scan(&fid)
+	if err == sql.ErrNoRows {
+		return
+	}
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
