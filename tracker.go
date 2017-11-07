@@ -51,6 +51,7 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m.HandleFunc("/ping", t.ping)
 	m.HandleFunc("/get-paths", t.getPaths)
 	m.HandleFunc("/get-devices", t.getDevices)
+	m.HandleFunc("/get-hosts", t.getHosts)
 	m.HandleFunc("/create-open", t.createOpen)
 	m.HandleFunc("/create-close", t.createClose)
 	m.HandleFunc("/delete", t.deleteFile)
@@ -396,7 +397,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 		Devid         int64     `json:"devid"`
 		Hostid        int64     `json:"hostid"`
 		Status        string    `json:"status"`
-		Weight        string    `json:"weight"`
+		Weight        NullInt64 `json:"weight"`
 		MbTotal       int64     `json:"mb_total"`
 		MbUsed        NullInt64 `json:"mb_used"`
 		MbAsof        int64     `json:"mb_asof"`
@@ -430,6 +431,68 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 		Devices []device `json:"devices"`
 	}
 	response.Devices = devices
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(response) // nolint: errcheck
+}
+
+func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	var err error
+
+	var hostid int64
+	var hostidProvided bool
+	hostidStr := r.FormValue("hostid")
+	if hostidStr == "" {
+		hostidProvided = false
+	} else {
+		var err error
+		hostid, err = strconv.ParseInt(hostidStr, 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		hostidProvided = true
+	}
+
+	type host struct {
+		Hostid   int64  `json:"hostid"`
+		Status   string `json:"status"`
+		HttpPort int64  `json:"http_port"`
+		Hostname string `json:"hostname"`
+		HostIp   string `json:"hostip"`
+	}
+	hosts := make([]host, 0)
+
+	var rows *sql.Rows
+	if hostidProvided {
+		rows, err = t.db.Query("select hostid, status, http_port, hostname, hostip from host where hostid=?", hostid)
+	} else {
+		rows, err = t.db.Query("select hostid, status, http_port, hostname, hostip from host")
+	}
+	if err != nil {
+		t.internalServerError("cannot select rows", err, r, w)
+		return
+	}
+
+	defer rows.Close() // nolint: errcheck
+	for rows.Next() {
+		var h host
+		err = rows.Scan(&h.Hostid, &h.Status, &h.HttpPort, &h.Hostname, &h.HostIp)
+		if err != nil {
+			t.internalServerError("cannot scan rows", err, r, w)
+			return
+		}
+		hosts = append(hosts, h)
+	}
+	var response struct {
+		Hosts []host `json:"hosts"`
+	}
+	response.Hosts = hosts
 
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
