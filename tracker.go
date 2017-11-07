@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -20,6 +21,8 @@ const (
 	dmid    = 1
 	classid = 1
 )
+
+type NullInt64 sql.NullInt64
 
 // Tracker tracks the info of files in database.
 // Tracker responds to client requests.
@@ -47,6 +50,7 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m := http.NewServeMux()
 	m.HandleFunc("/ping", t.ping)
 	m.HandleFunc("/get-paths", t.getPaths)
+	m.HandleFunc("/get-devices", t.getDevices)
 	m.HandleFunc("/create-open", t.createOpen)
 	m.HandleFunc("/create-close", t.createClose)
 	m.HandleFunc("/delete", t.deleteFile)
@@ -363,4 +367,100 @@ func (t *Tracker) removeOldTempfiles() {
 			return
 		}
 	}
+}
+
+func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	var err error
+
+	var devid int64
+	var devidProvided bool
+	devidStr := r.FormValue("devid")
+	if devidStr == "" {
+		devidProvided = false
+	} else {
+		var err error
+		devid, err = strconv.ParseInt(devidStr, 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		devidProvided = true
+	}
+
+	type device struct {
+		Devid         int64     `json:"devid"`
+		Hostid        int64     `json:"hostid"`
+		Status        string    `json:"status"`
+		Weight        string    `json:"weight"`
+		MbTotal       int64     `json:"mb_total"`
+		MbUsed        NullInt64 `json:"mb_used"`
+		MbAsof        int64     `json:"mb_asof"`
+		IoUtilization NullInt64 `json:"io_utilization"`
+	}
+	devices := make([]device, 0)
+
+	var rows *sql.Rows
+	if devidProvided {
+		rows, err = t.db.Query("select devid, hostid, status, weight, mb_total, mb_used, mb_asof, io_utilization from device where devid=?", devid)
+	} else {
+
+		rows, err = t.db.Query("select devid, hostid, status, weight, mb_total, mb_used, mb_asof, io_utilization from device")
+	}
+	if err != nil {
+		t.internalServerError("cannot select rows", err, r, w)
+		return
+	}
+
+	defer rows.Close() // nolint: errcheck
+	for rows.Next() {
+		var d device
+		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &d.Weight, &d.MbTotal, &d.MbUsed, &d.MbAsof, &d.IoUtilization)
+		if err != nil {
+			t.internalServerError("cannot scan rows", err, r, w)
+			return
+		}
+		devices = append(devices, d)
+	}
+	var response struct {
+		Devices []device `json:"devices"`
+	}
+	response.Devices = devices
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(response) // nolint: errcheck
+}
+
+// Scan implements the Scanner interface for NullInt64
+func (ni *NullInt64) Scan(value interface{}) error {
+	var i sql.NullInt64
+	if err := i.Scan(value); err != nil {
+		return err
+	}
+	// if nil the make Valid false
+	if reflect.TypeOf(value) == nil {
+		*ni = NullInt64{i.Int64, false}
+	} else {
+		*ni = NullInt64{i.Int64, true}
+	}
+	return nil
+}
+
+// MarshalJSON for NullInt64
+func (ni *NullInt64) MarshalJSON() ([]byte, error) {
+	if !ni.Valid {
+		return []byte("null"), nil
+	}
+	return json.Marshal(ni.Int64)
+}
+
+// UnmarshalJSON for NullInt64
+func (ni *NullInt64) UnmarshalJSON(b []byte) error {
+	err := json.Unmarshal(b, &ni.Int64)
+	ni.Valid = (err == nil)
+	return err
 }
