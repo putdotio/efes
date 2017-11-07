@@ -7,4 +7,4 @@ dsn = "mogilefs:123@(efes_mysql_1:3306)/mogilefs"
 [server]
 debug = true
 [amqp]
-url = "amqp://guest:guest@efes_rabbitmq_1:5672)/"
+url = "amqp://guest:guest@efes_rabbitmq_1:5672/"
