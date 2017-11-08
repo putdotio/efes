@@ -420,6 +420,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 			d.MbAsof = nil
 		}
 		if ioUtilization != nil && ioUtilization.Valid {
+			d.IoUtilization = &ioUtilization.Int64
 		} else {
 			d.IoUtilization = nil
 		}
