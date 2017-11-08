@@ -5,8 +5,8 @@ CREATE TABLE `device` (
   `weight` mediumint(9) DEFAULT '100',
   `mb_total` int(10) unsigned DEFAULT NULL,
   `mb_used` int(10) unsigned DEFAULT NULL,
-  `mb_asof` int(10) unsigned DEFAULT NULL,
   `io_utilization` tinyint(3) unsigned DEFAULT NULL,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`devid`),
   KEY `status` (`status`)
 ) ENGINE=InnoDB;

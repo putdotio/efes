@@ -60,7 +60,7 @@ func TestGetPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, mb_asof) values(2, 'alive', 1, 1000, 500, ?)", time.Now().UTC().Unix())
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used) values(2, 'alive', 1, 1000, 500)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestCreateOpen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, mb_asof) values(2, 'alive', 1, 1000, 500, ?)", time.Now().UTC().Unix())
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used) values(2, 'alive', 1, 1000, 500)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +136,7 @@ func TestCreateClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, mb_asof) values(2, 'alive', 1, 1000, 500, ?)", time.Now().UTC().Unix())
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used) values(2, 'alive', 1, 1000, 500)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +172,7 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, mb_asof) values(2, 'alive', 1, 1000, 500, ?)", time.Now().UTC().Unix())
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used) values(2, 'alive', 1, 1000, 500)")
 	if err != nil {
 		t.Fatal(err)
 	}

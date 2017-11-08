@@ -182,7 +182,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot insert tempfile", err, r, w)
 		return
 	}
-	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and mb_asof > ? order by mb_free desc", size, time.Now().UTC().Unix()-10)
+	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size)
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
