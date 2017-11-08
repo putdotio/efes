@@ -378,21 +378,6 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	var devid int64
-	var devidProvided bool
-	devidStr := r.FormValue("devid")
-	if devidStr == "" {
-		devidProvided = false
-	} else {
-		var err error
-		devid, err = strconv.ParseInt(devidStr, 10, 64)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		devidProvided = true
-	}
-
 	type device struct {
 		Devid         int64     `json:"devid"`
 		Hostid        int64     `json:"hostid"`
@@ -405,13 +390,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	devices := make([]device, 0)
 
-	var rows *sql.Rows
-	if devidProvided {
-		rows, err = t.db.Query("select devid, hostid, status, weight, mb_total, mb_used, mb_asof, io_utilization from device where devid=?", devid)
-	} else {
-
-		rows, err = t.db.Query("select devid, hostid, status, weight, mb_total, mb_used, mb_asof, io_utilization from device")
-	}
+	rows, err := t.db.Query("select devid, hostid, status, weight, mb_total, mb_used, mb_asof, io_utilization from device")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -427,6 +406,12 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 		}
 		devices = append(devices, d)
 	}
+	err = rows.Err()
+	if err != nil {
+		t.internalServerError("error while fetching rows", err, r, w)
+		return
+	}
+
 	var response struct {
 		Devices []device `json:"devices"`
 	}
@@ -444,21 +429,6 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	var hostid int64
-	var hostidProvided bool
-	hostidStr := r.FormValue("hostid")
-	if hostidStr == "" {
-		hostidProvided = false
-	} else {
-		var err error
-		hostid, err = strconv.ParseInt(hostidStr, 10, 64)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		hostidProvided = true
-	}
-
 	type host struct {
 		Hostid   int64  `json:"hostid"`
 		Status   string `json:"status"`
@@ -469,11 +439,7 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 	hosts := make([]host, 0)
 
 	var rows *sql.Rows
-	if hostidProvided {
-		rows, err = t.db.Query("select hostid, status, http_port, hostname, hostip from host where hostid=?", hostid)
-	} else {
-		rows, err = t.db.Query("select hostid, status, http_port, hostname, hostip from host")
-	}
+	rows, err = t.db.Query("select hostid, status, http_port, hostname, hostip from host")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -489,6 +455,12 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 		}
 		hosts = append(hosts, h)
 	}
+	err = rows.Err()
+	if err != nil {
+		t.internalServerError("error while fetching rows", err, r, w)
+		return
+	}
+
 	var response struct {
 		Hosts []host `json:"hosts"`
 	}
