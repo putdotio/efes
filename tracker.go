@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -21,8 +20,6 @@ const (
 	dmid    = 1
 	classid = 1
 )
-
-type NullInt64 sql.NullInt64
 
 // Tracker tracks the info of files in database.
 // Tracker responds to client requests.
@@ -379,18 +376,17 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	type device struct {
-		Devid         int64     `json:"devid"`
-		Hostid        int64     `json:"hostid"`
-		Status        string    `json:"status"`
-		Weight        NullInt64 `json:"weight"`
-		MbTotal       int64     `json:"mb_total"`
-		MbUsed        NullInt64 `json:"mb_used"`
-		MbAsof        int64     `json:"mb_asof"`
-		IoUtilization NullInt64 `json:"io_utilization"`
+		Devid         int64  `json:"devid"`
+		Hostid        int64  `json:"hostid"`
+		Status        string `json:"status"`
+		MbTotal       *int64 `json:"mb_total"`
+		MbUsed        *int64 `json:"mb_used"`
+		MbAsof        *int64 `json:"mb_asof"`
+		IoUtilization *int64 `json:"io_utilization"`
 	}
 	devices := make([]device, 0)
 
-	rows, err := t.db.Query("select devid, hostid, status, weight, mb_total, mb_used, mb_asof, io_utilization from device")
+	rows, err := t.db.Query("select devid, hostid, status, mb_total, mb_used, mb_asof, io_utilization from device")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -399,10 +395,33 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var d device
-		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &d.Weight, &d.MbTotal, &d.MbUsed, &d.MbAsof, &d.IoUtilization)
+		var mbTotal *sql.NullInt64
+		var mbUsed *sql.NullInt64
+		var mbAsof *sql.NullInt64
+		var ioUtilization *sql.NullInt64
+		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &mbTotal, &mbUsed, &mbAsof, &ioUtilization)
 		if err != nil {
 			t.internalServerError("cannot scan rows", err, r, w)
 			return
+		}
+		if mbTotal != nil && mbTotal.Valid {
+			d.MbTotal = &mbTotal.Int64
+		} else {
+			d.MbTotal = nil
+		}
+		if mbUsed != nil && mbUsed.Valid {
+			d.MbUsed = &mbUsed.Int64
+		} else {
+			d.MbUsed = nil
+		}
+		if mbAsof != nil && mbAsof.Valid {
+			d.MbAsof = &mbAsof.Int64
+		} else {
+			d.MbAsof = nil
+		}
+		if ioUtilization != nil && ioUtilization.Valid {
+		} else {
+			d.IoUtilization = nil
 		}
 		devices = append(devices, d)
 	}
@@ -468,27 +487,4 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
-}
-
-// Scan implements the Scanner interface for NullInt64
-func (ni *NullInt64) Scan(value interface{}) error {
-	var i sql.NullInt64
-	if err := i.Scan(value); err != nil {
-		return err
-	}
-	// if nil the make Valid false
-	if reflect.TypeOf(value) == nil {
-		*ni = NullInt64{i.Int64, false}
-	} else {
-		*ni = NullInt64{i.Int64, true}
-	}
-	return nil
-}
-
-// MarshalJSON for NullInt64
-func (ni *NullInt64) MarshalJSON() ([]byte, error) {
-	if !ni.Valid {
-		return []byte("null"), nil
-	}
-	return json.Marshal(ni.Int64)
 }
