@@ -452,9 +452,9 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 	type host struct {
 		Hostid   int64  `json:"hostid"`
 		Status   string `json:"status"`
-		HttpPort int64  `json:"http_port"`
+		HTTPPort int64  `json:"http_port"`
 		Hostname string `json:"hostname"`
-		HostIp   string `json:"hostip"`
+		HostIP   string `json:"hostip"`
 	}
 	hosts := make([]host, 0)
 
@@ -468,7 +468,7 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var h host
-		err = rows.Scan(&h.Hostid, &h.Status, &h.HttpPort, &h.Hostname, &h.HostIp)
+		err = rows.Scan(&h.Hostid, &h.Status, &h.HTTPPort, &h.Hostname, &h.HostIP)
 		if err != nil {
 			t.internalServerError("cannot scan rows", err, r, w)
 			return
