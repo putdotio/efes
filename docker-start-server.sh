@@ -4,8 +4,8 @@ datadir=/srv/mogilefs/dev$devid
 mkdir -p $datadir
 ip=$(hostname -i)
 
-sqlhost="INSERT INTO host (hostid, status, hostname, hostip) VALUES ($devid, 'alive', '$HOSTNAME', '$ip') ON DUPLICATE KEY UPDATE status='alive', hostname='$HOSTNAME', hostip='$ip'"
-sqldevice="INSERT INTO device (devid, hostid, status) VALUES ($devid, $devid, 'alive') ON DUPLICATE KEY UPDATE hostid=$devid, status='alive'"
+sqlhost="REPLACE INTO host (hostid, status, hostname, hostip) VALUES ($devid, 'alive', '$HOSTNAME', '$ip')"
+sqldevice="REPLACE INTO device (devid, hostid, status) VALUES ($devid, $devid, 'alive')"
 
 mysql=( mysql -h efes_mysql_1 -u mogilefs -p123 mogilefs )
 
