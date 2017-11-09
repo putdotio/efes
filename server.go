@@ -31,6 +31,7 @@ type Server struct {
 	onceDiskStatsUpdated sync.Once
 	diskStatsUpdated     chan struct{}
 	diskStatsStopped     chan struct{}
+	diskCleanStopped     chan struct{}
 }
 
 // NewServer returns a new Server instance.
@@ -51,6 +52,7 @@ func NewServer(c *Config) (*Server, error) {
 		Ready:            make(chan struct{}),
 		diskStatsUpdated: make(chan struct{}),
 		diskStatsStopped: make(chan struct{}),
+		diskCleanStopped: make(chan struct{}),
 	}
 	devicePrefix := "/" + filepath.Base(s.dir)
 	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.dir, s.log))
@@ -79,6 +81,7 @@ func (s *Server) Run() error {
 	if err != nil {
 		return err
 	}
+	go s.cleanDisk()
 	go s.updateDiskStats()
 	s.log.Notice("Server is started.")
 	errCh := make(chan error, 2)
@@ -136,6 +139,7 @@ func (s *Server) Shutdown() error {
 	}
 
 	<-s.diskStatsStopped
+	<-s.diskCleanStopped
 	err = s.db.Close()
 	if err != nil {
 		s.log.Error("Error while closing database connection")
@@ -163,7 +167,7 @@ func (s *Server) updateDiskStats() {
 				continue
 			}
 		case <-s.shutdown:
-			close(s.diskStatsStopped)
+			close(s.diskCleanStopped)
 			return
 		}
 	}
@@ -198,4 +202,93 @@ func (s *Server) getDiskUtilization(iostat *IOStat) (utilization sql.NullInt64) 
 	utilization.Valid = true
 	utilization.Int64 = int64(value)
 	return
+}
+
+func (s *Server) cleanDisk() {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			// TODO: Get dir from config or arguments
+			s.removeUnusedFids("/srv/mogilefs")
+		case <-s.shutdown:
+			close(s.diskCleanStopped)
+			return
+		}
+	}
+}
+
+func (s *Server) fidExistsOnDatabase(fileId int64) (bool, error) {
+	var fid int
+	existFile := true
+	existTempFile := true
+	// check file
+	row := s.db.QueryRow("select fid from file where fid=?", fileId)
+	err := row.Scan(&fid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.log.Debug("No record on file table for fid ", fileId)
+			existFile = false
+		} else {
+			s.log.Error("Error after querying file table ", err)
+			return true, err
+		}
+	}
+	// check tempfile
+	row = s.db.QueryRow("select fid from tempfile where fid=?", fileId)
+	err = row.Scan(&fid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.log.Debug("No record on tempfile table for fid", fileId)
+			existTempFile = false
+		} else {
+			s.log.Error("Error after querying tempfile table ", err)
+			return true, err
+		}
+	}
+	if existFile == false && existTempFile == false {
+		return false, nil
+	}
+	return true, nil
+
+}
+
+func (s *Server) removeUnusedFids(root string) {
+	err := filepath.Walk(root, s.visitFiles)
+	if err != nil {
+		s.log.Error("Error during walk through files", err)
+	}
+
+}
+
+func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
+	if filepath.Ext(path) != ".fid" {
+		return nil
+	}
+	// Example file name: 0000000789.fid
+	fileName := strings.Split(f.Name(), ".")
+	fileId, err := strconv.ParseInt(strings.TrimLeft(fileName[0], "0,"), 10, 64)
+	if err != nil {
+		s.log.Error("Can not parse file name ", err)
+		return nil
+	}
+	existsOnDB, err := s.fidExistsOnDatabase(fileId)
+	if err != nil {
+		s.log.Error("Can not querying database ", err)
+		return nil
+	}
+	if !existsOnDB {
+		// TODO: Move constant to config file
+		allowedDuration := time.Now().Add(-72 * time.Hour)
+		if f.ModTime().Sub(allowedDuration).Seconds() > 0 {
+			s.log.Info("File %i is new. The copying might be still going on. Not deleting..", fileId)
+		} else {
+			// TODO: Add file size to log
+			s.log.Info("File %i is too old and there is no record on DB for it. Deleting...", fileId)
+		}
+
+	}
+	return nil
+
 }
