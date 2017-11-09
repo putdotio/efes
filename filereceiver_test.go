@@ -68,8 +68,10 @@ func TestFileReceiverZeroByte(t *testing.T) {
 	setup(t)
 	defer tearDown()
 
-	// TODO test 0 byte files
-	t.SkipNow()
+	testCreate(t)
+	testSend(t, 0, false, "")
+	testOffset(t, 200, true, 0)
+	testDelete(t)
 }
 
 func testCreate(t *testing.T) {
