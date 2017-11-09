@@ -55,7 +55,17 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid header: storage-file-offset", http.StatusBadRequest)
 			return
 		}
-		err = saveFile(path, offset, r.Body)
+		var length int64 = -1
+		lengthHeader := r.Header.Get("storage-file-length")
+		if lengthHeader != "" {
+			length, err = strconv.ParseInt(lengthHeader, 10, 64)
+			if err != nil {
+				log.Printf("cannot parse length: %s", err)
+				http.Error(w, "invalid header: storage-file-length", http.StatusBadRequest)
+				return
+			}
+		}
+		err = saveFile(path, offset, length, r.Body)
 		if err == errOffset {
 			log.Printf("offset mismatch")
 			http.Error(w, "offset mismatch", http.StatusPreconditionFailed)
@@ -118,13 +128,20 @@ func saveOffset(path string, offset int64) error {
 	return ioutil.WriteFile(path+".offset", []byte(strconv.FormatInt(offset, 10)), 0666)
 }
 
-func saveFile(path string, offset int64, r io.Reader) error {
-	fileOffset, err := getOffset(path)
-	if err != nil {
-		return err
-	}
-	if offset != fileOffset {
-		return errOffset
+func saveFile(path string, offset int64, length int64, r io.Reader) error {
+	if offset == 0 {
+		err := createFile(path)
+		if err != nil {
+			return err
+		}
+	} else {
+		fileOffset, err := getOffset(path)
+		if err != nil {
+			return err
+		}
+		if offset != fileOffset {
+			return errOffset
+		}
 	}
 	f, err := os.OpenFile(path, os.O_WRONLY, 0666)
 	if err != nil {
@@ -136,7 +153,12 @@ func saveFile(path string, offset int64, r io.Reader) error {
 		return err
 	}
 	n, err := io.Copy(f, r)
-	saveOffset(path, offset+n)
+	newOffset := offset + n
+	if err == nil && newOffset == length {
+		err = deleteOffset(path)
+	} else {
+		saveOffset(path, newOffset)
+	}
 	return err
 }
 

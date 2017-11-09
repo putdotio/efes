@@ -24,12 +24,25 @@ func TestFileReceiver(t *testing.T) {
 	testOffset(t, fr, 404, false, 0)
 	testCreate(t, fr)
 	testOffset(t, fr, 200, true, 0)
-	testSend(t, fr, 0, "foo")
+	testSend(t, fr, 0, false, "foo")
 	testOffset(t, fr, 200, true, 3)
-	testSend(t, fr, 3, "bar")
+	testSend(t, fr, 3, false, "bar")
 	testOffset(t, fr, 200, true, 6)
 	testDelete(t, fr)
 	testOffset(t, fr, 404, false, 0)
+
+	// patch without post
+	testSend(t, fr, 0, false, "baz")
+	testOffset(t, fr, 200, true, 3)
+	testDelete(t, fr)
+	testOffset(t, fr, 404, false, 0)
+
+	// send file length
+	testOffset(t, fr, 404, false, 0)
+	testSend(t, fr, 0, true, "baz")
+	testOffset(t, fr, 404, false, 0)
+
+	// TODO test 0 byte files
 }
 
 func testCreate(t *testing.T, fr *FileReceiver) {
@@ -78,13 +91,16 @@ func testOffset(t *testing.T, fr *FileReceiver, statusCode int, checkValue bool,
 	}
 }
 
-func testSend(t *testing.T, fr *FileReceiver, offset int, data string) {
+func testSend(t *testing.T, fr *FileReceiver, offset int, sendLength bool, data string) {
 	b := bytes.NewBufferString(data)
 	req, err := http.NewRequest("PATCH", path, b)
 	if err != nil {
 		t.Fatal(err)
 	}
 	req.Header.Set("storage-file-offset", strconv.Itoa(offset))
+	if sendLength {
+		req.Header.Set("storage-file-length", strconv.Itoa(len(data)))
+	}
 	rr := httptest.NewRecorder()
 	fr.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
