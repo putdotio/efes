@@ -8,6 +8,8 @@ import (
 	"os"
 	"strconv"
 	"testing"
+
+	"github.com/cenkalti/log"
 )
 
 const path = "/dir/file.txt"
@@ -23,7 +25,7 @@ func setup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fr = newFileReceiver(tempdir)
+	fr = newFileReceiver(tempdir, log.DefaultLogger)
 }
 
 func tearDown() {

@@ -4,11 +4,12 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/cenkalti/log"
 )
 
 var (
@@ -19,10 +20,20 @@ var (
 // FileReceiver implements http.Handler for receiving files from clients in chunks.
 type FileReceiver struct {
 	dir string
+	log log.Logger
 }
 
-func newFileReceiver(dir string) *FileReceiver {
-	return &FileReceiver{dir: dir}
+func newFileReceiver(dir string, logger log.Logger) *FileReceiver {
+	return &FileReceiver{
+		dir: dir,
+		log: logger,
+	}
+}
+
+func (f *FileReceiver) internalServerError(message string, err error, r *http.Request, w http.ResponseWriter) {
+	message = message + ": " + err.Error()
+	f.log.Error(message + "; " + r.URL.Path)
+	http.Error(w, message, http.StatusInternalServerError)
 }
 
 func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -31,27 +42,23 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		err := createFile(path)
 		if err != nil {
-			log.Printf("cannot create file: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			f.internalServerError("cannot create file", err, r, w)
 			return
 		}
 	case http.MethodHead:
 		offset, err := getOffset(path)
 		if err == errNotExist {
-			log.Println("offset file does not exist")
-			http.Error(w, err.Error(), http.StatusNotFound)
+			http.Error(w, "offset file does not exist", http.StatusNotFound)
 			return
 		}
 		if err != nil {
-			log.Printf("cannot get offset: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			f.internalServerError("cannot get offset", err, r, w)
 			return
 		}
 		w.Header().Set("storage-file-offset", strconv.FormatInt(offset, 10))
 	case http.MethodPatch:
 		offset, err := strconv.ParseInt(r.Header.Get("storage-file-offset"), 10, 64)
 		if err != nil {
-			log.Printf("cannot parse offset: %s", err)
 			http.Error(w, "invalid header: storage-file-offset", http.StatusBadRequest)
 			return
 		}
@@ -60,32 +67,27 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if lengthHeader != "" {
 			length, err = strconv.ParseInt(lengthHeader, 10, 64)
 			if err != nil {
-				log.Printf("cannot parse length: %s", err)
 				http.Error(w, "invalid header: storage-file-length", http.StatusBadRequest)
 				return
 			}
 		}
 		err = saveFile(path, offset, length, r.Body)
 		if err == errOffset || err == errNotExist {
-			log.Printf("offset mismatch")
 			http.Error(w, "offset mismatch", http.StatusPreconditionFailed)
 			return
 		}
 		if err != nil {
-			log.Printf("cannot save file: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			f.internalServerError("cannot save file", err, r, w)
 			return
 		}
 	case http.MethodDelete:
 		err := deleteOffset(path)
 		if err == errNotExist {
-			log.Println("offset file does not exist")
-			http.Error(w, err.Error(), http.StatusNotFound)
+			http.Error(w, "offset file does not exist", http.StatusNotFound)
 			return
 		}
 		if err != nil {
-			log.Printf("cannot delete offset: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			f.internalServerError("cannot delete offset file", err, r, w)
 			return
 		}
 	default:
