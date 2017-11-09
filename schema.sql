@@ -1,9 +1,7 @@
 CREATE TABLE `device` (
-
   `devid` mediumint(8) unsigned NOT NULL,
   `hostid` mediumint(8) unsigned NOT NULL,
   `status` enum('alive','dead','down','readonly','drain') DEFAULT NULL,
-  `weight` mediumint(9) DEFAULT '100',
   `mb_total` int(10) unsigned DEFAULT NULL,
   `mb_used` int(10) unsigned DEFAULT NULL,
   `io_utilization` tinyint(3) unsigned DEFAULT NULL,
@@ -32,11 +30,8 @@ CREATE TABLE `host` (
   `hostid` mediumint(8) unsigned NOT NULL,
   `status` enum('alive','dead','down') DEFAULT NULL,
   `http_port` mediumint(8) unsigned DEFAULT '7500',
-  `http_get_port` mediumint(8) unsigned DEFAULT NULL,
   `hostname` varchar(40) DEFAULT NULL,
   `hostip` varchar(40) DEFAULT NULL,
-  `altip` varchar(15) DEFAULT NULL,
-  `altmask` varchar(18) DEFAULT NULL,
   PRIMARY KEY (`hostid`)
 ) ENGINE=InnoDB;
 CREATE TABLE `tempfile` (
