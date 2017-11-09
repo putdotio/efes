@@ -6,5 +6,7 @@ shutdown_timeout = 5000
 dsn = "mogilefs:123@(efes_mysql_1:3306)/mogilefs"
 [server]
 debug = true
+listen_address = "0.0.0.0:8500"
+shutdown_timeout = 10000
 [amqp]
 url = "amqp://mogilefs:123@efes_rabbitmq_1:5672/"

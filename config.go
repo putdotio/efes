@@ -22,7 +22,9 @@ type AMQPConfig struct {
 
 // ServerConfig holds configuration values for Server.
 type ServerConfig struct {
-	Debug bool `toml:"debug"`
+	Debug           bool   `toml:"debug"`
+	ListenAddress   string `toml:"listen_address"`
+	ShutdownTimeout uint32 `toml:"shutdown_timeout"`
 }
 
 // Config holds configuration values for all Efes components.
@@ -38,6 +40,10 @@ var defaultConfig = Config{
 		ListenAddress:   "0.0.0.0:8001",
 		ShutdownTimeout: 3000,
 		TempfileTooOld:  86400000,
+	},
+	Server: ServerConfig{
+		ListenAddress:   "0.0.0.0:8500",
+		ShutdownTimeout: 10000,
 	},
 }
 

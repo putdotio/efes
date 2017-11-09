@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -20,6 +23,7 @@ type Server struct {
 	devid            uint64
 	db               *sql.DB
 	log              log.Logger
+	server           http.Server
 	shutdown         chan struct{}
 	diskStatsStopped chan struct{}
 }
@@ -33,13 +37,16 @@ func NewServer(c *Config, dir string) (*Server, error) {
 	if !fi.IsDir() {
 		return nil, fmt.Errorf("Path must be a directory: %s", dir)
 	}
+	logger := log.NewLogger("server")
 	s := &Server{
 		config:           c,
 		dir:              dir,
-		log:              log.NewLogger("server"),
+		log:              logger,
 		shutdown:         make(chan struct{}),
 		diskStatsStopped: make(chan struct{}),
 	}
+	r := newFileReceiver(dir, s.log)
+	s.server.Handler = r
 	if s.config.Server.Debug {
 		s.log.SetLevel(log.DEBUG)
 	}
@@ -56,16 +63,35 @@ func NewServer(c *Config, dir string) (*Server, error) {
 
 // Run this server in a blocking manner. Running server can be stopped with Shutdown().
 func (s *Server) Run() error {
+	listener, err := net.Listen("tcp", s.config.Server.ListenAddress)
+	if err != nil {
+		return err
+	}
+	go s.updateDiskStats()
 	s.log.Notice("Server is started.")
-	s.updateDiskStats()
-	return nil
+	err = s.server.Serve(listener)
+	if err == http.ErrServerClosed {
+		s.log.Notice("Server is shutting down.")
+		return nil
+	}
+	return err
 }
 
 // Shutdown the server.
 func (s *Server) Shutdown() error {
 	close(s.shutdown)
+
+	timeout := time.Duration(s.config.Server.ShutdownTimeout) * time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	_ = cancel
+	err := s.server.Shutdown(ctx)
+	if err != nil {
+		s.log.Error("Error while shutting down HTTP server")
+		return err
+	}
+
 	<-s.diskStatsStopped
-	err := s.db.Close()
+	err = s.db.Close()
 	if err != nil {
 		s.log.Error("Error while closing database connection")
 		return err
