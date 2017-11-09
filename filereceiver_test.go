@@ -74,6 +74,14 @@ func TestFileReceiverZeroByte(t *testing.T) {
 	testDelete(t)
 }
 
+func TestFileReceiverSingleRequest(t *testing.T) {
+	setup(t)
+	defer tearDown()
+
+	testSend(t, 0, true, "foo")
+	testOffset(t, 404, false, 0)
+}
+
 func testCreate(t *testing.T) {
 	t.Helper()
 	req, err := http.NewRequest("POST", path, nil)
