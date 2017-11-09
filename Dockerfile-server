@@ -1,4 +1,4 @@
 FROM efes
 RUN apt-get update && apt-get install -y mysql-client
-ADD docker-start-server.sh /root/start-server.sh
-ENTRYPOINT ["/bin/bash", "/root/start-server.sh"]
+ADD docker-run-server.sh /root/run-server.sh
+ENTRYPOINT ["/bin/bash", "/root/run-server.sh"]
