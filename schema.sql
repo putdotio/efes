@@ -1,4 +1,5 @@
 CREATE TABLE `device` (
+
   `devid` mediumint(8) unsigned NOT NULL,
   `hostid` mediumint(8) unsigned NOT NULL,
   `status` enum('alive','dead','down','readonly','drain') DEFAULT NULL,

@@ -386,7 +386,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	devices := make([]device, 0)
 
-	rows, err := t.db.Query("select devid, hostid, status, mb_total, mb_used, mb_asof, io_utilization from device")
+	rows, err := t.db.Query("select devid, hostid, status, mb_total, mb_used, unix_timestamp(updated_at), io_utilization from device")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -397,9 +397,8 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 		var d device
 		var mbTotal *sql.NullInt64
 		var mbUsed *sql.NullInt64
-		var mbAsof *sql.NullInt64
 		var ioUtilization *sql.NullInt64
-		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &mbTotal, &mbUsed, &mbAsof, &ioUtilization)
+		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &mbTotal, &mbUsed, &d.MbAsof, &ioUtilization)
 		if err != nil {
 			t.internalServerError("cannot scan rows", err, r, w)
 			return
@@ -413,11 +412,6 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 			d.MbUsed = &mbUsed.Int64
 		} else {
 			d.MbUsed = nil
-		}
-		if mbAsof != nil && mbAsof.Valid {
-			d.MbAsof = &mbAsof.Int64
-		} else {
-			d.MbAsof = nil
 		}
 		if ioUtilization != nil && ioUtilization.Valid {
 			d.IoUtilization = &ioUtilization.Int64
