@@ -7,10 +7,9 @@ services:
     logging:
       driver: none
   rabbitmq:
-    image: "rabbitmq:3.6"
-    entrypoint: rabbitmq-server
-    environment:
-      HOME: /root
+    build:
+      dockerfile: Dockerfile-rabbitmq
+      context: .
     logging:
       driver: none
   tracker:
