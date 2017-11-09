@@ -1,5 +1,4 @@
 FROM efes
 RUN apt-get update && apt-get install -y mysql-client
 ADD docker-start-server.sh /root/start-server.sh
-ADD docker-wait-for-mysql.sh /root/wait-for-mysql.sh
 ENTRYPOINT ["/bin/bash", "/root/start-server.sh"]

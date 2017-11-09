@@ -5,6 +5,5 @@ ADD Gopkg.toml Gopkg.lock /go/src/github.com/putdotio/efes/
 RUN dep ensure -vendor-only
 RUN apt-get update && apt-get install -y mysql-client
 ADD docker-run-tests.sh /root/run-tests.sh
-ADD docker-wait-for-mysql.sh /root/wait-for-mysql.sh
 ADD *.go /go/src/github.com/putdotio/efes/
 ENTRYPOINT ["/bin/bash", "/root/run-tests.sh"]
