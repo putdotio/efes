@@ -12,11 +12,11 @@ MYSQL_DATADIR=/var/lib/mysql2
 mkdir -p "$MYSQL_DATADIR"
 
 echo 'Initializing database'
-mysqld --initialize-insecure --datadir=$MYSQL_DATADIR
+mysqld --initialize-insecure --datadir=$MYSQL_DATADIR &>/dev/null
 echo 'Database initialized'
 
 SOCKET=/var/run/mysqld/mysqld.sock
-mysqld --user=root --datadir=$MYSQL_DATADIR --skip-networking --socket="${SOCKET}" &
+mysqld --user=root --datadir=$MYSQL_DATADIR --skip-networking --socket="${SOCKET}" &>/dev/null &
 pid="$!"
 
 mysql=( mysql --protocol=socket -uroot -hlocalhost --socket="${SOCKET}" )
