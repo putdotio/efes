@@ -395,28 +395,22 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var d device
-		var mbTotal *sql.NullInt64
-		var mbUsed *sql.NullInt64
-		var ioUtilization *sql.NullInt64
+		var mbTotal sql.NullInt64
+		var mbUsed sql.NullInt64
+		var ioUtilization sql.NullInt64
 		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &mbTotal, &mbUsed, &d.MbAsof, &ioUtilization)
 		if err != nil {
 			t.internalServerError("cannot scan rows", err, r, w)
 			return
 		}
-		if mbTotal != nil && mbTotal.Valid {
+		if mbTotal.Valid {
 			d.MbTotal = &mbTotal.Int64
-		} else {
-			d.MbTotal = nil
 		}
-		if mbUsed != nil && mbUsed.Valid {
+		if mbUsed.Valid {
 			d.MbUsed = &mbUsed.Int64
-		} else {
-			d.MbUsed = nil
 		}
-		if ioUtilization != nil && ioUtilization.Valid {
+		if ioUtilization.Valid {
 			d.IoUtilization = &ioUtilization.Int64
-		} else {
-			d.IoUtilization = nil
 		}
 		devices = append(devices, d)
 	}
