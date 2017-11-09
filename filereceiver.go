@@ -66,7 +66,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		err = saveFile(path, offset, length, r.Body)
-		if err == errOffset {
+		if err == errOffset || err == errNotExist {
 			log.Printf("offset mismatch")
 			http.Error(w, "offset mismatch", http.StatusPreconditionFailed)
 			return

@@ -82,6 +82,23 @@ func TestFileReceiverSingleRequest(t *testing.T) {
 	testOffset(t, 404, false, 0)
 }
 
+func TestFileReceiverInvalidOffset(t *testing.T) {
+	setup(t)
+	defer tearDown()
+
+	req, err := http.NewRequest("PATCH", path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("storage-file-offset", "1")
+	rr := httptest.NewRecorder()
+	fr.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusPreconditionFailed {
+		t.Logf("handler returned wrong status code: got %v want %v", status, http.StatusPreconditionFailed)
+		t.Fatal(rr.Body.String())
+	}
+}
+
 func testCreate(t *testing.T) {
 	t.Helper()
 	req, err := http.NewRequest("POST", path, nil)
