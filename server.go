@@ -85,7 +85,7 @@ func (s *Server) updateDiskStats() {
 		case <-ticker.C:
 			used, total := s.getDiskUsage()
 			utilization := s.getDiskUtilization(iostat)
-			_, err = s.db.Exec("update device set io_utilization=?, mb_used=?, mb_total=? where devid=?", utilization, used, total, s.devid)
+			_, err = s.db.Exec("update device set io_utilization=?, mb_used=?, mb_total=?, updated_at=current_timestamp where devid=?", utilization, used, total, s.devid)
 			if err != nil {
 				s.log.Errorln("Cannot update device stats:", err.Error())
 				continue
