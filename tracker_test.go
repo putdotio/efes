@@ -240,7 +240,7 @@ func TestGetHosts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req, err := http.NewRequest("GET", "/get-hosts?hostid=1", nil)
+	req, err := http.NewRequest("GET", "/get-hosts", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
