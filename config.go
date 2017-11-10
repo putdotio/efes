@@ -27,6 +27,12 @@ type ServerConfig struct {
 	ShutdownTimeout uint32 `toml:"shutdown_timeout"`
 }
 
+// ClientConfig holds configuration values for Client.
+type ClientConfig struct {
+	TrackerURL string `toml:"tracker_url"`
+	ChunkSize  uint64 `toml:"chunk_size"`
+}
+
 // Config holds configuration values for all Efes components.
 type Config struct {
 	Tracker  TrackerConfig

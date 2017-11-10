@@ -13,61 +13,88 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const version = "0.0.0"
-
-func init() {
+func main() {
 	rand.Seed(time.Now().UnixNano())
 	log.DefaultHandler.SetLevel(log.DEBUG)
-}
 
-func main() {
+	var cfg *Config
+
 	app := cli.NewApp()
-	app.Version = version
 	app.Usage = "Simple yet powerful distributed file system"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "config, c",
-			Value: "/etc/efes.toml",
-			Usage: "configuration file path",
+			Name:   "config, c",
+			Value:  "/etc/efes.toml",
+			Usage:  "configuration file path",
+			EnvVar: "EFES_CONFIG",
 		},
+	}
+	app.Before = func(c *cli.Context) error {
+		var err error
+		cfg, err = ReadConfig(c.GlobalString("config"))
+		if err != nil {
+			log.Warningln("Cannot read config:", err)
+		}
+		return nil
 	}
 	app.Commands = []cli.Command{
 		{
 			Name:  "tracker",
 			Usage: "Runs Tracker process",
-			Action: func(c *cli.Context) {
-				cfg, err := ReadConfig(c.GlobalString("config"))
-				if err != nil {
-					log.Fatal("Error while loading configuration. ", err)
-				}
+			Action: func(c *cli.Context) error {
 				t, err := NewTracker(cfg)
 				if err != nil {
-					log.Fatal("Error while initializing tracker. ", err)
+					return err
 				}
 				runUntilInterrupt(t)
+				return nil
 			},
 		},
 		{
 			Name:  "server",
 			Usage: "Runs Server process",
-			Action: func(c *cli.Context) {
-				cfg, err := ReadConfig(c.GlobalString("config"))
-				if err != nil {
-					log.Fatal("Error while loading configuration. ", err)
-				}
+			Action: func(c *cli.Context) error {
 				dir := c.Args().Get(0)
 				s, err := NewServer(cfg, dir)
 				if err != nil {
-					log.Fatal("Error while initializing server. ", err)
+					return err
 				}
 				runUntilInterrupt(s)
+				return nil
+			},
+		},
+		{
+			Name:  "client",
+			Usage: "Client for reading/writing files",
+			Subcommands: []cli.Command{
+				{
+					Name:  "write",
+					Usage: "write file to efes",
+					Action: func(c *cli.Context) error {
+						path := c.Args().Get(0)
+						client, err := NewClient(cfg)
+						if err != nil {
+							return err
+						}
+						return client.Write(path)
+					},
+				},
+				{
+					Name:  "read",
+					Usage: "read file from efes",
+					Action: func(c *cli.Context) error {
+						path := c.Args().Get(0)
+						client, err := NewClient(cfg)
+						if err != nil {
+							return err
+						}
+						return client.Read(path)
+					},
+				},
 			},
 		},
 	}
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Fatal(err)
-	}
+	app.Run(os.Args)
 }
 
 type process interface {
