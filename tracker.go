@@ -126,9 +126,7 @@ func (t *Tracker) internalServerError(message string, err error, r *http.Request
 }
 
 func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
-	var response struct {
-		Paths []string `json:"paths"`
-	}
+	var response GetPaths
 	response.Paths = make([]string, 0)
 	key := r.FormValue("key")
 	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=? and f.dmid=?", key, dmid)
@@ -171,7 +169,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		size = 0
 	} else {
 		var err error
-		size, err = strconv.ParseUint(r.FormValue("size"), 10, 64)
+		size, err = strconv.ParseUint(sizeStr, 10, 64)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -182,7 +180,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot insert tempfile", err, r, w)
 		return
 	}
-	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size)
+	rows, err := t.db.Query("select h.hostip, d.http_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size)
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -223,11 +221,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		devices = devices[:len(devices)/2]
 	}
 	d := devices[rand.Intn(len(devices))]
-	response := struct {
-		Path  string `json:"path"`
-		Fid   int64  `json:"fid"`
-		Devid int64  `json:"devid"`
-	}{
+	response := CreateOpen{
 		Path:  fmt.Sprintf("http://%s:%d/dev%d/%s/%s/%s/%s.fid", d.hostip, d.httpPort, d.devid, sfid[0:1], sfid[1:4], sfid[4:7], sfid),
 		Fid:   fid,
 		Devid: d.devid,
@@ -375,16 +369,8 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	type device struct {
-		Devid         int64  `json:"devid"`
-		Hostid        int64  `json:"hostid"`
-		Status        string `json:"status"`
-		MbTotal       *int64 `json:"mb_total"`
-		MbUsed        *int64 `json:"mb_used"`
-		MbAsof        *int64 `json:"mb_asof"`
-		IoUtilization *int64 `json:"io_utilization"`
-	}
-	devices := make([]device, 0)
+	type device Device
+	devices := make([]Device, 0)
 
 	rows, err := t.db.Query("select devid, hostid, status, mb_total, mb_used, unix_timestamp(updated_at), io_utilization from device")
 	if err != nil {
@@ -394,7 +380,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
-		var d device
+		var d Device
 		var mbTotal sql.NullInt64
 		var mbUsed sql.NullInt64
 		var ioUtilization sql.NullInt64
@@ -420,9 +406,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var response struct {
-		Devices []device `json:"devices"`
-	}
+	var response GetDevices
 	response.Devices = devices
 
 	encoder := json.NewEncoder(w)
@@ -437,14 +421,8 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	type host struct {
-		Hostid   int64  `json:"hostid"`
-		Status   string `json:"status"`
-		HTTPPort int64  `json:"http_port"`
-		Hostname string `json:"hostname"`
-		HostIP   string `json:"hostip"`
-	}
-	hosts := make([]host, 0)
+	type host Host
+	hosts := make([]Host, 0)
 
 	var rows *sql.Rows
 	rows, err = t.db.Query("select hostid, status, http_port, hostname, hostip from host")
@@ -455,7 +433,7 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
-		var h host
+		var h Host
 		err = rows.Scan(&h.Hostid, &h.Status, &h.HTTPPort, &h.Hostname, &h.HostIP)
 		if err != nil {
 			t.internalServerError("cannot scan rows", err, r, w)
@@ -469,9 +447,7 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var response struct {
-		Hosts []host `json:"hosts"`
-	}
+	var response GetHosts
 	response.Hosts = hosts
 
 	encoder := json.NewEncoder(w)

@@ -30,7 +30,7 @@ CREATE TABLE `file_on` (
 CREATE TABLE `host` (
   `hostid` mediumint(8) unsigned NOT NULL,
   `status` enum('alive','dead','down') DEFAULT NULL,
-  `http_port` mediumint(8) unsigned DEFAULT '7500',
+  `http_port` mediumint(8) unsigned DEFAULT '8500',
   `hostname` varchar(40) DEFAULT NULL,
   `hostip` varchar(40) DEFAULT NULL,
   PRIMARY KEY (`hostid`)

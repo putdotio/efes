@@ -29,14 +29,15 @@ type ServerConfig struct {
 
 // ClientConfig holds configuration values for Client.
 type ClientConfig struct {
+	Debug      bool   `toml:"debug"`
 	TrackerURL string `toml:"tracker_url"`
-	ChunkSize  uint64 `toml:"chunk_size"`
 }
 
 // Config holds configuration values for all Efes components.
 type Config struct {
 	Tracker  TrackerConfig
 	Server   ServerConfig
+	Client   ClientConfig
 	Database DatabaseConfig
 	AMQP     AMQPConfig
 }
@@ -50,6 +51,9 @@ var defaultConfig = Config{
 	Server: ServerConfig{
 		ListenAddress:   "0.0.0.0:8500",
 		ShutdownTimeout: 10000,
+	},
+	Client: ClientConfig{
+		TrackerURL: "http://127.0.0.1:8001",
 	},
 }
 

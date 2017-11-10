@@ -71,30 +71,35 @@ func main() {
 					Name:  "write",
 					Usage: "write file to efes",
 					Action: func(c *cli.Context) error {
-						path := c.Args().Get(0)
+						key := c.Args().Get(0)
+						path := c.Args().Get(1)
 						client, err := NewClient(cfg)
 						if err != nil {
 							return err
 						}
-						return client.Write(path)
+						return client.Write(key, path)
 					},
 				},
 				{
 					Name:  "read",
 					Usage: "read file from efes",
 					Action: func(c *cli.Context) error {
-						path := c.Args().Get(0)
+						key := c.Args().Get(0)
+						path := c.Args().Get(1)
 						client, err := NewClient(cfg)
 						if err != nil {
 							return err
 						}
-						return client.Read(path)
+						return client.Read(key, path)
 					},
 				},
 			},
 		},
 	}
-	app.Run(os.Args)
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 type process interface {

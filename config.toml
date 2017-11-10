@@ -11,4 +11,5 @@ shutdown_timeout = 10000
 [amqp]
 url = "amqp://mogilefs:123@efes_rabbitmq_1:5672/"
 [client]
-tracker_url = "http://efes_tracker_1:8001/"
+debug = true
+tracker_url = "http://efes_tracker_1:8001"
