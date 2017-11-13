@@ -6,4 +6,5 @@ RUN dep ensure -vendor-only
 RUN apt-get update && apt-get install -y mysql-client
 ADD docker-run-tests.sh /root/run-tests.sh
 ADD *.go /go/src/github.com/putdotio/efes/
+ADD config-docker.toml /etc/efes.toml
 ENTRYPOINT ["/bin/bash", "/root/run-tests.sh"]
