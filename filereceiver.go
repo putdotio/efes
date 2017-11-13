@@ -99,7 +99,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func createFile(path string) error {
 	f, err := os.Create(path)
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(filepath.Dir(path), 0777)
+		err = os.MkdirAll(filepath.Dir(path), 0700)
 		if err != nil {
 			return err
 		}
@@ -146,23 +146,31 @@ func saveFile(path string, offset int64, length int64, r io.Reader) error {
 			return errOffset
 		}
 	}
-	f, err := os.OpenFile(path, os.O_WRONLY, 0666)
+	f, err := os.OpenFile(path, os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 	_, err = f.Seek(offset, io.SeekStart)
 	if err != nil {
+		f.Close() // nolint: errcheck, gas
 		return err
 	}
 	n, err := io.Copy(f, r)
+	if err != nil {
+		f.Close() // nolint: errcheck, gas
+		return err
+	}
+	err = f.Close()
+	if err != nil {
+		return err
+	}
 	newOffset := offset + n
-	if err == nil && newOffset == length {
+	if newOffset == length {
 		// If we know the length of the file, we can delete the ".offset"
 		// file without the need of a seperate DELETE from the client.
 		err = deleteOffset(path)
 	} else {
-		saveOffset(path, newOffset)
+		err = saveOffset(path, newOffset)
 	}
 	return err
 }

@@ -68,9 +68,12 @@ func (c *Client) Read(key, path string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 	_, err = io.Copy(f, resp.Body)
-	return err
+	if err != nil {
+		_ = f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 func (c *Client) getPaths(key string) ([]string, error) {
@@ -128,7 +131,7 @@ func (c *Client) Write(key, path string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer f.Close() // nolint: errcheck
 	fi, err := f.Stat()
 	if err != nil {
 		return err
