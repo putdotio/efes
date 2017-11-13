@@ -25,6 +25,7 @@ type ServerConfig struct {
 	ListenAddress        string `toml:"listen_address"`
 	ListenAddressForRead string `toml:"listen_address_for_read"`
 	ShutdownTimeout      uint32 `toml:"shutdown_timeout"`
+	CleanDiskPeriod      int    `toml:"clean_disk_period"`
 }
 
 // ClientConfig holds configuration values for Client.

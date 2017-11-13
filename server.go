@@ -205,13 +205,14 @@ func (s *Server) getDiskUtilization(iostat *IOStat) (utilization sql.NullInt64) 
 }
 
 func (s *Server) cleanDisk() {
+	// TODO: Get period from config
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			// TODO: Get dir from config or arguments
-			s.removeUnusedFids("/srv/mogilefs")
+			fmt.Println("murat")
+			s.removeUnusedFids(s.dir)
 		case <-s.shutdown:
 			close(s.diskCleanStopped)
 			return
@@ -219,16 +220,16 @@ func (s *Server) cleanDisk() {
 	}
 }
 
-func (s *Server) fidExistsOnDatabase(fileId int64) (bool, error) {
+func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 	var fid int
 	existFile := true
 	existTempFile := true
 	// check file
-	row := s.db.QueryRow("select fid from file where fid=?", fileId)
+	row := s.db.QueryRow("select fid from file where fid=?", fileID)
 	err := row.Scan(&fid)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.log.Debug("No record on file table for fid ", fileId)
+			s.log.Debug("No record on file table for fid ", fileID)
 			existFile = false
 		} else {
 			s.log.Error("Error after querying file table ", err)
@@ -236,11 +237,11 @@ func (s *Server) fidExistsOnDatabase(fileId int64) (bool, error) {
 		}
 	}
 	// check tempfile
-	row = s.db.QueryRow("select fid from tempfile where fid=?", fileId)
+	row = s.db.QueryRow("select fid from tempfile where fid=?", fileID)
 	err = row.Scan(&fid)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.log.Debug("No record on tempfile table for fid", fileId)
+			s.log.Debug("No record on tempfile table for fid", fileID)
 			existTempFile = false
 		} else {
 			s.log.Error("Error after querying tempfile table ", err)
@@ -268,24 +269,25 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 	}
 	// Example file name: 0000000789.fid
 	fileName := strings.Split(f.Name(), ".")
-	fileId, err := strconv.ParseInt(strings.TrimLeft(fileName[0], "0,"), 10, 64)
+	fileID, err := strconv.ParseInt(strings.TrimLeft(fileName[0], "0,"), 10, 64)
 	if err != nil {
 		s.log.Error("Can not parse file name ", err)
 		return nil
 	}
-	existsOnDB, err := s.fidExistsOnDatabase(fileId)
+	existsOnDB, err := s.fidExistsOnDatabase(fileID)
 	if err != nil {
 		s.log.Error("Can not querying database ", err)
 		return nil
 	}
 	if !existsOnDB {
 		// TODO: Move constant to config file
-		allowedDuration := time.Now().Add(-72 * time.Hour)
+		allowedDuration := time.Now().Add(time.Duration(-s.config.Server.CleanDiskPeriod) * time.Second)
 		if f.ModTime().Sub(allowedDuration).Seconds() > 0 {
-			s.log.Info("File %i is new. The copying might be still going on. Not deleting..", fileId)
+			s.log.Info("File %i is new. The copying might be still going on. Not deleting..", fileID)
 		} else {
+			// TODO: Add delete logic.
 			// TODO: Add file size to log
-			s.log.Info("File %i is too old and there is no record on DB for it. Deleting...", fileId)
+			s.log.Info("File %i is too old and there is no record on DB for it. Deleting...", fileID)
 		}
 
 	}
