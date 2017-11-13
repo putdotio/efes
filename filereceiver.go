@@ -132,6 +132,7 @@ func saveOffset(path string, offset int64) error {
 
 func saveFile(path string, offset int64, length int64, r io.Reader) error {
 	if offset == 0 {
+		// File can be saved without a prior POST for creating offset file.
 		err := createFile(path)
 		if err != nil {
 			return err
@@ -157,6 +158,8 @@ func saveFile(path string, offset int64, length int64, r io.Reader) error {
 	n, err := io.Copy(f, r)
 	newOffset := offset + n
 	if err == nil && newOffset == length {
+		// If we know the length of the file, we can delete the ".offset"
+		// file without the need of a seperate DELETE from the client.
 		err = deleteOffset(path)
 	} else {
 		saveOffset(path, newOffset)
