@@ -53,7 +53,7 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m.HandleFunc("/create-close", t.createClose)
 	m.HandleFunc("/delete", t.deleteFile)
 	t.server.Handler = m
-	if t.config.Tracker.Debug {
+	if t.config.Debug {
 		t.log.SetLevel(log.DEBUG)
 	}
 	var err error

@@ -1,7 +1,7 @@
 CREATE TABLE `device` (
   `devid` mediumint(8) unsigned NOT NULL,
   `hostid` mediumint(8) unsigned NOT NULL,
-  `http_port` mediumint(8) unsigned DEFAULT '8500',
+  `http_port` mediumint(8) unsigned DEFAULT '8501',
   `status` enum('alive','dead','down','readonly','drain') DEFAULT NULL,
   `mb_total` int(10) unsigned DEFAULT NULL,
   `mb_used` int(10) unsigned DEFAULT NULL,

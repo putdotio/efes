@@ -4,7 +4,6 @@ import "github.com/BurntSushi/toml"
 
 // TrackerConfig holds configuration values for Tracker.
 type TrackerConfig struct {
-	Debug           bool   `toml:"debug"`
 	ListenAddress   string `toml:"listen_address"`
 	ShutdownTimeout uint32 `toml:"shutdown_timeout"`
 	TempfileTooOld  uint32 `toml:"tempfile_too_old"`
@@ -22,19 +21,19 @@ type AMQPConfig struct {
 
 // ServerConfig holds configuration values for Server.
 type ServerConfig struct {
-	Debug           bool   `toml:"debug"`
-	ListenAddress   string `toml:"listen_address"`
-	ShutdownTimeout uint32 `toml:"shutdown_timeout"`
+	ListenAddress        string `toml:"listen_address"`
+	ListenAddressForRead string `toml:"listen_address_for_read"`
+	ShutdownTimeout      uint32 `toml:"shutdown_timeout"`
 }
 
 // ClientConfig holds configuration values for Client.
 type ClientConfig struct {
-	Debug      bool   `toml:"debug"`
 	TrackerURL string `toml:"tracker_url"`
 }
 
 // Config holds configuration values for all Efes components.
 type Config struct {
+	Debug    bool `toml:"debug"`
 	Tracker  TrackerConfig
 	Server   ServerConfig
 	Client   ClientConfig
@@ -49,11 +48,18 @@ var defaultConfig = Config{
 		TempfileTooOld:  86400000,
 	},
 	Server: ServerConfig{
-		ListenAddress:   "0.0.0.0:8500",
-		ShutdownTimeout: 10000,
+		ListenAddress:        "0.0.0.0:8501",
+		ListenAddressForRead: "0.0.0.0:8500",
+		ShutdownTimeout:      10000,
 	},
 	Client: ClientConfig{
 		TrackerURL: "http://127.0.0.1:8001",
+	},
+	Database: DatabaseConfig{
+		DSN: "test:test@(127.0.0.1:3306)/mogilefs",
+	},
+	AMQP: AMQPConfig{
+		URL: "amqp://guest:guest@127.0.0.1:5672/",
 	},
 }
 

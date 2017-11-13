@@ -23,7 +23,8 @@ type Server struct {
 	devid            uint64
 	db               *sql.DB
 	log              log.Logger
-	server           http.Server
+	readServer       http.Server
+	writeServer      http.Server
 	shutdown         chan struct{}
 	diskStatsStopped chan struct{}
 }
@@ -45,9 +46,10 @@ func NewServer(c *Config, dir string) (*Server, error) {
 		shutdown:         make(chan struct{}),
 		diskStatsStopped: make(chan struct{}),
 	}
-	r := newFileReceiver(dir, s.log)
-	s.server.Handler = r
-	if s.config.Server.Debug {
+	devicePrefix := "/" + filepath.Base(dir)
+	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(dir, s.log))
+	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(dir)))
+	if s.config.Debug {
 		s.log.SetLevel(log.DEBUG)
 	}
 	s.devid, err = strconv.ParseUint(strings.TrimPrefix(filepath.Base(dir), "dev"), 10, 32)
@@ -63,17 +65,36 @@ func NewServer(c *Config, dir string) (*Server, error) {
 
 // Run this server in a blocking manner. Running server can be stopped with Shutdown().
 func (s *Server) Run() error {
-	listener, err := net.Listen("tcp", s.config.Server.ListenAddress)
+	writeListener, err := net.Listen("tcp", s.config.Server.ListenAddress)
+	if err != nil {
+		return err
+	}
+	readListener, err := net.Listen("tcp", s.config.Server.ListenAddressForRead)
 	if err != nil {
 		return err
 	}
 	go s.updateDiskStats()
 	s.log.Notice("Server is started.")
-	err = s.server.Serve(listener)
-	if err == http.ErrServerClosed {
-		s.log.Notice("Server is shutting down.")
-		return nil
+	errCh := make(chan error, 2)
+	go func() {
+		err = s.writeServer.Serve(writeListener)
+		if err == http.ErrServerClosed {
+			s.log.Notice("Write server is shutting down.")
+		}
+		errCh <- err
+	}()
+	go func() {
+		err = s.readServer.Serve(readListener)
+		if err == http.ErrServerClosed {
+			s.log.Notice("Read server is shutting down.")
+		}
+		errCh <- err
+	}()
+	err = <-errCh
+	if err != nil {
+		return err
 	}
+	err = <-errCh
 	return err
 }
 
@@ -82,11 +103,19 @@ func (s *Server) Shutdown() error {
 	close(s.shutdown)
 
 	timeout := time.Duration(s.config.Server.ShutdownTimeout) * time.Millisecond
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	_ = cancel
-	err := s.server.Shutdown(ctx)
+
+	err := s.readServer.Shutdown(ctx)
 	if err != nil {
-		s.log.Error("Error while shutting down HTTP server")
+		s.log.Error("Error while shutting down read HTTP server")
+		return err
+	}
+
+	err = s.writeServer.Shutdown(ctx)
+	if err != nil {
+		s.log.Error("Error while shutting down write HTTP server")
 		return err
 	}
 
