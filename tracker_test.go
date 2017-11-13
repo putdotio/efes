@@ -8,15 +8,6 @@ import (
 	"time"
 )
 
-var testConfig = &Config{
-	Database: DatabaseConfig{
-		DSN: "mogilefs:123@(efestest_mysql_1:3306)/mogilefs",
-	},
-	AMQP: AMQPConfig{
-		URL: "amqp://guest:guest@efestest_rabbitmq_1:5672/",
-	},
-}
-
 func TestPing(t *testing.T) {
 	tr, err := NewTracker(testConfig)
 	if err != nil {
