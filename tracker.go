@@ -214,7 +214,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 	}
 	sfid := fmt.Sprintf("%010d", fid)
 	if len(devices) == 0 {
-		http.Error(w, "no device available", http.StatusNotFound)
+		http.Error(w, "no device available", http.StatusServiceUnavailable)
 		return
 	}
 	if len(devices) > 1 {
