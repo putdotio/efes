@@ -100,7 +100,7 @@ func TestCreateOpen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used) values(2, 'alive', 1, 1000, 500)")
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, http_port) values(2, 'alive', 1, 1000, 500, 1234)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func TestCreateOpen(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := "{\"path\":\"http://1.2.3.4:7500/dev2/0/000/000/0000000005.fid\",\"fid\":5,\"devid\":2}\n"
+	expected := "{\"path\":\"http://1.2.3.4:1234/dev2/0/000/000/0000000005.fid\",\"fid\":5,\"devid\":2}\n"
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)

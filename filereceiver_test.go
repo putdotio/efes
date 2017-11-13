@@ -12,7 +12,7 @@ import (
 	"github.com/cenkalti/log"
 )
 
-const path = "/dir/file.txt"
+const testPath = "/dir/file.txt"
 
 var (
 	tempdir string
@@ -88,7 +88,7 @@ func TestFileReceiverInvalidOffset(t *testing.T) {
 	setup(t)
 	defer tearDown()
 
-	req, err := http.NewRequest("PATCH", path, nil)
+	req, err := http.NewRequest("PATCH", testPath, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestFileReceiverInvalidOffset(t *testing.T) {
 
 func testCreate(t *testing.T) {
 	t.Helper()
-	req, err := http.NewRequest("POST", path, nil)
+	req, err := http.NewRequest("POST", testPath, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ func testCreate(t *testing.T) {
 
 func testDelete(t *testing.T) {
 	t.Helper()
-	req, err := http.NewRequest(http.MethodDelete, path, nil)
+	req, err := http.NewRequest(http.MethodDelete, testPath, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func testDelete(t *testing.T) {
 
 func testOffset(t *testing.T, statusCode int, checkValue bool, value int64) {
 	t.Helper()
-	req, err := http.NewRequest("HEAD", path, nil)
+	req, err := http.NewRequest("HEAD", testPath, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func testOffset(t *testing.T, statusCode int, checkValue bool, value int64) {
 func testSend(t *testing.T, offset int, sendLength bool, data string) {
 	t.Helper()
 	b := bytes.NewBufferString(data)
-	req, err := http.NewRequest("PATCH", path, b)
+	req, err := http.NewRequest("PATCH", testPath, b)
 	if err != nil {
 		t.Fatal(err)
 	}

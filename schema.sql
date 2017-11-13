@@ -44,4 +44,4 @@ CREATE TABLE `tempfile` (
   `devids` varchar(5000) DEFAULT NULL,
   PRIMARY KEY (`fid`),
   KEY `ndx_createtime` (`createtime`)
-) ENGINE=InnoDB AUTO_INCREMENT=390;
+) ENGINE=InnoDB;
