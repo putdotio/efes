@@ -30,10 +30,14 @@ func NewClient(c *Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	logger := log.NewLogger("client")
+	if c.Debug {
+		logger.SetLevel(log.DEBUG)
+	}
 	return &Client{
 		config:     c.Client,
 		trackerURL: u,
-		log:        log.NewLogger("client"),
+		log:        logger,
 	}, nil
 }
 
