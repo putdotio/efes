@@ -2,4 +2,4 @@ FROM efes
 RUN apt-get update && apt-get install -y mysql-client
 ADD docker-run-server.sh /root/run-server.sh
 ENTRYPOINT ["/bin/bash", "/root/run-server.sh"]
-EXPOSE 8500
+EXPOSE 8500 8501
