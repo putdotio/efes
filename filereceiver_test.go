@@ -21,7 +21,7 @@ var (
 
 func setup(t *testing.T) {
 	var err error
-	tempdir, err = ioutil.TempDir("", "storage-file-receiver-test")
+	tempdir, err = ioutil.TempDir("", "efes-file-receiver-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestFileReceiverInvalidOffset(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Header.Set("storage-file-offset", "1")
+	req.Header.Set("efes-file-offset", "1")
 	rr := httptest.NewRecorder()
 	fr.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusPreconditionFailed {
@@ -120,7 +120,7 @@ func testDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Header.Set("storage-file-offset", "6")
+	req.Header.Set("efes-file-offset", "6")
 	rr := httptest.NewRecorder()
 	fr.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
@@ -140,7 +140,7 @@ func testOffset(t *testing.T, statusCode int, checkValue bool, value int64) {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, statusCode)
 	}
 	if checkValue {
-		offset, err := strconv.ParseInt(rr.Header().Get("storage-file-offset"), 10, 64)
+		offset, err := strconv.ParseInt(rr.Header().Get("efes-file-offset"), 10, 64)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -157,9 +157,9 @@ func testSend(t *testing.T, offset int, sendLength bool, data string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Header.Set("storage-file-offset", strconv.Itoa(offset))
+	req.Header.Set("efes-file-offset", strconv.Itoa(offset))
 	if sendLength {
-		req.Header.Set("storage-file-length", strconv.Itoa(len(data)))
+		req.Header.Set("efes-file-length", strconv.Itoa(len(data)))
 	}
 	rr := httptest.NewRecorder()
 	fr.ServeHTTP(rr, req)

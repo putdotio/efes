@@ -64,6 +64,7 @@ func (c *Client) Read(key, path string) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	_, err = io.Copy(f, resp.Body)
 	return err
 }
@@ -123,6 +124,7 @@ func (c *Client) Write(key, path string) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	fi, err := f.Stat()
 	if err != nil {
 		return err
@@ -152,8 +154,8 @@ func (c *Client) write(path string, size int64, r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Add("storage-file-offset", "0")
-	req.Header.Add("storage-file-length", strconv.FormatInt(size, 10))
+	req.Header.Add("efes-file-offset", "0")
+	req.Header.Add("efes-file-length", strconv.FormatInt(size, 10))
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err

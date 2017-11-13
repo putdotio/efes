@@ -55,19 +55,19 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			f.internalServerError("cannot get offset", err, r, w)
 			return
 		}
-		w.Header().Set("storage-file-offset", strconv.FormatInt(offset, 10))
+		w.Header().Set("efes-file-offset", strconv.FormatInt(offset, 10))
 	case http.MethodPatch:
-		offset, err := strconv.ParseInt(r.Header.Get("storage-file-offset"), 10, 64)
+		offset, err := strconv.ParseInt(r.Header.Get("efes-file-offset"), 10, 64)
 		if err != nil {
-			http.Error(w, "invalid header: storage-file-offset", http.StatusBadRequest)
+			http.Error(w, "invalid header: efes-file-offset", http.StatusBadRequest)
 			return
 		}
 		var length int64 = -1
-		lengthHeader := r.Header.Get("storage-file-length")
+		lengthHeader := r.Header.Get("efes-file-length")
 		if lengthHeader != "" {
 			length, err = strconv.ParseInt(lengthHeader, 10, 64)
 			if err != nil {
-				http.Error(w, "invalid header: storage-file-length", http.StatusBadRequest)
+				http.Error(w, "invalid header: efes-file-length", http.StatusBadRequest)
 				return
 			}
 		}

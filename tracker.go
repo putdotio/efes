@@ -129,7 +129,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 	var response GetPaths
 	response.Paths = make([]string, 0)
 	key := r.FormValue("key")
-	rows, err := t.db.Query("select h.hostip, h.http_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=? and f.dmid=?", key, dmid)
+	rows, err := t.db.Query("select h.hostip, d.read_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=? and f.dmid=?", key, dmid)
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -180,7 +180,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot insert tempfile", err, r, w)
 		return
 	}
-	rows, err := t.db.Query("select h.hostip, d.http_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size)
+	rows, err := t.db.Query("select h.hostip, d.write_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size)
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -425,7 +425,7 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 	hosts := make([]Host, 0)
 
 	var rows *sql.Rows
-	rows, err = t.db.Query("select hostid, status, http_port, hostname, hostip from host")
+	rows, err = t.db.Query("select hostid, status, hostname, hostip from host")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -434,7 +434,7 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var h Host
-		err = rows.Scan(&h.Hostid, &h.Status, &h.HTTPPort, &h.Hostname, &h.HostIP)
+		err = rows.Scan(&h.Hostid, &h.Status, &h.Hostname, &h.HostIP)
 		if err != nil {
 			t.internalServerError("cannot scan rows", err, r, w)
 			return

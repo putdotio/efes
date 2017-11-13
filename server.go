@@ -30,31 +30,31 @@ type Server struct {
 }
 
 // NewServer returns a new Server instance.
-func NewServer(c *Config, dir string) (*Server, error) {
-	fi, err := os.Stat(dir)
+func NewServer(c *Config) (*Server, error) {
+	fi, err := os.Stat(c.Server.DataDir)
 	if err != nil {
 		return nil, err
 	}
 	if !fi.IsDir() {
-		return nil, fmt.Errorf("Path must be a directory: %s", dir)
+		return nil, fmt.Errorf("Path must be a directory: %s", c.Server.DataDir)
 	}
 	logger := log.NewLogger("server")
 	s := &Server{
 		config:           c,
-		dir:              dir,
+		dir:              c.Server.DataDir,
 		log:              logger,
 		shutdown:         make(chan struct{}),
 		diskStatsStopped: make(chan struct{}),
 	}
-	devicePrefix := "/" + filepath.Base(dir)
-	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(dir, s.log))
-	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(dir)))
+	devicePrefix := "/" + filepath.Base(s.dir)
+	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.dir, s.log))
+	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(s.dir)))
 	if s.config.Debug {
 		s.log.SetLevel(log.DEBUG)
 	}
-	s.devid, err = strconv.ParseUint(strings.TrimPrefix(filepath.Base(dir), "dev"), 10, 32)
+	s.devid, err = strconv.ParseUint(strings.TrimPrefix(filepath.Base(s.dir), "dev"), 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", dir)
+		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", s.dir)
 	}
 	s.db, err = sql.Open("mysql", s.config.Database.DSN)
 	if err != nil {

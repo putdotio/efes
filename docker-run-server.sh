@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 devid=$1
-datadir=/srv/mogilefs/dev$devid
+datadir=/srv/efes/dev$devid
 mkdir -p $datadir
 ip=$(hostname -i)
 

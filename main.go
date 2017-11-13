@@ -62,8 +62,7 @@ func main() {
 			Name:  "server",
 			Usage: "Runs Server process",
 			Action: func(c *cli.Context) error {
-				dir := c.Args().Get(0)
-				s, err := NewServer(cfg, dir)
+				s, err := NewServer(cfg)
 				if err != nil {
 					return err
 				}

@@ -31,7 +31,6 @@ type GetHosts struct {
 type Host struct {
 	Hostid   int64  `json:"hostid"`
 	Status   string `json:"status"`
-	HTTPPort int64  `json:"http_port"`
 	Hostname string `json:"hostname"`
 	HostIP   string `json:"hostip"`
 }

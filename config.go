@@ -21,6 +21,7 @@ type AMQPConfig struct {
 
 // ServerConfig holds configuration values for Server.
 type ServerConfig struct {
+	DataDir              string `toml:"datadir"`
 	ListenAddress        string `toml:"listen_address"`
 	ListenAddressForRead string `toml:"listen_address_for_read"`
 	ShutdownTimeout      uint32 `toml:"shutdown_timeout"`
@@ -48,6 +49,7 @@ var defaultConfig = Config{
 		TempfileTooOld:  86400000,
 	},
 	Server: ServerConfig{
+		DataDir:              "/srv/efes/dev1",
 		ListenAddress:        "0.0.0.0:8501",
 		ListenAddressForRead: "0.0.0.0:8500",
 		ShutdownTimeout:      10000,

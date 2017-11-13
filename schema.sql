@@ -1,7 +1,8 @@
 CREATE TABLE `device` (
   `devid` mediumint(8) unsigned NOT NULL,
   `hostid` mediumint(8) unsigned NOT NULL,
-  `http_port` mediumint(8) unsigned DEFAULT '8501',
+  `read_port` mediumint(8) unsigned DEFAULT '8500',
+  `write_port` mediumint(8) unsigned DEFAULT '8501',
   `status` enum('alive','dead','down','readonly','drain') DEFAULT NULL,
   `mb_total` int(10) unsigned DEFAULT NULL,
   `mb_used` int(10) unsigned DEFAULT NULL,
@@ -30,7 +31,6 @@ CREATE TABLE `file_on` (
 CREATE TABLE `host` (
   `hostid` mediumint(8) unsigned NOT NULL,
   `status` enum('alive','dead','down') DEFAULT NULL,
-  `http_port` mediumint(8) unsigned DEFAULT '8500',
   `hostname` varchar(40) DEFAULT NULL,
   `hostip` varchar(40) DEFAULT NULL,
   PRIMARY KEY (`hostid`)
