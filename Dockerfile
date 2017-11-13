@@ -8,5 +8,4 @@ RUN CGO_ENABLED=0 go install .
 
 FROM ubuntu:xenial
 COPY --from=builder /go/bin/efes /usr/local/bin/efes
-ADD config.toml /etc/efes.toml
 ENTRYPOINT ["efes"]
