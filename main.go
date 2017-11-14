@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -98,6 +99,37 @@ func main() {
 							return err
 						}
 						return client.Read(key, path)
+					},
+				},
+				{
+					Name:  "delete",
+					Usage: "delete file from efes",
+					Action: func(c *cli.Context) error {
+						key := c.Args().Get(0)
+						client, err := NewClient(cfg)
+						if err != nil {
+							return err
+						}
+						return client.Delete(key)
+					},
+				},
+				{
+					Name:  "exist",
+					Usage: "check if a key exists in efes",
+					Action: func(c *cli.Context) error {
+						key := c.Args().Get(0)
+						client, err := NewClient(cfg)
+						if err != nil {
+							return err
+						}
+						exist, err := client.Exist(key)
+						if err != nil {
+							return err
+						}
+						if !exist {
+							return errors.New("key does not exist")
+						}
+						return nil
 					},
 				},
 			},

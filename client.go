@@ -199,3 +199,17 @@ func (c *Client) createClose(key string, size, fid, devid int64) error {
 	form.Add("devid", strconv.FormatInt(devid, 10))
 	return c.request(http.MethodPost, "create-close", form, http.StatusOK, nil)
 }
+
+func (c *Client) Delete(key string) error {
+	form := url.Values{}
+	form.Add("key", key)
+	return c.request(http.MethodPost, "delete", form, http.StatusOK, nil)
+}
+
+func (c *Client) Exist(key string) (bool, error) {
+	paths, err := c.getPaths(key)
+	if err != nil {
+		return false, err
+	}
+	return len(paths) > 0, nil
+}
