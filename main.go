@@ -79,8 +79,9 @@ func main() {
 			Usage: "Client for reading/writing files",
 			Subcommands: []cli.Command{
 				{
-					Name:  "write",
-					Usage: "write file to efes",
+					Name:      "write",
+					Usage:     "write file to efes",
+					ArgsUsage: "key path",
 					Flags: []cli.Flag{
 						cli.StringFlag{
 							Name:  "chunk, c",
@@ -106,8 +107,9 @@ func main() {
 					},
 				},
 				{
-					Name:  "read",
-					Usage: "read file from efes",
+					Name:      "read",
+					Usage:     "read file from efes",
+					ArgsUsage: "key path",
 					Action: func(c *cli.Context) error {
 						key := c.Args().Get(0)
 						path := c.Args().Get(1)
@@ -119,8 +121,9 @@ func main() {
 					},
 				},
 				{
-					Name:  "delete",
-					Usage: "delete file from efes",
+					Name:      "delete",
+					Usage:     "delete file from efes",
+					ArgsUsage: "key",
 					Action: func(c *cli.Context) error {
 						key := c.Args().Get(0)
 						client, err := NewClient(cfg)
@@ -131,8 +134,9 @@ func main() {
 					},
 				},
 				{
-					Name:  "exist",
-					Usage: "check if a key exists in efes",
+					Name:      "exist",
+					Usage:     "check if a key exists in efes",
+					ArgsUsage: "key",
 					Action: func(c *cli.Context) error {
 						key := c.Args().Get(0)
 						client, err := NewClient(cfg)
