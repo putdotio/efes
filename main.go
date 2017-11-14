@@ -91,6 +91,9 @@ func main() {
 						},
 					},
 					Action: func(c *cli.Context) error {
+						if c.NArg() < 2 {
+							cli.ShowAppHelpAndExit(c, 1)
+						}
 						key := c.Args().Get(0)
 						path := c.Args().Get(1)
 						if c.IsSet("chunk") {
@@ -108,6 +111,9 @@ func main() {
 					Usage:     "read file from efes",
 					ArgsUsage: "key path",
 					Action: func(c *cli.Context) error {
+						if c.NArg() < 2 {
+							cli.ShowAppHelpAndExit(c, 1)
+						}
 						key := c.Args().Get(0)
 						path := c.Args().Get(1)
 						client, err := NewClient(cfg)
@@ -122,6 +128,9 @@ func main() {
 					Usage:     "delete file from efes",
 					ArgsUsage: "key",
 					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							cli.ShowAppHelpAndExit(c, 1)
+						}
 						key := c.Args().Get(0)
 						client, err := NewClient(cfg)
 						if err != nil {
@@ -135,6 +144,9 @@ func main() {
 					Usage:     "check if a key exists in efes",
 					ArgsUsage: "key",
 					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							cli.ShowAppHelpAndExit(c, 1)
+						}
 						key := c.Args().Get(0)
 						client, err := NewClient(cfg)
 						if err != nil {
