@@ -55,6 +55,7 @@ func TestClient(t *testing.T) {
 	}
 	go srv.Run()
 	defer srv.Shutdown()
+	testConfig.Client.ChunkSize = 1
 	clt, err := NewClient(testConfig)
 	if err != nil {
 		t.Fatal(err)
@@ -95,7 +96,7 @@ func TestClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	if string(copyContent) != content {
-		t.Fatal("invalid content")
+		t.Fatal("invalid content:", copyContent)
 	}
 
 	err = clt.Delete("foo")

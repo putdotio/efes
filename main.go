@@ -14,9 +14,12 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+func init() {
+	log.DefaultHandler.SetLevel(log.DEBUG)
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	log.DefaultHandler.SetLevel(log.DEBUG)
 
 	var cfg *Config
 

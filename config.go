@@ -29,12 +29,13 @@ type ServerConfig struct {
 
 // ClientConfig holds configuration values for Client.
 type ClientConfig struct {
-	TrackerURL string `toml:"tracker_url"`
+	TrackerURL string    `toml:"tracker_url"`
+	ChunkSize  ChunkSize `toml:"chunk_size"`
 }
 
 // Config holds configuration values for all Efes components.
 type Config struct {
-	Debug    bool `toml:"debug"`
+	Debug    bool
 	Tracker  TrackerConfig
 	Server   ServerConfig
 	Client   ClientConfig
@@ -56,6 +57,7 @@ var defaultConfig = Config{
 	},
 	Client: ClientConfig{
 		TrackerURL: "http://127.0.0.1:8001",
+		ChunkSize:  1024 * 1024,
 	},
 	Database: DatabaseConfig{
 		DSN: "test:test@(127.0.0.1:3306)/mogilefs",

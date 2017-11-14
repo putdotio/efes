@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -172,23 +173,38 @@ func (c *Client) createOpen(size int64) (path string, fid, devid int64, err erro
 }
 
 func (c *Client) write(path string, size int64, r io.Reader) (int64, error) {
-	counter := newReadCounter(r)
-	req, err := http.NewRequest(http.MethodPatch, path, counter)
-	if err != nil {
-		return counter.Count(), err
+	var offset, n int64
+	buf := make([]byte, 32*1024)
+	for {
+		chunkReader := io.LimitReader(r, int64(c.config.ChunkSize))
+		m, err := io.ReadFull(chunkReader, buf)
+		c.log.Debugln("read", m, "bytes", "err:", err)
+		offset = n
+		n += int64(m)
+		switch err {
+		case nil, io.ErrUnexpectedEOF:
+		case io.EOF:
+			return n, nil
+		default:
+			return n, err
+		}
+		req, err := http.NewRequest(http.MethodPatch, path, bytes.NewReader(buf[:m]))
+		if err != nil {
+			return n, err
+		}
+		req.Header.Add("content-length", strconv.Itoa(m))
+		req.Header.Add("efes-file-offset", strconv.FormatInt(offset, 10))
+		if size > -1 {
+			req.Header.Add("efes-file-length", strconv.FormatInt(size, 10))
+		}
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return n, err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return n, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
 	}
-	req.Header.Add("efes-file-offset", "0")
-	if size > -1 {
-		req.Header.Add("efes-file-length", strconv.FormatInt(size, 10))
-	}
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return counter.Count(), err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return counter.Count(), fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-	return counter.Count(), nil
 }
 
 func (c *Client) createClose(key string, size, fid, devid int64) error {
