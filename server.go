@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/log"
@@ -18,15 +19,18 @@ import (
 
 // Server runs on storage servers.
 type Server struct {
-	config           *Config
-	dir              string
-	devid            uint64
-	db               *sql.DB
-	log              log.Logger
-	readServer       http.Server
-	writeServer      http.Server
-	shutdown         chan struct{}
-	diskStatsStopped chan struct{}
+	config               *Config
+	dir                  string
+	devid                uint64
+	db                   *sql.DB
+	log                  log.Logger
+	readServer           http.Server
+	writeServer          http.Server
+	shutdown             chan struct{}
+	Ready                chan struct{}
+	onceDiskStatsUpdated sync.Once
+	diskStatsUpdated     chan struct{}
+	diskStatsStopped     chan struct{}
 }
 
 // NewServer returns a new Server instance.
@@ -44,6 +48,8 @@ func NewServer(c *Config) (*Server, error) {
 		dir:              c.Server.DataDir,
 		log:              logger,
 		shutdown:         make(chan struct{}),
+		Ready:            make(chan struct{}),
+		diskStatsUpdated: make(chan struct{}),
 		diskStatsStopped: make(chan struct{}),
 	}
 	devicePrefix := "/" + filepath.Base(s.dir)
@@ -90,12 +96,22 @@ func (s *Server) Run() error {
 		}
 		errCh <- err
 	}()
+	go s.notifyReady()
 	err = <-errCh
 	if err != nil {
 		return err
 	}
 	err = <-errCh
 	return err
+}
+
+func (s *Server) notifyReady() {
+	select {
+	case <-s.shutdown:
+		return
+	case <-s.diskStatsUpdated:
+		close(s.Ready)
+	}
 }
 
 // Shutdown the server.
@@ -141,6 +157,7 @@ func (s *Server) updateDiskStats() {
 			used, total := s.getDiskUsage()
 			utilization := s.getDiskUtilization(iostat)
 			_, err = s.db.Exec("update device set io_utilization=?, mb_used=?, mb_total=?, updated_at=current_timestamp where devid=?", utilization, used, total, s.devid)
+			s.onceDiskStatsUpdated.Do(func() { close(s.diskStatsUpdated) })
 			if err != nil {
 				s.log.Errorln("Cannot update device stats:", err.Error())
 				continue

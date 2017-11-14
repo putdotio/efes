@@ -31,6 +31,7 @@ type Tracker struct {
 	server                    http.Server
 	amqp                      *amqpredialer.AMQPRedialer
 	shutdown                  chan struct{}
+	Ready                     chan struct{}
 	removeOldTempfilesStopped chan struct{}
 	amqpRedialerStopped       chan struct{}
 }
@@ -38,9 +39,10 @@ type Tracker struct {
 // NewTracker returns a new Tracker instance.
 func NewTracker(c *Config) (*Tracker, error) {
 	t := &Tracker{
-		config:                    c,
-		log:                       log.NewLogger("tracker"),
-		shutdown:                  make(chan struct{}),
+		config:   c,
+		log:      log.NewLogger("tracker"),
+		shutdown: make(chan struct{}),
+		Ready:    make(chan struct{}),
 		removeOldTempfilesStopped: make(chan struct{}),
 		amqpRedialerStopped:       make(chan struct{}),
 	}
@@ -80,6 +82,7 @@ func (t *Tracker) Run() error {
 		t.amqp.Run()
 		close(t.amqpRedialerStopped)
 	}()
+	close(t.Ready)
 	err = t.server.Serve(listener)
 	if err == http.ErrServerClosed {
 		t.log.Notice("Tracker is shutting down.")
