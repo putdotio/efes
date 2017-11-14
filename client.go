@@ -173,6 +173,7 @@ func (c *Client) createOpen(size int64) (path string, fid, devid int64, err erro
 }
 
 func (c *Client) write(path string, size int64, r io.Reader) (int64, error) {
+	c.log.Debugln("client chunk size:", c.config.ChunkSize)
 	var offset, n int64
 	buf := make([]byte, 32*1024)
 	for {
