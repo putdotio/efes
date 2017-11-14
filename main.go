@@ -22,6 +22,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	var cfg *Config
+	var chunkSize = ChunkSize(1 * M)
 
 	app := cli.NewApp()
 	app.Usage = "Simple yet powerful distributed file system"
@@ -83,21 +84,17 @@ func main() {
 					Usage:     "write file to efes",
 					ArgsUsage: "key path",
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						cli.GenericFlag{
 							Name:  "chunk, c",
 							Usage: "chunk size",
+							Value: &chunkSize,
 						},
 					},
 					Action: func(c *cli.Context) error {
 						key := c.Args().Get(0)
 						path := c.Args().Get(1)
 						if c.IsSet("chunk") {
-							var cs ChunkSize
-							err := cs.UnmarshalText([]byte(c.String("chunk")))
-							if err != nil {
-								return err
-							}
-							cfg.Client.ChunkSize = cs
+							cfg.Client.ChunkSize = chunkSize
 						}
 						client, err := NewClient(cfg)
 						if err != nil {

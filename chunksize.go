@@ -2,44 +2,76 @@ package main
 
 import "strconv"
 
+const (
+	K = 1024
+	M = 1024 * 1024
+	G = 1024 * 1024 * 1024
+)
+
 type ChunkSize int64
 
+func (c *ChunkSize) MarshalText() (text []byte, err error) {
+	return []byte(c.String()), nil
+}
+
 func (c *ChunkSize) UnmarshalText(text []byte) error {
-	s := string(text)
-	switch s[len(s)-1] {
+	return c.Set(string(text))
+}
+
+func (c *ChunkSize) Set(value string) error {
+	switch value[len(value)-1] {
 	case 'K':
-		s = s[:len(s)-1]
-		i, err := strconv.ParseInt(s, 10, 64)
+		value = value[:len(value)-1]
+		i, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return err
 		}
-		i *= 1024
+		i *= K
 		*c = ChunkSize(i)
 		return nil
 	case 'M':
-		s = s[:len(s)-1]
-		i, err := strconv.ParseInt(s, 10, 64)
+		value = value[:len(value)-1]
+		i, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return err
 		}
-		i *= (1024 * 1024)
+		i *= M
 		*c = ChunkSize(i)
 		return nil
 	case 'G':
-		s = s[:len(s)-1]
-		i, err := strconv.ParseInt(s, 10, 64)
+		value = value[:len(value)-1]
+		i, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return err
 		}
-		i *= (1024 * 1024 * 1024)
+		i *= G
 		*c = ChunkSize(i)
 		return nil
 	default:
-		i, err := strconv.ParseInt(s, 10, 64)
+		i, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return err
 		}
 		*c = ChunkSize(i)
 		return nil
 	}
+}
+
+func (c *ChunkSize) String() string {
+	i := int64(*c)
+	if i == 0 {
+		return "0"
+	}
+	var postfix string
+	if i%G == 0 {
+		i /= G
+		postfix = "G"
+	} else if i%M == 0 {
+		i /= M
+		postfix = "M"
+	} else if i%K == 0 {
+		i /= K
+		postfix = "K"
+	}
+	return strconv.FormatInt(i, 10) + postfix
 }
