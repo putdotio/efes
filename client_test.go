@@ -24,7 +24,8 @@ func createTempfile(t *testing.T, content string) string {
 }
 
 func TestClient(t *testing.T) {
-	content := "this is the file content"
+	const chunkSize = 2
+	content := "123" // a string length of 3 for testing chunk size of 2
 	source := createTempfile(t, content)
 	defer os.Remove(source)
 
@@ -55,7 +56,7 @@ func TestClient(t *testing.T) {
 	}
 	go srv.Run()
 	defer srv.Shutdown()
-	testConfig.Client.ChunkSize = 1
+	testConfig.Client.ChunkSize = chunkSize
 	clt, err := NewClient(testConfig)
 	if err != nil {
 		t.Fatal(err)
