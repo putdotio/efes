@@ -81,9 +81,23 @@ func main() {
 				{
 					Name:  "write",
 					Usage: "write file to efes",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "chunk, c",
+							Usage: "chunk size",
+						},
+					},
 					Action: func(c *cli.Context) error {
 						key := c.Args().Get(0)
 						path := c.Args().Get(1)
+						if c.IsSet("chunk") {
+							var cs ChunkSize
+							err := cs.UnmarshalText([]byte(c.String("chunk")))
+							if err != nil {
+								return err
+							}
+							cfg.Client.ChunkSize = cs
+						}
 						client, err := NewClient(cfg)
 						if err != nil {
 							return err
