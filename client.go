@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -54,16 +53,9 @@ func (c *Client) Read(key, path string) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode >= 500 {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("server error (%d): %s", resp.StatusCode, string(body))
-	}
-	if resp.StatusCode >= 400 {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("client error (%d): %s", resp.StatusCode, string(body))
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	err = checkResponseError(resp, http.StatusOK)
+	if err != nil {
+		return err
 	}
 	var f *os.File
 	if path == "-" {
@@ -107,24 +99,19 @@ func (c *Client) request(method, urlPath string, params url.Values, statusCode i
 	if method == http.MethodPost {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
+	c.log.Debugln("request method:", req.Method, "path:", req.URL.Path)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
-	body, _ := ioutil.ReadAll(resp.Body)
-	if resp.StatusCode >= 500 {
-		return fmt.Errorf("server error (%d): %s", resp.StatusCode, string(body))
-	}
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("client error (%d): %s", resp.StatusCode, string(body))
-	}
-	if resp.StatusCode != statusCode {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	err = checkResponseError(resp, statusCode)
+	if err != nil {
+		return err
 	}
 	if response == nil {
 		return nil
 	}
-	err = json.Unmarshal(body, response)
+	err = json.NewDecoder(resp.Body).Decode(response)
 	if err != nil {
 		return err
 	}
@@ -174,36 +161,31 @@ func (c *Client) createOpen(size int64) (path string, fid, devid int64, err erro
 
 func (c *Client) write(path string, size int64, r io.Reader) (int64, error) {
 	c.log.Debugln("client chunk size:", c.config.ChunkSize)
-	var offset, n int64
-	buf := make([]byte, 32*1024)
-	for {
-		chunkReader := io.LimitReader(r, int64(c.config.ChunkSize))
-		m, err := io.ReadFull(chunkReader, buf)
-		c.log.Debugln("read", m, "bytes", "err:", err)
-		offset = n
-		n += int64(m)
-		switch err {
-		case nil, io.ErrUnexpectedEOF:
-		case io.EOF:
-			return n, nil
-		default:
-			return n, err
-		}
-		req, err := http.NewRequest(http.MethodPatch, path, bytes.NewReader(buf[:m]))
+	rc := newReadCounter(r)
+	for i := 0; ; i++ {
+		c.log.Debugf("sending chunk #%d", i)
+		chunkReader := io.LimitReader(rc, int64(c.config.ChunkSize))
+		req, err := http.NewRequest(http.MethodPatch, path, chunkReader)
 		if err != nil {
-			return n, err
+			return rc.Count(), err
 		}
-		req.Header.Add("content-length", strconv.Itoa(m))
+		offset := rc.Count()
+		c.log.Debugln("sending file from offset:", offset)
 		req.Header.Add("efes-file-offset", strconv.FormatInt(offset, 10))
 		if size > -1 {
 			req.Header.Add("efes-file-length", strconv.FormatInt(size, 10))
 		}
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
-			return n, err
+			return rc.Count(), err
 		}
-		if resp.StatusCode != http.StatusOK {
-			return n, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		err = checkResponseError(resp, http.StatusOK)
+		if err != nil {
+			return rc.Count(), err
+		}
+		if size > -1 && rc.Count() >= size {
+			// EOF is reached. Do not make a new PATCH request with empty body.
+			return rc.Count(), nil
 		}
 	}
 }
@@ -217,16 +199,34 @@ func (c *Client) createClose(key string, size, fid, devid int64) error {
 	return c.request(http.MethodPost, "create-close", form, http.StatusOK, nil)
 }
 
+// Delete the key on Efes.
 func (c *Client) Delete(key string) error {
 	form := url.Values{}
 	form.Add("key", key)
 	return c.request(http.MethodPost, "delete", form, http.StatusOK, nil)
 }
 
+// Exist checks the existing of a key on Efes.
 func (c *Client) Exist(key string) (bool, error) {
 	paths, err := c.getPaths(key)
 	if err != nil {
 		return false, err
 	}
 	return len(paths) > 0, nil
+}
+
+func checkResponseError(resp *http.Response, statusCode int) error {
+	if resp.StatusCode >= 500 {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("server error (%d): %s", resp.StatusCode, string(body))
+	}
+	if resp.StatusCode >= 400 {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("client error (%d): %s", resp.StatusCode, string(body))
+	}
+	if resp.StatusCode != statusCode {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
+	}
+	return nil
 }
