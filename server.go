@@ -168,6 +168,7 @@ func (s *Server) updateDiskStats() {
 			}
 		case <-s.shutdown:
 			close(s.diskCleanStopped)
+			close(s.diskStatsStopped)
 			return
 		}
 	}
@@ -205,8 +206,7 @@ func (s *Server) getDiskUtilization(iostat *IOStat) (utilization sql.NullInt64) 
 }
 
 func (s *Server) cleanDisk() {
-	// TODO: Get period from config
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(time.Duration(s.config.Server.CleanDiskRunPeriod) * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -280,8 +280,7 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 		return nil
 	}
 	if !existsOnDB {
-		// TODO: Move constant to config file
-		allowedDuration := time.Now().Add(time.Duration(-s.config.Server.CleanDiskPeriod) * time.Second)
+		allowedDuration := time.Now().Add(time.Duration(-s.config.Server.CleanDiskFileTTL) * time.Second)
 		if f.ModTime().Sub(allowedDuration).Seconds() > 0 {
 			s.log.Info("File %i is new. The copying might be still going on. Not deleting..", fileID)
 		} else {
