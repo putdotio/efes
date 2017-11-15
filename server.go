@@ -167,7 +167,6 @@ func (s *Server) updateDiskStats() {
 				continue
 			}
 		case <-s.shutdown:
-			close(s.diskCleanStopped)
 			close(s.diskStatsStopped)
 			return
 		}
@@ -211,7 +210,6 @@ func (s *Server) cleanDisk() {
 	for {
 		select {
 		case <-ticker.C:
-			fmt.Println("murat")
 			s.removeUnusedFids(s.dir)
 		case <-s.shutdown:
 			close(s.diskCleanStopped)
