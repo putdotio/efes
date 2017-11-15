@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -262,32 +263,36 @@ func (s *Server) removeUnusedFids(root string) {
 }
 
 func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
-	if filepath.Ext(path) != ".fid" {
-		return nil
-	}
-	// Example file name: 0000000789.fid
-	fileName := strings.Split(f.Name(), ".")
-	fileID, err := strconv.ParseInt(strings.TrimLeft(fileName[0], "0,"), 10, 64)
-	if err != nil {
-		s.log.Error("Can not parse file name ", err)
-		return nil
-	}
-	existsOnDB, err := s.fidExistsOnDatabase(fileID)
-	if err != nil {
-		s.log.Error("Can not querying database ", err)
-		return nil
-	}
-	if !existsOnDB {
-		allowedDuration := time.Now().Add(time.Duration(-s.config.Server.CleanDiskFileTTL) * time.Second)
-		if f.ModTime().Sub(allowedDuration).Seconds() > 0 {
-			s.log.Info("File %i is new. The copying might be still going on. Not deleting..", fileID)
-		} else {
-			// TODO: Add delete logic.
-			// TODO: Add file size to log
-			s.log.Info("File %i is too old and there is no record on DB for it. Deleting...", fileID)
+	select {
+	case <-s.shutdown:
+		return io.EOF
+	default:
+		if filepath.Ext(path) != ".fid" {
+			return nil
 		}
-
+		// Example file name: 0000000789.fid
+		fileName := strings.Split(f.Name(), ".")
+		fileID, err := strconv.ParseInt(strings.TrimLeft(fileName[0], "0,"), 10, 64)
+		if err != nil {
+			s.log.Error("Can not parse file name ", err)
+			return nil
+		}
+		existsOnDB, err := s.fidExistsOnDatabase(fileID)
+		if err != nil {
+			s.log.Error("Can not querying database ", err)
+			return nil
+		}
+		if !existsOnDB {
+			allowedDuration := time.Now().Add(time.Duration(-s.config.Server.CleanDiskFileTTL) * time.Second)
+			if f.ModTime().Sub(allowedDuration).Seconds() > 0 {
+				s.log.Info("File %i is new. The copying might be still going on. Not deleting..", fileID)
+			} else {
+				// TODO: Add delete logic.
+				// TODO: Add file size to log
+				s.log.Infof("File %d is too old and there is no record on DB for it. Deleting...", fileID)
+			}
+		}
+		return nil
 	}
-	return nil
 
 }
