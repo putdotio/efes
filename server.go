@@ -262,6 +262,23 @@ func (s *Server) removeUnusedFids(root string) {
 
 }
 
+func (s *Server) shouldDeleteFile(fileID int64, fileModtime time.Time) (bool, error) {
+	existsOnDB, err := s.fidExistsOnDatabase(fileID)
+	if err != nil {
+		s.log.Error("Can not querying database ", err)
+		return false, nil
+	}
+	if existsOnDB {
+		return false, nil
+	}
+	if int64(time.Now().Sub(fileModtime).Seconds()) < s.config.Server.CleanDiskFileTTL {
+		s.log.Info("File %i is new. The copying might be still going on. Not deleting..", fileID)
+		return false, nil
+	}
+	return true, nil
+
+}
+
 func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 	select {
 	case <-s.shutdown:
@@ -277,22 +294,16 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 			s.log.Error("Can not parse file name ", err)
 			return nil
 		}
-		existsOnDB, err := s.fidExistsOnDatabase(fileID)
+		delete, err := s.shouldDeleteFile(fileID, f.ModTime())
 		if err != nil {
-			s.log.Error("Can not querying database ", err)
+			s.log.Error("Error during find out whether file should be deleted ", err)
 			return nil
 		}
-		if !existsOnDB {
-			allowedDuration := time.Now().Add(time.Duration(-s.config.Server.CleanDiskFileTTL) * time.Second)
-			if f.ModTime().Sub(allowedDuration).Seconds() > 0 {
-				s.log.Info("File %i is new. The copying might be still going on. Not deleting..", fileID)
-			} else {
-				// TODO: Add delete logic.
-				// TODO: Add file size to log
-				s.log.Infof("File %d is too old and there is no record on DB for it. Deleting...", fileID)
-			}
+		if delete {
+			// TODO: Add delete logic.
+			s.log.Info("File %i is too old and there is no record on DB for it. Deleting...", fileID)
+			return nil
 		}
-		return nil
 	}
-
+	return nil
 }
