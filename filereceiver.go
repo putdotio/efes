@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -13,7 +14,6 @@ import (
 )
 
 var (
-	errOffset   = errors.New("offset mismatch")
 	errNotExist = errors.New("not valid upload")
 )
 
@@ -72,8 +72,13 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		err = saveFile(path, offset, length, r.Body)
-		if err == errOffset || err == errNotExist {
-			http.Error(w, "offset mismatch", http.StatusPreconditionFailed)
+		if oerr, ok := err.(*OffsetMismatchError); ok {
+			// Cannot use http.Error() because we want to set "efes-file-offset" header.
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			w.Header().Set("efes-file-offset", strconv.FormatInt(oerr.Required, 10))
+			w.WriteHeader(http.StatusConflict)
+			fmt.Fprintln(w, oerr.Error())
 			return
 		}
 		if err != nil {
@@ -139,11 +144,14 @@ func saveFile(path string, offset int64, length int64, r io.Reader) error {
 		}
 	} else {
 		fileOffset, err := getOffset(path)
+		if err == errNotExist {
+			return &OffsetMismatchError{offset, 0}
+		}
 		if err != nil {
 			return err
 		}
 		if offset != fileOffset {
-			return errOffset
+			return &OffsetMismatchError{offset, fileOffset}
 		}
 	}
 	f, err := os.OpenFile(path, os.O_WRONLY, 0600)
@@ -181,4 +189,13 @@ func deleteOffset(path string) error {
 		return errNotExist
 	}
 	return err
+}
+
+// OffsetMismatchError is returned when the offset specified in request does not match the actual offset on the disk.
+type OffsetMismatchError struct {
+	Given, Required int64
+}
+
+func (e *OffsetMismatchError) Error() string {
+	return fmt.Sprintf("given offset (%d) does not match required offset (%d)", e.Given, e.Required)
 }

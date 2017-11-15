@@ -25,7 +25,7 @@ func createTempfile(t *testing.T, content string) string {
 
 func TestClient(t *testing.T) {
 	const chunkSize = 2
-	content := "123" // a string length of 3 for testing chunk size of 2
+	content := "12345" // a string length of 5 for testing chunk size of 2
 	source := createTempfile(t, content)
 	defer os.Remove(source)
 

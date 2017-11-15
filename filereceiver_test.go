@@ -95,8 +95,8 @@ func TestFileReceiverInvalidOffset(t *testing.T) {
 	req.Header.Set("efes-file-offset", "1")
 	rr := httptest.NewRecorder()
 	fr.ServeHTTP(rr, req)
-	if status := rr.Code; status != http.StatusPreconditionFailed {
-		t.Logf("handler returned wrong status code: got %v want %v", status, http.StatusPreconditionFailed)
+	if status := rr.Code; status != http.StatusConflict {
+		t.Logf("handler returned wrong status code: got %v want %v", status, http.StatusConflict)
 		t.Fatal(rr.Body.String())
 	}
 }
