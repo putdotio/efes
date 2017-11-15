@@ -29,11 +29,15 @@ type HTTPError struct {
 }
 
 func newHTTPError(resp *http.Response) *HTTPError {
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	message := string(body)
+	if err != nil {
+		message = "incomplete: " + message
+	}
 	return &HTTPError{
 		Code:    resp.StatusCode,
 		Header:  resp.Header,
-		Message: string(body),
+		Message: message,
 	}
 }
 

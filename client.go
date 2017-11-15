@@ -190,7 +190,8 @@ func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
 			if cerr.Code == http.StatusConflict {
 				actualOffsetString := cerr.Header.Get("efes-file-offset")
 				if actualOffsetString != "" {
-					actualOffset, err := strconv.ParseInt(actualOffsetString, 10, 64)
+					var actualOffset int64
+					actualOffset, err = strconv.ParseInt(actualOffsetString, 10, 64)
 					if err != nil {
 						c.log.Errorln("got invalid offset from server:", actualOffsetString)
 						return offset, err

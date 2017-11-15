@@ -78,7 +78,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			w.Header().Set("efes-file-offset", strconv.FormatInt(oerr.Required, 10))
 			w.WriteHeader(http.StatusConflict)
-			fmt.Fprintln(w, oerr.Error())
+			fmt.Fprint(w, oerr.Error()) // nolint: gas
 			return
 		}
 		if err != nil {
