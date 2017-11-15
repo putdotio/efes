@@ -57,6 +57,8 @@ var defaultConfig = Config{
 		ListenAddress:        "0.0.0.0:8501",
 		ListenAddressForRead: "0.0.0.0:8500",
 		ShutdownTimeout:      10000,
+		CleanDiskFileTTL:     43200,
+		CleanDiskRunPeriod:   259200,
 	},
 	Client: ClientConfig{
 		TrackerURL:   "http://127.0.0.1:8001",
