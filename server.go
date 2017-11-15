@@ -169,6 +169,7 @@ func (s *Server) updateDiskStats() {
 			}
 		case <-s.shutdown:
 			close(s.diskCleanStopped)
+			close(s.diskStatsStopped)
 			return
 		}
 	}
