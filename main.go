@@ -170,6 +170,35 @@ func main() {
 				},
 			},
 		},
+		{
+			Name:   "ready",
+			Hidden: true,
+			Flags: []cli.Flag{
+				cli.DurationFlag{
+					Name:  "timeout",
+					Value: 10 * time.Second,
+				},
+			},
+			Subcommands: []cli.Command{
+				{
+					Name: "mysql",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name: "exec",
+						},
+					},
+					Action: func(c *cli.Context) error {
+						return readyMysql(cfg.Database, c.Parent().Duration("timeout"), c.String("exec"))
+					},
+				},
+				{
+					Name: "rabbitmq",
+					Action: func(c *cli.Context) error {
+						return readyRabbitmq(cfg.AMQP, c.Parent().Duration("timeout"))
+					},
+				},
+			},
+		},
 	}
 	err := app.Run(os.Args)
 	if err != nil {

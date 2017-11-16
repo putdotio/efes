@@ -1,4 +1,5 @@
 FROM efes
-EXPOSE 8001
+ADD docker-run-tracker.sh /root/run-tracker.sh
 ADD config-docker.toml /etc/efes.toml
-ENTRYPOINT ["efes", "tracker"]
+ENTRYPOINT ["/bin/bash", "/root/run-tracker.sh"]
+EXPOSE 8001
