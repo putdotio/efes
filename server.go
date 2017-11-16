@@ -206,12 +206,12 @@ func (s *Server) getDiskUtilization(iostat *IOStat) (utilization sql.NullInt64) 
 }
 
 func (s *Server) cleanDisk() {
+	var lastDiskCleanTime string
 	ticker := time.NewTicker(time.Minute * 1)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			var lastDiskCleanTime string
 			row := s.db.QueryRow("select last_disk_clean_time from device where devid=?", s.devid)
 			err := row.Scan(&lastDiskCleanTime)
 			if err != nil {
@@ -227,7 +227,7 @@ func (s *Server) cleanDisk() {
 			if int64(time.Now().Sub(t).Seconds()) < s.config.Server.CleanDiskRunPeriod {
 				continue
 			}
-			s.log.Debug("Updating last_disk_clean_time on db..")
+			s.log.Debug("Updating disk clean time on db..")
 			_, err = s.db.Exec("update device set last_disk_clean_time=current_timestamp where devid=?", s.devid)
 			if err != nil {
 				s.log.Error("Error during updating last disk clean time", err)
