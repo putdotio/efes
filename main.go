@@ -34,9 +34,12 @@ func main() {
 			EnvVar: "EFES_CONFIG",
 		},
 		cli.BoolFlag{
-			Name:   "debug, d",
-			Usage:  "enable debug log",
-			EnvVar: "EFES_DEBUG",
+			Name:  "debug, d",
+			Usage: "enable debug log",
+		},
+		cli.BoolFlag{
+			Name:  "no-debug, D",
+			Usage: "disable debug log",
 		},
 	}
 	app.Before = func(c *cli.Context) error {
@@ -46,7 +49,10 @@ func main() {
 			log.Warningln("Cannot read config:", err)
 		}
 		if c.IsSet("debug") {
-			cfg.Debug = c.GlobalBool("debug")
+			cfg.Debug = true
+		}
+		if c.IsSet("no-debug") {
+			cfg.Debug = false
 		}
 		return nil
 	}
