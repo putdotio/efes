@@ -51,7 +51,6 @@ func TestShouldDeleteFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Add to database first
 	cleanDatabase(t, s.db)
 	// Insert into file table
 	_, err = s.db.Exec("insert into file(fid, dmid, classid, devcount) values(1, 1, 1, 1)")

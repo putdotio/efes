@@ -240,7 +240,7 @@ func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 	err = row.Scan(&fid)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.log.Debug("No record on tempfile table for fid", fileID)
+			s.log.Debug("No record on tempfile table for fid ", fileID)
 			existTempFile = false
 		} else {
 			s.log.Error("Error after querying tempfile table ", err)
@@ -272,7 +272,6 @@ func (s *Server) shouldDeleteFile(fileID int64, fileModtime time.Time) (bool, er
 		return false, nil
 	}
 	if int64(time.Now().Sub(fileModtime).Seconds()) < s.config.Server.CleanDiskFileTTL {
-		s.log.Info("File %i is new. The copying might be still going on. Not deleting..", fileID)
 		return false, nil
 	}
 	return true, nil
@@ -301,7 +300,7 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 		}
 		if delete {
 			// TODO: Add delete logic.
-			s.log.Info("File %i is too old and there is no record on DB for it. Deleting...", fileID)
+			s.log.Infof("Fid %d is too old and there is no record on DB for it. Deleting...", fileID)
 			return nil
 		}
 	}
