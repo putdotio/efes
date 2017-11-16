@@ -8,6 +8,7 @@ CREATE TABLE `device` (
   `mb_used` int(10) unsigned DEFAULT NULL,
   `io_utilization` tinyint(3) unsigned DEFAULT NULL,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_disk_clean_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`devid`),
   KEY `status` (`status`)
 ) ENGINE=InnoDB;
