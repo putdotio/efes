@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"os"
 	"testing"
 	"time"
 )
@@ -16,25 +15,10 @@ func cleanDatabase(t *testing.T, db *sql.DB) {
 			t.Fatal(err)
 		}
 	}
-	err := os.RemoveAll("/srv/efes/dev1")
-	if err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestFidExistsOnDatabase(t *testing.T) {
-	dataDir := "/srv/efes/dev1"
-	err := os.MkdirAll(dataDir, 666)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = os.MkdirAll(dataDir, 0700)
-	if err != nil {
-		t.Fatal(err)
-	}
-	testConfig.Server.DataDir = dataDir
 	s, err := NewServer(testConfig)
-	s.config.Server.DataDir = dataDir
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,27 +45,13 @@ func TestFidExistsOnDatabase(t *testing.T) {
 }
 
 func TestShouldDeleteFile(t *testing.T) {
-	// Create file on disk
-	dataDir := "/srv/efes/dev1"
-	err := os.MkdirAll(dataDir, 666)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = os.Create("/srv/efes/dev1/1.fid")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	testConfig.Server.DataDir = dataDir
 	testConfig.Server.CleanDiskFileTTL = 300
 	s, err := NewServer(testConfig)
-	s.config.Server.DataDir = dataDir
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Add to database first
-
 	cleanDatabase(t, s.db)
 	// Insert into file table
 	_, err = s.db.Exec("insert into file(fid, dmid, classid, devcount) values(1, 1, 1, 1)")
