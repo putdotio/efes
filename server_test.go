@@ -15,8 +15,7 @@ func setupServer(t *testing.T, fileID int64) *Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Insert into tempfile table
-	_, err = s.db.Exec("insert into tempfile(fid, createtime, classid, dmid) values(1, 1501245392, 1, 1)")
+	_, err = s.db.Exec("insert into tempfile(fid, createtime, classid, dmid) values(?, 1501245392, 1, 1)", fileID)
 	if err != nil {
 		t.Fatal(err)
 	}
