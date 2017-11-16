@@ -48,7 +48,7 @@ func TestShouldDeleteFileExistsOnDbNewOnDisk(t *testing.T) {
 	}
 
 	if res {
-		t.Error("File exists on database but return not-exists!")
+		t.Error("File exists on database && new on disk but returned true to delete!")
 	}
 
 }
@@ -63,7 +63,7 @@ func TestShouldDeleteFileExistsOnDbOldOnDisk(t *testing.T) {
 	}
 
 	if res {
-		t.Error("File exists on database but return not-exists!")
+		t.Error("File exists on database && old on disk but returned true to delete!")
 	}
 }
 func TestShouldDeleteFileNotExistsOnDbNewOnDisk(t *testing.T) {
@@ -77,7 +77,7 @@ func TestShouldDeleteFileNotExistsOnDbNewOnDisk(t *testing.T) {
 	}
 
 	if res {
-		t.Error("File exists on database but return not-exists!")
+		t.Error("File exists on database && new on disk but returned true to delete!")
 	}
 }
 func TestShouldDeleteFileNotExistsOnDbOldOnDisk(t *testing.T) {
