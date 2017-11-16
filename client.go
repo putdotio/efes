@@ -208,7 +208,7 @@ func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
 			return offset, cerr
 		}
 		if err != nil {
-			c.log.Errorln("error while sending the stream:", err)
+			c.log.Errorln("error while sending the file:", err)
 			continue
 		}
 		return offset, nil
