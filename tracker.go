@@ -177,13 +177,14 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		size /= M
 	}
 	res, err := t.db.Exec("insert into tempfile(createtime, classid, dmid) values(?, ?, ?)", time.Now().UTC().Unix(), classid, dmid)
 	if err != nil {
 		t.internalServerError("cannot insert tempfile", err, r, w)
 		return
 	}
-	rows, err := t.db.Query("select h.hostip, d.write_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size)
+	rows, err := t.db.Query("select h.hostip, d.write_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size+1)
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
