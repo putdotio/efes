@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -28,16 +27,6 @@ func TestPing(t *testing.T) {
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)
-	}
-}
-
-func cleanDB(t *testing.T, db *sql.DB) {
-	tables := []string{"file", "file_on", "tempfile", "device", "host"}
-	for _, table := range tables {
-		_, err := db.Exec("truncate table " + table)
-		if err != nil {
-			t.Fatal(err)
-		}
 	}
 }
 

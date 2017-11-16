@@ -1,28 +1,16 @@
 package main
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 )
-
-// TODO: Duplicate with tracker test
-func cleanDatabase(t *testing.T, db *sql.DB) {
-	tables := []string{"file", "file_on", "tempfile", "device", "host"}
-	for _, table := range tables {
-		_, err := db.Exec("truncate table " + table)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-}
 
 func TestFidExistsOnDatabase(t *testing.T) {
 	s, err := NewServer(testConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cleanDatabase(t, s.db)
+	cleanDB(t, s.db)
 	// Insert into file table
 	_, err = s.db.Exec("insert into file(fid, dmid, classid, devcount) values(1, 1, 1, 1)")
 	if err != nil {
@@ -51,7 +39,7 @@ func TestShouldDeleteFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cleanDatabase(t, s.db)
+	cleanDB(t, s.db)
 	// Insert into file table
 	_, err = s.db.Exec("insert into file(fid, dmid, classid, devcount) values(1, 1, 1, 1)")
 	if err != nil {
