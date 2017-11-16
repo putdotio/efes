@@ -26,6 +26,12 @@
   revision = "a6cc66445f9211e313b633cff591883030fac97a"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/dustin/go-humanize"
+  packages = ["."]
+  revision = "bb3d318650d48840a39aa21a027c6630e198e626"
+
+[[projects]]
   name = "github.com/go-ole/go-ole"
   packages = [".","oleutil"]
   revision = "0e87ea779d9deb219633b828a023b32e1244dd57"
@@ -82,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "eb81223bc5a7a40308e92f006aa8e48b4b178545e76a8ba158077ed2cbe0e8ab"
+  inputs-digest = "e2f84cc4d32e208cf516e908cef71673c14e82972a716161034522c01467697d"
   solver-name = "gps-cdcl"
   solver-version = 1

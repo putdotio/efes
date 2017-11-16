@@ -55,21 +55,45 @@ func (c *Client) Read(key, path string) error {
 	if err != nil {
 		return err
 	}
-	var f *os.File
+	var w io.Writer
+	var cl io.Closer
 	if path == "-" {
-		f = os.Stdout
+		w = os.Stdout
+		cl = os.Stdout
 	} else {
-		f, err = os.Create(path)
+		f, err := os.Create(path)
 		if err != nil {
 			return err
 		}
+		defer f.Close()
+		w = f
+		cl = f
+		if c.config.ShowProgress {
+			size := c.getContentLength(resp)
+			p := newWriteProgress(f, size)
+			defer p.Close()
+			w = p
+		}
 	}
-	_, err = io.Copy(f, resp.Body)
+	_, err = io.Copy(w, resp.Body)
 	if err != nil {
-		_ = f.Close()
 		return err
 	}
-	return f.Close()
+	return cl.Close()
+}
+
+func (c *Client) getContentLength(resp *http.Response) int64 {
+	contentLengthHeader := resp.Header.Get("Content-Length")
+	if contentLengthHeader == "" {
+		c.log.Warning("server sent no conent-length header")
+		return -1
+	}
+	contentLength, err := strconv.ParseInt(contentLengthHeader, 10, 64)
+	if err != nil {
+		c.log.Errorln("cannot parse content-length header:", err.Error())
+		return -1
+	}
+	return contentLength
 }
 
 func (c *Client) getPaths(key string) ([]string, error) {
@@ -166,6 +190,11 @@ func (c *Client) writeFile(key, path string, f *os.File) error {
 
 func (c *Client) sendReader(path string, r io.Reader) (int64, error) {
 	var offset int64
+	if c.config.ShowProgress {
+		p := newReadProgress(r, -1)
+		defer p.Close()
+		r = p
+	}
 	for {
 		n, err := c.send(path, r, offset, -1)
 		offset += n
@@ -182,8 +211,16 @@ func (c *Client) sendReader(path string, r io.Reader) (int64, error) {
 
 func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
 	var offset int64
+	var r io.Reader
+	if c.config.ShowProgress {
+		p := newReadProgress(f, size)
+		defer p.Close()
+		r = p
+	} else {
+		r = f
+	}
 	for {
-		n, err := c.send(path, f, offset, size)
+		n, err := c.send(path, r, offset, size)
 		offset += n
 		if cerr, ok := err.(*ClientError); ok {
 			// Get the offset from server and try again.
