@@ -41,10 +41,7 @@ func TestShouldDeleteFileExistsOnDbNewOnDisk(t *testing.T) {
 	s := setupServer(t, 1)
 
 	modTime := time.Now().Add(-time.Duration(200 * time.Second))
-	res, err := s.shouldDeleteFile(1, modTime)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := s.shouldDeleteFile(1, modTime)
 
 	if res {
 		t.Error("File exists on database && new on disk but returned true to delete!")
@@ -56,10 +53,7 @@ func TestShouldDeleteFileExistsOnDbOldOnDisk(t *testing.T) {
 	s := setupServer(t, 1)
 
 	modTime := time.Now().Add(-time.Duration(400 * time.Second))
-	res, err := s.shouldDeleteFile(1, modTime)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := s.shouldDeleteFile(1, modTime)
 
 	if res {
 		t.Error("File exists on database && old on disk but returned true to delete!")
@@ -70,10 +64,7 @@ func TestShouldDeleteFileNotExistsOnDbNewOnDisk(t *testing.T) {
 	s := setupServer(t, 1)
 
 	modTime := time.Now().Add(-time.Duration(200 * time.Second))
-	res, err := s.shouldDeleteFile(2, modTime)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := s.shouldDeleteFile(2, modTime)
 
 	if res {
 		t.Error("File exists on database && new on disk but returned true to delete!")
@@ -84,10 +75,7 @@ func TestShouldDeleteFileNotExistsOnDbOldOnDisk(t *testing.T) {
 	s := setupServer(t, 1)
 
 	modTime := time.Now().Add(-time.Duration(400 * time.Second))
-	res, err := s.shouldDeleteFile(2, modTime)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := s.shouldDeleteFile(2, modTime)
 
 	if !res {
 		t.Error("File should be deleted but returned not to!")

@@ -282,19 +282,19 @@ func (s *Server) removeUnusedFids(root string) {
 
 }
 
-func (s *Server) shouldDeleteFile(fileID int64, fileModtime time.Time) (bool, error) {
+func (s *Server) shouldDeleteFile(fileID int64, fileModtime time.Time) bool {
 	existsOnDB, err := s.fidExistsOnDatabase(fileID)
 	if err != nil {
 		s.log.Error("Can not querying database ", err)
-		return false, nil
+		return false
 	}
 	if existsOnDB {
-		return false, nil
+		return false
 	}
 	if int64(time.Now().Sub(fileModtime).Seconds()) < s.config.Server.CleanDiskFileTTL {
-		return false, nil
+		return false
 	}
-	return true, nil
+	return true
 
 }
 
@@ -313,12 +313,7 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 			s.log.Error("Can not parse file name ", err)
 			return nil
 		}
-		delete, err := s.shouldDeleteFile(fileID, f.ModTime())
-		if err != nil {
-			s.log.Error("Error during find out whether file should be deleted ", err)
-			return nil
-		}
-		if delete {
+		if s.shouldDeleteFile(fileID, f.ModTime()) {
 			// TODO: Add delete logic.
 			s.log.Infof("Fid %d is too old and there is no record on DB for it. Deleting...", fileID)
 			return nil
