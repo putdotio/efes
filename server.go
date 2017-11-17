@@ -269,10 +269,7 @@ func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 			return true, err
 		}
 	}
-	if existFile == false && existTempFile == false {
-		return false, nil
-	}
-	return true, nil
+	return existFile || existTempFile, nil
 
 }
 
