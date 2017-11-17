@@ -16,6 +16,7 @@ import (
 
 	"github.com/cenkalti/log"
 	"github.com/shirou/gopsutil/disk"
+	"github.com/streadway/amqp"
 )
 
 // Server runs on storage servers.
@@ -84,6 +85,7 @@ func (s *Server) Run() error {
 	}
 	go s.cleanDisk()
 	go s.updateDiskStats()
+	go s.consumeDeleteQueue()
 	s.log.Notice("Server is started.")
 	errCh := make(chan error, 2)
 	go func() {
@@ -304,8 +306,146 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 		if s.shouldDeleteFile(fileID, f.ModTime()) {
 			// TODO: Add delete logic.
 			s.log.Infof("Fid %d is too old and there is no record on DB for it. Deleting...", fileID)
+			s.publishDeleteTask(path)
 			return nil
 		}
 	}
 	return nil
+}
+
+func (s *Server) publishDeleteTask(fidPath string) {
+	conn, ok := <-s.amqp.Conn()
+	if !ok {
+		s.log.Infof("Failed to create connection")
+		return
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		s.log.Infof("Failed to open a channel for publishing delete task.", err)
+		return
+	}
+
+	q, err := ch.QueueDeclare(
+		"clean_disk", // name
+		false,        // durable
+		false,        // delete when unused
+		false,        // exclusive
+		false,        // no-wait
+		nil,          // arguments
+	)
+	if err != nil {
+		s.log.Infof("Failed to declare a queue", err)
+		return
+	}
+
+	err = ch.Publish(
+		"",     // exchange
+		q.Name, // routing key
+		false,  // mandatory
+		false,  // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(fidPath),
+		})
+	if err != nil {
+		s.log.Infof("Failed to publish a message", err)
+		return
+	}
+
+}
+
+func (s *Server) consumeDeleteQueue() {
+	// TODO: Add waitgroup for consuming channel.
+	s.log.Debug("Starting delete queue consumer..")
+	for {
+		// TODO: Close connection
+		conn, ok := <-s.amqp.Conn()
+		if !ok {
+			s.log.Error("Failed to create amqp connection")
+			continue
+		}
+		// TODO: Use select statement for consuming tasks
+		select {
+		case <-s.shutdown:
+			s.log.Noticef("Consumer has been stopped on delete_task queue.")
+			return
+		default:
+		}
+
+		ch, err := conn.Channel()
+		if err != nil {
+			s.log.Infof("Failed to open a channel for consuming delete task.", err)
+			continue
+		}
+		q, err := ch.QueueDeclare(
+			"clean_disk", // name
+			false,        // durable
+			false,        // delete when unused
+			false,        // exclusive
+			false,        // no-wait
+			nil,          // arguments
+		)
+		if err != nil {
+			s.log.Infof("Failed to declare a queue", err)
+			continue
+		}
+		hostname, err := os.Hostname()
+		if err != nil {
+			s.log.Infof("Failed to get host name", err)
+			continue
+		}
+		pid := os.Getpid()
+		consumerTag := "efes-delete-worker:" + strconv.Itoa(pid) + "@" + hostname + "/" + strconv.FormatUint(s.devid, 10)
+		messages, err := ch.Consume(
+			q.Name,      // queue
+			consumerTag, // consumer
+			false,       // auto-ack
+			false,       // exclusive
+			false,       // no-local
+			false,       // no-wait
+			nil,         // args
+		)
+		for msg := range messages {
+			// TODO: Should we count&store failure count and give up after a certain amount?
+			go func(msg amqp.Delivery) {
+				err := s.deleteFidOnDisk(string(msg.Body))
+				if err != nil {
+					if err := msg.Nack(false, true); err != nil {
+						s.log.Errorf("NACK error: %s", err)
+					}
+				}
+				err = msg.Ack(false)
+				if err != nil {
+					s.log.Errorf("ACK error: %s", err)
+				}
+			}(msg)
+
+		}
+
+		if err != nil {
+			s.log.Error("Failed to publish a message", err)
+			continue
+		}
+
+	}
+}
+
+func (s *Server) deleteFidOnDisk(path string) error {
+	s.log.Debug("Deleting path on disk ", path)
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		s.log.Debugf("File %s does not exist on disk.", path)
+		return nil
+	}
+	err := os.Remove(path)
+
+	if err != nil {
+		s.log.Errorf("Failed to delete path %s on disk %s", path, err)
+		return err
+	}
+	s.log.Debugf("Path %s deleted. ", path)
+	return nil
+
 }
