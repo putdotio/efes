@@ -246,7 +246,6 @@ func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 	err := row.Scan(&fid)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.log.Debug("No record on file table for fid ", fileID)
 			existFile = false
 		} else {
 			s.log.Error("Error after querying file table ", err)
@@ -258,7 +257,6 @@ func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 	err = row.Scan(&fid)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.log.Debug("No record on tempfile table for fid ", fileID)
 			existTempFile = false
 		} else {
 			s.log.Error("Error after querying tempfile table ", err)
