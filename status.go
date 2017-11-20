@@ -79,6 +79,7 @@ func (s *efesStatus) Print() {
 	// Setup table
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetBorder(false)
+	table.SetFooterAlignment(tablewriter.ALIGN_RIGHT)
 	table.SetHeader([]string{
 		"Host",
 		"Device",
