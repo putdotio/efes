@@ -287,11 +287,8 @@ func (s *Server) shouldDeleteFile(fileID int64, fileModtime time.Time) bool {
 	if existsOnDB {
 		return false
 	}
-	if int64(time.Now().Sub(fileModtime).Seconds()) < s.config.Server.CleanDiskFileTTL {
-		return false
-	}
-	return true
-
+	ttl := time.Duration(s.config.Server.CleanDiskFileTTL) * time.Second
+	return time.Now().Sub(fileModtime) > ttl
 }
 
 func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
