@@ -16,7 +16,7 @@ import (
 
 // Client is for reading and writing files on Efes.
 type Client struct {
-	config     ClientConfig
+	config     *Config
 	log        log.Logger
 	trackerURL *url.URL
 	httpClient http.Client
@@ -33,7 +33,7 @@ func NewClient(c *Config) (*Client, error) {
 		logger.SetLevel(log.DEBUG)
 	}
 	return &Client{
-		config:     c.Client,
+		config:     c,
 		trackerURL: u,
 		log:        logger,
 	}, nil
@@ -68,7 +68,7 @@ func (c *Client) Read(key, path string) error {
 		defer f.Close()
 		w = f
 		cl = f
-		if c.config.ShowProgress {
+		if c.config.Client.ShowProgress {
 			size := c.getContentLength(resp)
 			p := newWriteProgress(f, size)
 			defer p.Close()
@@ -190,7 +190,7 @@ func (c *Client) writeFile(key, path string, f *os.File) error {
 
 func (c *Client) sendReader(path string, r io.Reader) (int64, error) {
 	var offset int64
-	if c.config.ShowProgress {
+	if c.config.Client.ShowProgress {
 		p := newReadProgress(r, -1)
 		defer p.Close()
 		r = p
@@ -212,7 +212,7 @@ func (c *Client) sendReader(path string, r io.Reader) (int64, error) {
 func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
 	var offset int64
 	var r io.Reader
-	if c.config.ShowProgress {
+	if c.config.Client.ShowProgress {
 		p := newReadProgress(f, size)
 		defer p.Close()
 		r = p
@@ -254,12 +254,12 @@ func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
 
 // send a patch request until and error occurs or stream is finished
 func (c *Client) send(path string, r io.Reader, offset, size int64) (int64, error) {
-	c.log.Debugln("client chunk size:", c.config.ChunkSize)
+	c.log.Debugln("client chunk size:", c.config.Client.ChunkSize)
 	totalCounter := newReadCounter(r)
 	currentOffset := offset
 	for i := 0; ; i++ {
 		c.log.Debugf("sending chunk #%d from offset=%d", i, currentOffset)
-		chunkReader := io.LimitReader(totalCounter, int64(c.config.ChunkSize))
+		chunkReader := io.LimitReader(totalCounter, int64(c.config.Client.ChunkSize))
 		requestOffset := currentOffset
 		err := c.patch(path, chunkReader, requestOffset, size)
 		if err != nil {

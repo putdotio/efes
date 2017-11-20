@@ -168,6 +168,22 @@ func main() {
 						return nil
 					},
 				},
+				{
+					Name:  "status",
+					Usage: "show system status",
+					Action: func(c *cli.Context) error {
+						client, err := NewClient(cfg)
+						if err != nil {
+							return err
+						}
+						s, err := client.Status()
+						if err != nil {
+							return err
+						}
+						s.Print()
+						return nil
+					},
+				},
 			},
 		},
 		{

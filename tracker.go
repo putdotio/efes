@@ -388,7 +388,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 		var mbTotal sql.NullInt64
 		var mbUsed sql.NullInt64
 		var ioUtilization sql.NullInt64
-		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &mbTotal, &mbUsed, &d.MbAsof, &ioUtilization)
+		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &mbTotal, &mbUsed, &d.UpdatedAt, &ioUtilization)
 		if err != nil {
 			t.internalServerError("cannot scan rows", err, r, w)
 			return
