@@ -285,7 +285,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot insert or replace file", err, r, w)
 		return
 	}
-	_, err = tx.Exec("replace into file_on(fid, devid) values(?, ?)", fid, devid)
+	_, err = tx.Exec("insert into file_on(fid, devid) values(?, ?)", fid, devid)
 	if err != nil {
 		t.internalServerError("cannot insert file_on record", err, r, w)
 		return
