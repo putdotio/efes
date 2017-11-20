@@ -140,6 +140,9 @@ func (c *Client) Status() (*efesStatus, error) {
 		hostsByID[h.Hostid] = &h
 	}
 	for _, d := range devices.Devices {
+		if d.Status == "dead" {
+			continue
+		}
 		var hostname string
 		if h, ok := hostsByID[d.Hostid]; ok {
 			hostname = h.Hostname
