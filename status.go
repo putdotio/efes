@@ -136,9 +136,9 @@ func (c *Client) Status() (*efesStatus, error) {
 	if err != nil {
 		return nil, err
 	}
-	hostsByID := make(map[int64]*Host)
+	hostsByID := make(map[int64]Host)
 	for _, h := range hosts.Hosts {
-		hostsByID[h.Hostid] = &h
+		hostsByID[h.Hostid] = h
 	}
 	for _, d := range devices.Devices {
 		if d.Status == "dead" {
