@@ -38,12 +38,15 @@ func (c *Client) Read(key, path string) error {
 		defer f.Close()
 		w = f
 		cl = f
-		if c.config.Client.ShowProgress {
-			size := c.getContentLength(resp)
-			p := newWriteProgress(f, size)
-			defer p.Close()
-			w = p
+	}
+	if c.config.Client.ShowProgress {
+		var size int64 = -1
+		if path != "-" {
+			size = c.getContentLength(resp)
 		}
+		p := newWriteProgress(w, size)
+		defer p.Close()
+		w = p
 	}
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {

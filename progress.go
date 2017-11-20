@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -109,5 +110,5 @@ func (p *Progress) printSpeed(now time.Time) {
 		remainingTime = (totalTime - elapsedTime).String()
 	}
 
-	fmt.Printf("%s %s%% %s/s %s\n", humanize.Comma(count), percent, speed, remainingTime)
+	fmt.Fprintf(os.Stderr, "%s %s%% %s/s %s\n", humanize.Comma(count), percent, speed, remainingTime)
 }
