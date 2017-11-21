@@ -90,7 +90,7 @@ func (s *Server) Run() error {
 	}
 	go s.cleanDisk()
 	go s.updateDiskStats()
-	// go s.consumeDeleteQueue()
+	go s.consumeDeleteQueue()
 	s.log.Notice("Server is started.")
 	errCh := make(chan error, 2)
 	go func() {
@@ -109,7 +109,6 @@ func (s *Server) Run() error {
 	}()
 	go func() {
 		s.amqp.Run()
-		close(s.amqpRedialerStopped)
 	}()
 	go s.notifyReady()
 	err = <-errCh
@@ -158,12 +157,7 @@ func (s *Server) Shutdown() error {
 		s.log.Error("Error while closing database connection")
 		return err
 	}
-	err = s.amqp.Close()
-	if err != nil {
-		return err
-	}
 
-	<-s.amqpRedialerStopped
 	return nil
 }
 
@@ -334,7 +328,6 @@ func (s *Server) publishDeleteTask(fidPath string) {
 		s.log.Infof("Failed to create amqp connection for publishing delete task")
 		return
 	}
-	defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
@@ -384,7 +377,8 @@ func (s *Server) consumeDeleteQueue() {
 		// TODO: Use select statement for consuming tasks
 		select {
 		case <-s.shutdown:
-			s.log.Noticef("Consumer has been stopped on delete_task queue.")
+			close(s.amqpRedialerStopped)
+			s.log.Notice("AMQP connection is shutting down..")
 			return
 		default:
 		}
