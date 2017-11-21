@@ -13,7 +13,6 @@ import (
 
 type Drainer struct {
 	config   *Config
-	dir      string
 	devid    uint64
 	db       *sql.DB
 	client   *Client
@@ -45,7 +44,6 @@ func NewDrainer(c *Config) (*Drainer, error) {
 	logger := log.NewLogger("drain")
 	d := &Drainer{
 		config:   c,
-		dir:      c.Server.DataDir,
 		devid:    devid,
 		db:       db,
 		client:   clt,
@@ -104,7 +102,7 @@ func (d *Drainer) Run() error {
 func (d *Drainer) moveFile(fid int64) error {
 	sfid := fmt.Sprintf("%010d", fid)
 	fidpath := fmt.Sprintf("/%s/%s/%s/%s.fid", sfid[0:1], sfid[1:4], sfid[4:7], sfid)
-	fidpath = filepath.Join(d.dir, fidpath)
+	fidpath = filepath.Join(d.config.Server.DataDir, fidpath)
 
 	f, err := os.Open(fidpath)
 	if err != nil {
