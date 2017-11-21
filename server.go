@@ -20,8 +20,6 @@ import (
 	"github.com/streadway/amqp"
 )
 
-const cleanDiskQueue = "clean_disk_queue"
-
 // Server runs on storage servers.
 type Server struct {
 	config               *Config
@@ -337,13 +335,19 @@ func (s *Server) publishDeleteTask(fidPath string) {
 		return
 	}
 
+	queueName, err := s.getDeleteQueueName()
+	if err != nil {
+		s.log.Error("Failed to get queue name.", err)
+		return
+	}
+
 	q, err := ch.QueueDeclare(
-		cleanDiskQueue, // name
-		false,          // durable
-		false,          // delete when unused
-		false,          // exclusive
-		false,          // no-wait
-		nil,            // arguments
+		queueName, // name
+		false,     // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
 	)
 	if err != nil {
 		s.log.Infof("Failed to declare a queue", err)
@@ -369,11 +373,6 @@ func (s *Server) publishDeleteTask(fidPath string) {
 func (s *Server) consumeDeleteQueue() {
 	s.log.Debug("Starting delete queue consumer..")
 	for {
-		conn, ok := <-s.amqp.Conn()
-		if !ok {
-			s.log.Error("Failed to create amqp connection for consuming delete queue.")
-			continue
-		}
 		select {
 		case <-s.shutdown:
 			close(s.amqpRedialerStopped)
@@ -382,18 +381,28 @@ func (s *Server) consumeDeleteQueue() {
 		default:
 		}
 
+		conn, ok := <-s.amqp.Conn()
+		if !ok {
+			s.log.Error("Failed to create amqp connection for consuming delete queue.")
+			continue
+		}
 		ch, err := conn.Channel()
 		if err != nil {
-			s.log.Infof("Failed to open a channel for consuming delete task.", err)
+			s.log.Error("Failed to open a channel for consuming delete task.", err)
+			continue
+		}
+		queueName, err := s.getDeleteQueueName()
+		if err != nil {
+			s.log.Error("Failed to get queue name.", err)
 			continue
 		}
 		q, err := ch.QueueDeclare(
-			cleanDiskQueue, // name
-			false,          // durable
-			false,          // delete when unused
-			false,          // exclusive
-			false,          // no-wait
-			nil,            // arguments
+			queueName, // name
+			false,     // durable
+			false,     // delete when unused
+			false,     // exclusive
+			false,     // no-wait
+			nil,       // arguments
 		)
 		if err != nil {
 			s.log.Infof("Failed to declare a queue", err)
@@ -452,5 +461,16 @@ func (s *Server) deleteFidOnDisk(path string) error {
 	}
 	s.log.Debugf("Path %s deleted. ", path)
 	return nil
+
+}
+
+func (s *Server) getDeleteQueueName() (string, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		s.log.Error("Failed to get host name", err)
+		return "", err
+	}
+
+	return "clean_disk." + hostname, nil
 
 }
