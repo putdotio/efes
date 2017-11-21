@@ -187,6 +187,18 @@ func main() {
 			},
 		},
 		{
+			Name:  "drain",
+			Usage: "drain device by moving files to antoher server",
+			Action: func(c *cli.Context) error {
+				d, err := NewDrainer(cfg)
+				if err != nil {
+					return err
+				}
+				runUntilInterrupt(d)
+				return nil
+			},
+		},
+		{
 			Name:   "ready",
 			Hidden: true,
 			Flags: []cli.Flag{

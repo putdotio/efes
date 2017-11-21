@@ -7,12 +7,12 @@ build:
 
 up:
 	docker build -t $(NAME) -f Dockerfile .
-	docker-compose rm -f
+	docker-compose rm -fsv
 	docker-compose up --build
 
 test: export COMPOSE_PROJECT_NAME=$(NAME)test
 test:
-	docker-compose rm -f
+	docker-compose rm -fsv
 	docker-compose -f docker-compose-test.yml up --build --exit-code-from test --abort-on-container-exit
 
 upload: build

@@ -44,10 +44,20 @@ func NewServer(c *Config) (*Server, error) {
 	if !fi.IsDir() {
 		return nil, fmt.Errorf("Path must be a directory: %s", c.Server.DataDir)
 	}
+	devid, err := strconv.ParseUint(strings.TrimPrefix(filepath.Base(c.Server.DataDir), "dev"), 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", c.Server.DataDir)
+	}
+	db, err := sql.Open("mysql", c.Database.DSN)
+	if err != nil {
+		return nil, err
+	}
 	logger := log.NewLogger("server")
 	s := &Server{
 		config:           c,
 		dir:              c.Server.DataDir,
+		devid:            devid,
+		db:               db,
 		log:              logger,
 		shutdown:         make(chan struct{}),
 		Ready:            make(chan struct{}),
@@ -60,14 +70,6 @@ func NewServer(c *Config) (*Server, error) {
 	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(s.dir)))
 	if s.config.Debug {
 		s.log.SetLevel(log.DEBUG)
-	}
-	s.devid, err = strconv.ParseUint(strings.TrimPrefix(filepath.Base(s.dir), "dev"), 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", s.dir)
-	}
-	s.db, err = sql.Open("mysql", s.config.Database.DSN)
-	if err != nil {
-		return nil, err
 	}
 	return s, nil
 }
