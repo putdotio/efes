@@ -20,6 +20,8 @@ import (
 	"github.com/streadway/amqp"
 )
 
+const cleanDiskQueue = "clean_disk_queue"
+
 // Server runs on storage servers.
 type Server struct {
 	config               *Config
@@ -336,12 +338,12 @@ func (s *Server) publishDeleteTask(fidPath string) {
 	}
 
 	q, err := ch.QueueDeclare(
-		"clean_disk", // name
-		false,        // durable
-		false,        // delete when unused
-		false,        // exclusive
-		false,        // no-wait
-		nil,          // arguments
+		cleanDiskQueue, // name
+		false,          // durable
+		false,          // delete when unused
+		false,          // exclusive
+		false,          // no-wait
+		nil,            // arguments
 	)
 	if err != nil {
 		s.log.Infof("Failed to declare a queue", err)
@@ -365,16 +367,13 @@ func (s *Server) publishDeleteTask(fidPath string) {
 }
 
 func (s *Server) consumeDeleteQueue() {
-	// TODO: Add waitgroup for consuming channel.
 	s.log.Debug("Starting delete queue consumer..")
 	for {
-		// TODO: Close connection
 		conn, ok := <-s.amqp.Conn()
 		if !ok {
 			s.log.Error("Failed to create amqp connection for consuming delete queue.")
 			continue
 		}
-		// TODO: Use select statement for consuming tasks
 		select {
 		case <-s.shutdown:
 			close(s.amqpRedialerStopped)
@@ -389,12 +388,12 @@ func (s *Server) consumeDeleteQueue() {
 			continue
 		}
 		q, err := ch.QueueDeclare(
-			"clean_disk", // name
-			false,        // durable
-			false,        // delete when unused
-			false,        // exclusive
-			false,        // no-wait
-			nil,          // arguments
+			cleanDiskQueue, // name
+			false,          // durable
+			false,          // delete when unused
+			false,          // exclusive
+			false,          // no-wait
+			nil,            // arguments
 		)
 		if err != nil {
 			s.log.Infof("Failed to declare a queue", err)
@@ -417,7 +416,6 @@ func (s *Server) consumeDeleteQueue() {
 			nil,         // args
 		)
 		for msg := range messages {
-			// TODO: Should we count&store failure count and give up after a certain amount?
 			err := s.deleteFidOnDisk(string(msg.Body))
 			if err != nil {
 				if err := msg.Nack(false, true); err != nil {
