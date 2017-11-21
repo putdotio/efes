@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/log"
+	"github.com/cenkalti/redialer/amqpredialer"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/streadway/amqp"
 )
@@ -30,10 +31,12 @@ type Server struct {
 	writeServer          http.Server
 	shutdown             chan struct{}
 	Ready                chan struct{}
+	amqp                 *amqpredialer.AMQPRedialer
 	onceDiskStatsUpdated sync.Once
 	diskStatsUpdated     chan struct{}
 	diskStatsStopped     chan struct{}
 	diskCleanStopped     chan struct{}
+	amqpRedialerStopped  chan struct{}
 }
 
 // NewServer returns a new Server instance.
@@ -47,14 +50,15 @@ func NewServer(c *Config) (*Server, error) {
 	}
 	logger := log.NewLogger("server")
 	s := &Server{
-		config:           c,
-		dir:              c.Server.DataDir,
-		log:              logger,
-		shutdown:         make(chan struct{}),
-		Ready:            make(chan struct{}),
-		diskStatsUpdated: make(chan struct{}),
-		diskStatsStopped: make(chan struct{}),
-		diskCleanStopped: make(chan struct{}),
+		config:              c,
+		dir:                 c.Server.DataDir,
+		log:                 logger,
+		shutdown:            make(chan struct{}),
+		Ready:               make(chan struct{}),
+		diskStatsUpdated:    make(chan struct{}),
+		diskStatsStopped:    make(chan struct{}),
+		diskCleanStopped:    make(chan struct{}),
+		amqpRedialerStopped: make(chan struct{}),
 	}
 	devicePrefix := "/" + filepath.Base(s.dir)
 	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.dir, s.log))
@@ -70,6 +74,7 @@ func NewServer(c *Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	s.amqp, err = amqpredialer.New(c.AMQP.URL)
 	return s, nil
 }
 
@@ -85,7 +90,7 @@ func (s *Server) Run() error {
 	}
 	go s.cleanDisk()
 	go s.updateDiskStats()
-	go s.consumeDeleteQueue()
+	// go s.consumeDeleteQueue()
 	s.log.Notice("Server is started.")
 	errCh := make(chan error, 2)
 	go func() {
@@ -101,6 +106,10 @@ func (s *Server) Run() error {
 			s.log.Notice("Read server is shutting down.")
 		}
 		errCh <- err
+	}()
+	go func() {
+		s.amqp.Run()
+		close(s.amqpRedialerStopped)
 	}()
 	go s.notifyReady()
 	err = <-errCh
@@ -143,11 +152,18 @@ func (s *Server) Shutdown() error {
 
 	<-s.diskStatsStopped
 	<-s.diskCleanStopped
+
 	err = s.db.Close()
 	if err != nil {
 		s.log.Error("Error while closing database connection")
 		return err
 	}
+	err = s.amqp.Close()
+	if err != nil {
+		return err
+	}
+
+	<-s.amqpRedialerStopped
 	return nil
 }
 
@@ -170,7 +186,6 @@ func (s *Server) updateDiskStats() {
 				continue
 			}
 		case <-s.shutdown:
-			close(s.diskCleanStopped)
 			close(s.diskStatsStopped)
 			return
 		}
@@ -316,7 +331,7 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 func (s *Server) publishDeleteTask(fidPath string) {
 	conn, ok := <-s.amqp.Conn()
 	if !ok {
-		s.log.Infof("Failed to create connection")
+		s.log.Infof("Failed to create amqp connection for publishing delete task")
 		return
 	}
 	defer conn.Close()
@@ -363,7 +378,7 @@ func (s *Server) consumeDeleteQueue() {
 		// TODO: Close connection
 		conn, ok := <-s.amqp.Conn()
 		if !ok {
-			s.log.Error("Failed to create amqp connection")
+			s.log.Error("Failed to create amqp connection for consuming delete queue.")
 			continue
 		}
 		// TODO: Use select statement for consuming tasks
