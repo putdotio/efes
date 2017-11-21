@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net"
@@ -179,36 +180,18 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		}
 		size /= M
 	}
+	d, err := findAliveDevice(t.db, int64(size))
+	if err == errNoDeviceAvailable {
+		http.Error(w, "no device available", http.StatusServiceUnavailable)
+		return
+	}
+	if err != nil {
+		t.internalServerError("cannot find a device", err, r, w)
+		return
+	}
 	res, err := t.db.Exec("insert into tempfile(createtime, classid, dmid) values(?, ?, ?)", time.Now().UTC().Unix(), classid, dmid)
 	if err != nil {
 		t.internalServerError("cannot insert tempfile", err, r, w)
-		return
-	}
-	rows, err := t.db.Query("select h.hostip, d.write_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size+1)
-	if err != nil {
-		t.internalServerError("cannot select rows", err, r, w)
-		return
-	}
-	type device struct {
-		hostip   string
-		httpPort int64
-		devid    int64
-		mbFree   int64
-	}
-	devices := make([]device, 0)
-	defer rows.Close() // nolint: errcheck
-	for rows.Next() {
-		var d device
-		err = rows.Scan(&d.hostip, &d.httpPort, &d.devid, &d.mbFree)
-		if err != nil {
-			t.internalServerError("cannot scan rows", err, r, w)
-			return
-		}
-		devices = append(devices, d)
-	}
-	err = rows.Err()
-	if err != nil {
-		t.internalServerError("error while fetching rows", err, r, w)
 		return
 	}
 	fid, err := res.LastInsertId()
@@ -216,22 +199,56 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot get last insert id", err, r, w)
 		return
 	}
-	sfid := fmt.Sprintf("%010d", fid)
-	if len(devices) == 0 {
-		http.Error(w, "no device available", http.StatusServiceUnavailable)
-		return
-	}
-	if len(devices) > 1 {
-		devices = devices[:len(devices)/2]
-	}
-	d := devices[rand.Intn(len(devices))]
 	response := CreateOpen{
-		Path:  fmt.Sprintf("http://%s:%d/dev%d/%s/%s/%s/%s.fid", d.hostip, d.httpPort, d.devid, sfid[0:1], sfid[1:4], sfid[4:7], sfid),
+		Path:  d.PatchURL(fid),
 		Fid:   fid,
 		Devid: d.devid,
 	}
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
+}
+
+var errNoDeviceAvailable = errors.New("no device available")
+
+type aliveDevice struct {
+	hostip   string
+	httpPort int64
+	devid    int64
+	mbFree   int64
+}
+
+func (d *aliveDevice) PatchURL(fid int64) string {
+	sfid := fmt.Sprintf("%010d", fid)
+	return fmt.Sprintf("http://%s:%d/dev%d/%s/%s/%s/%s.fid", d.hostip, d.httpPort, d.devid, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
+}
+
+func findAliveDevice(db *sql.DB, size int64) (*aliveDevice, error) {
+	rows, err := db.Query("select h.hostip, d.write_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size+1)
+	if err != nil {
+		return nil, err
+	}
+	devices := make([]aliveDevice, 0)
+	defer rows.Close() // nolint: errcheck
+	for rows.Next() {
+		var d aliveDevice
+		err = rows.Scan(&d.hostip, &d.httpPort, &d.devid, &d.mbFree)
+		if err != nil {
+			return nil, err
+		}
+		devices = append(devices, d)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	if len(devices) == 0 {
+		return nil, errNoDeviceAvailable
+	}
+	if len(devices) == 1 {
+		return &devices[0], nil
+	}
+	devices = devices[:len(devices)/2]
+	return &devices[rand.Intn(len(devices))], nil
 }
 
 func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
