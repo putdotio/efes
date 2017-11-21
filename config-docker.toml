@@ -12,7 +12,7 @@ shutdown_timeout = 10000
 clean_disk_file_ttl = 60
 clean_disk_run_period = 30
 [amqp]
-url = "amqp://mogilefs:123@efes_rabbitmq_1:5672/"
+url = "amqp://efes:123@efes_rabbitmq_1:5672/"
 [client]
 tracker_url = "http://efes_tracker_1:8001"
 chunk_size = "1M"

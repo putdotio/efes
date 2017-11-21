@@ -4,6 +4,9 @@ RUN go get github.com/golang/dep/cmd/dep
 ADD Gopkg.toml Gopkg.lock /go/src/github.com/putdotio/efes/
 RUN dep ensure -vendor-only
 RUN apt-get update && apt-get install -y mysql-client
+RUN apt-get install -y curl
+RUN curl http://www.rabbitmq.com/rabbitmq-signing-key-public.asc | apt-key add -
+RUN apt-get update && apt-get install -y rabbitmq-server
 ADD docker-run-tests.sh /root/run-tests.sh
 ADD *.go /go/src/github.com/putdotio/efes/
 ADD config-docker.toml /etc/efes.toml

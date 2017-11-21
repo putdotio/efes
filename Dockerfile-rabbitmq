@@ -1,6 +1,6 @@
 FROM rabbitmq:3.6
 
-ARG RABBITMQ_USER=mogilefs
+ARG RABBITMQ_USER=efes
 ARG RABBITMQ_PASS=123
 
 ENV HOME=/var/lib/rabbitmq2
