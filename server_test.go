@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 	"time"
 )
@@ -79,6 +80,25 @@ func TestShouldDeleteFileNotExistsOnDbOldOnDisk(t *testing.T) {
 
 	if !res {
 		t.Error("File should be deleted but returned not to!")
+	}
+
+}
+
+func TestDeleteFidOnDisk(t *testing.T) {
+	path := "/tmp/123.fid"
+	_, err := os.Create(path)
+
+	if err != nil {
+		t.Error("Error while creating file", err)
+	}
+	s := setupServer(t, 1)
+	err = s.deleteFidOnDisk(path)
+	if err != nil {
+		t.Error("File should be deleted but returned not to!")
+	}
+	_, err = os.Stat(path)
+	if !os.IsNotExist(err) {
+		t.Error("File should be deleted but exists on disk!")
 	}
 
 }
