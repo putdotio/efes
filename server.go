@@ -418,18 +418,16 @@ func (s *Server) consumeDeleteQueue() {
 		)
 		for msg := range messages {
 			// TODO: Should we count&store failure count and give up after a certain amount?
-			go func(msg amqp.Delivery) {
-				err := s.deleteFidOnDisk(string(msg.Body))
-				if err != nil {
-					if err := msg.Nack(false, true); err != nil {
-						s.log.Errorf("NACK error: %s", err)
-					}
+			err := s.deleteFidOnDisk(string(msg.Body))
+			if err != nil {
+				if err := msg.Nack(false, true); err != nil {
+					s.log.Errorf("NACK error: %s", err)
 				}
-				err = msg.Ack(false)
-				if err != nil {
-					s.log.Errorf("ACK error: %s", err)
-				}
-			}(msg)
+			}
+			err = msg.Ack(false)
+			if err != nil {
+				s.log.Errorf("ACK error: %s", err)
+			}
 
 		}
 
