@@ -75,6 +75,10 @@ func NewServer(c *Config) (*Server, error) {
 		return nil, err
 	}
 	s.amqp, err = amqpredialer.New(c.AMQP.URL)
+	if err != nil {
+		return nil, err
+	}
+
 	return s, nil
 }
 
@@ -158,7 +162,10 @@ func (s *Server) Shutdown() error {
 		s.log.Error("Error while closing database connection")
 		return err
 	}
-
+	err = s.amqp.Close()
+	if err != nil {
+		return err
+	}
 	<-s.amqpRedialerStopped
 	return nil
 }
