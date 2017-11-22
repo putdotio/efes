@@ -22,6 +22,8 @@ import (
 
 // Server runs on storage servers.
 type Server struct {
+	deleteQueueName      string
+	hostname             string
 	config               *Config
 	dir                  string
 	devid                uint64
@@ -49,7 +51,13 @@ func NewServer(c *Config) (*Server, error) {
 		return nil, fmt.Errorf("Path must be a directory: %s", c.Server.DataDir)
 	}
 	logger := log.NewLogger("server")
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
 	s := &Server{
+		hostname:            hostname,
+		deleteQueueName:     "delete_queue",
 		config:              c,
 		dir:                 c.Server.DataDir,
 		log:                 logger,
@@ -350,25 +358,12 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 		return err
 	}
 
-	queueName, err := s.getDeleteQueueName()
-	if err != nil {
-		return err
-	}
-
-	q, err := ch.QueueDeclare(
-		queueName, // name
-		false,     // durable
-		false,     // delete when unused
-		false,     // exclusive
-		false,     // no-wait
-		nil,       // arguments
-	)
+	q, err := s.declareDeleteQueue(ch)
 	if err != nil {
 		return err
 	}
 
 	body := strconv.FormatInt(fileID, 10)
-
 	err = ch.Publish(
 		"",     // exchange
 		q.Name, // routing key
@@ -378,11 +373,22 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 			ContentType: "text/plain",
 			Body:        []byte(body),
 		})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 
+}
+func (s *Server) declareDeleteQueue(ch *amqp.Channel) (amqp.Queue, error) {
+	q, err := ch.QueueDeclare(
+		s.deleteQueueName, // name
+		true,              // durable
+		false,             // delete when unused
+		false,             // exclusive
+		false,             // no-wait
+		nil,               // arguments
+	)
+	if err != nil {
+		return amqp.Queue{}, err
+	}
+	return q, nil
 }
 
 func (s *Server) consumeDeleteQueue() {
@@ -405,30 +411,15 @@ func (s *Server) consumeDeleteQueue() {
 			s.log.Error("Failed to open a channel for consuming delete task.", err)
 			continue
 		}
-		queueName, err := s.getDeleteQueueName()
-		if err != nil {
-			s.log.Error("Failed to get queue name.", err)
-			continue
-		}
-		q, err := ch.QueueDeclare(
-			queueName, // name
-			false,     // durable
-			false,     // delete when unused
-			false,     // exclusive
-			false,     // no-wait
-			nil,       // arguments
-		)
+
+		q, err := s.declareDeleteQueue(ch)
 		if err != nil {
 			s.log.Infof("Failed to declare a queue", err)
 			continue
 		}
-		hostname, err := os.Hostname()
-		if err != nil {
-			s.log.Infof("Failed to get host name", err)
-			continue
-		}
+
 		pid := os.Getpid()
-		consumerTag := "efes-delete-worker:" + strconv.Itoa(pid) + "@" + hostname + "/" + strconv.FormatUint(s.devid, 10)
+		consumerTag := "efes-delete-worker:" + strconv.Itoa(pid) + "@" + s.hostname + "/" + strconv.FormatUint(s.devid, 10)
 		messages, err := ch.Consume(
 			q.Name,      // queue
 			consumerTag, // consumer
@@ -478,13 +469,7 @@ func (s *Server) deleteFidOnDisk(path string) error {
 
 }
 
-func (s *Server) getDeleteQueueName() (string, error) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		s.log.Error("Failed to get host name", err)
-		return "", err
-	}
-
-	return "clean_disk." + hostname, nil
+func (s *Server) getDeleteQueueName() string {
+	return s.deleteQueueName + "." + s.hostname
 
 }
