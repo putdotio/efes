@@ -328,30 +328,31 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 		if s.shouldDeleteFile(fileID, f.ModTime()) {
 			// TODO: Add delete logic.
 			s.log.Infof("Fid %d is too old and there is no record on DB for it. Deleting...", fileID)
-			s.publishDeleteTask(path)
+			err = s.publishDeleteTask(fileID)
+			if err != nil {
+				s.log.Error("Error while publishing delete task", err)
+			}
 			return nil
 		}
 	}
 	return nil
 }
 
-func (s *Server) publishDeleteTask(fidPath string) {
+func (s *Server) publishDeleteTask(fileID int64) error {
 	conn, ok := <-s.amqp.Conn()
 	if !ok {
 		s.log.Infof("Failed to create amqp connection for publishing delete task")
-		return
+		return amqp.ErrClosed
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		s.log.Infof("Failed to open a channel for publishing delete task.", err)
-		return
+		return err
 	}
 
 	queueName, err := s.getDeleteQueueName()
 	if err != nil {
-		s.log.Error("Failed to get queue name.", err)
-		return
+		return err
 	}
 
 	q, err := ch.QueueDeclare(
@@ -363,9 +364,10 @@ func (s *Server) publishDeleteTask(fidPath string) {
 		nil,       // arguments
 	)
 	if err != nil {
-		s.log.Infof("Failed to declare a queue", err)
-		return
+		return err
 	}
+
+	body := strconv.FormatInt(fileID, 10)
 
 	err = ch.Publish(
 		"",     // exchange
@@ -374,12 +376,12 @@ func (s *Server) publishDeleteTask(fidPath string) {
 		false,  // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body:        []byte(fidPath),
+			Body:        []byte(body),
 		})
 	if err != nil {
-		s.log.Infof("Failed to publish a message", err)
-		return
+		return err
 	}
+	return nil
 
 }
 
