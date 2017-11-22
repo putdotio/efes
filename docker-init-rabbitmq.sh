@@ -9,7 +9,7 @@ RABBITMQ_DATADIR=/var/lib/rabbitmq2
 mkdir -p "$RABBITMQ_DATADIR"
 
 echo Starting RabbitMQ server...
-rabbitmq-server --hostname localhost &>/dev/null &
+rabbitmq-server --hostname efestest_rabbitmq_1 &>/dev/null &
 pid="$!"
 
 echo Waiting for the server to get ready...

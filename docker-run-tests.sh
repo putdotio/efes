@@ -7,17 +7,4 @@ until "${mysql[@]}" -e "select 1" &>/dev/null ; do
 done
 echo "MySQL is ready."
 
-echo Starting RabbitMQ server...
-rabbitmq-server --hostname localhost &>/dev/null &
-until rabbitmqctl -t 1 list_queues &> /dev/null; do
-  echo 'RabbitMQ is not ready yet...'
-  sleep 1
-done
-echo "RabbitMQ is ready."
-
-echo Adding user...
-rabbitmqctl add_user efes 123
-rabbitmqctl set_user_tags efes administrator
-rabbitmqctl set_permissions -p / efes  ".*" ".*" ".*"
-
 exec go test -v ./...
