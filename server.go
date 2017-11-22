@@ -430,8 +430,15 @@ func (s *Server) consumeDeleteQueue() {
 			nil,         // args
 		)
 		for msg := range messages {
-			err := s.deleteFidOnDisk(string(msg.Body))
+			msgBody := string(msg.Body)
+			fileID, err := strconv.ParseInt(msgBody, 10, 64)
 			if err != nil {
+				s.log.Error("Error while parsing int", err)
+			}
+
+			err = s.deleteFidOnDisk(fileID)
+			if err != nil {
+				s.log.Errorf("Failed to delete fid %d, %s", fileID, err)
 				if err := msg.Nack(false, true); err != nil {
 					s.log.Errorf("NACK error: %s", err)
 				}
@@ -445,20 +452,17 @@ func (s *Server) consumeDeleteQueue() {
 	}
 }
 
-func (s *Server) deleteFidOnDisk(path string) error {
-	s.log.Debug("Deleting path on disk ", path)
+func (s *Server) deleteFidOnDisk(fileID int64) error {
+	s.log.Debug("Deleting fid on disk ", fileID)
+	sfid := fmt.Sprintf("%010d", fileID)
+	path := fmt.Sprintf("%s/%s/%s/%s/%s.fid", s.dir, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		s.log.Debugf("File %s does not exist on disk.", path)
-		return nil
-	}
 	err := os.Remove(path)
 
 	if err != nil {
-		s.log.Errorf("Failed to delete path %s on disk %s", path, err)
 		return err
 	}
-	s.log.Debugf("Path %s deleted. ", path)
+	s.log.Debugf("Fid %d deleted. ", fileID)
 	return nil
 
 }
