@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -95,6 +96,13 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			f.internalServerError("cannot delete offset file", err, r, w)
 			return
 		}
+	case "CRC32":
+		s, err := crc32file(path)
+		if err != nil {
+			f.internalServerError("cannot calculate crc32 of file", err, r, w)
+			return
+		}
+		w.Write([]byte(s))
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
@@ -198,4 +206,18 @@ type OffsetMismatchError struct {
 
 func (e *OffsetMismatchError) Error() string {
 	return fmt.Sprintf("given offset (%d) does not match required offset (%d)", e.Given, e.Required)
+}
+
+func crc32file(name string) (string, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := crc32.NewIEEE()
+	_, err = io.Copy(h, f)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }

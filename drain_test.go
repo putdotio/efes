@@ -83,6 +83,7 @@ func TestDrain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	dr.checksum = true
 	err = dr.Run()
 	if err != nil {
 		t.Fatal(err)

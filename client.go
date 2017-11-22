@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -99,4 +100,24 @@ func (c *Client) Exist(key string) (bool, error) {
 		return false, err
 	}
 	return len(paths) > 0, nil
+}
+
+func (c *Client) crc32(path string) (string, error) {
+	req, err := http.NewRequest("CRC32", path, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	err = checkResponseError(resp)
+	if err != nil {
+		return "", err
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }

@@ -13,6 +13,7 @@ import (
 
 type Drainer struct {
 	config   *Config
+	checksum bool
 	devid    uint64
 	db       *sql.DB
 	client   *Client
@@ -108,6 +109,7 @@ func (d *Drainer) moveFile(fid int64) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	fi, err := f.Stat()
 	if err != nil {
 		return err
@@ -120,6 +122,27 @@ func (d *Drainer) moveFile(fid int64) error {
 	_, err = d.client.sendFile(newPath, f, fi.Size())
 	if err != nil {
 		return err
+	}
+	if d.checksum {
+		var remoteChecksum string
+		remoteChecksumCalculated := make(chan struct{})
+		go func() {
+			defer func() { close(remoteChecksumCalculated) }()
+			var errRemote error
+			remoteChecksum, errRemote = d.client.crc32(newPath)
+			if errRemote != nil {
+				d.log.Errorln("cannot calculate remote crc32:", errRemote)
+				return
+			}
+		}()
+		localChecksum, err := crc32file(fidpath)
+		if err != nil {
+			return err
+		}
+		<-remoteChecksumCalculated
+		if remoteChecksum != localChecksum {
+			return fmt.Errorf("crc32 mismatch: local=%s, remote=%s", localChecksum, remoteChecksum)
+		}
 	}
 	tx, err := d.db.Begin()
 	if err != nil {
