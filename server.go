@@ -260,27 +260,31 @@ func (s *Server) cleanDisk() {
 
 func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 	var fid int
+	existFile := true
+	existTempFile := true
 	// check file
 	row := s.db.QueryRow("select fid from file where fid=?", fileID)
 	err := row.Scan(&fid)
-	if err == nil {
-		return true, nil
-	}
-	if err != sql.ErrNoRows {
-		s.log.Error("Error after querying file table ", err)
-		return true, err
+	if err != nil {
+		if err == sql.ErrNoRows {
+			existFile = false
+		} else {
+			s.log.Error("Error after querying file table ", err)
+			return true, err
+		}
 	}
 	// check tempfile
 	row = s.db.QueryRow("select fid from tempfile where fid=?", fileID)
 	err = row.Scan(&fid)
-	if err == nil {
-		return true, nil
+	if err != nil {
+		if err == sql.ErrNoRows {
+			existTempFile = false
+		} else {
+			s.log.Error("Error after querying tempfile table ", err)
+			return true, err
+		}
 	}
-	if err != sql.ErrNoRows {
-		s.log.Error("Error after querying tempfile table ", err)
-		return true, err
-	}
-	return false, nil
+	return existFile || existTempFile, nil
 
 }
 
