@@ -109,6 +109,7 @@ func (s *Server) Run() error {
 	}()
 	go func() {
 		s.amqp.Run()
+		close(s.amqpRedialerStopped)
 	}()
 	go s.notifyReady()
 	err = <-errCh
@@ -158,6 +159,7 @@ func (s *Server) Shutdown() error {
 		return err
 	}
 
+	<-s.amqpRedialerStopped
 	return nil
 }
 
@@ -375,7 +377,6 @@ func (s *Server) consumeDeleteQueue() {
 	for {
 		select {
 		case <-s.shutdown:
-			close(s.amqpRedialerStopped)
 			s.log.Notice("AMQP connection is shutting down..")
 			return
 		default:
