@@ -62,7 +62,7 @@ var defaultConfig = Config{
 	},
 	Client: ClientConfig{
 		TrackerURL:   "http://127.0.0.1:8001",
-		ChunkSize:    1024 * 1024,
+		ChunkSize:    100 * 1024 * 1024,
 		ShowProgress: true,
 	},
 	Database: DatabaseConfig{
