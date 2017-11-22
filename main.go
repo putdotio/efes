@@ -182,7 +182,7 @@ func main() {
 		},
 		{
 			Name:  "drain",
-			Usage: "drain device by moving files to antoher server",
+			Usage: "drain device by moving files to another device",
 			Action: func(c *cli.Context) error {
 				d, err := NewDrainer(cfg)
 				if err != nil {
