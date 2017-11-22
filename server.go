@@ -442,12 +442,6 @@ func (s *Server) consumeDeleteQueue() {
 			}
 
 		}
-
-		if err != nil {
-			s.log.Error("Failed to publish a message", err)
-			continue
-		}
-
 	}
 }
 
