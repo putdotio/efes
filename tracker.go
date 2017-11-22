@@ -178,7 +178,6 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		size /= M
 	}
 	d, err := findAliveDevice(t.db, int64(size))
 	if err == errNoDeviceAvailable {
@@ -223,7 +222,8 @@ func (d *aliveDevice) PatchURL(fid int64) string {
 }
 
 func findAliveDevice(db *sql.DB, size int64) (*aliveDevice, error) {
-	rows, err := db.Query("select h.hostip, d.write_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size+1)
+	size = (size / M) + 1
+	rows, err := db.Query("select h.hostip, d.write_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size)
 	if err != nil {
 		return nil, err
 	}
