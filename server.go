@@ -347,33 +347,34 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 }
 
 func (s *Server) publishDeleteTask(fileID int64) error {
-	conn, ok := <-s.amqp.Conn()
-	if !ok {
-		s.log.Infof("Failed to create amqp connection for publishing delete task")
-		return amqp.ErrClosed
-	}
+	select {
+	case <-s.shutdown:
+		s.log.Notice("AMQP connection is shutting down..")
+		return nil
+	case conn := <-s.amqp.Conn():
 
-	ch, err := conn.Channel()
-	if err != nil {
+		ch, err := conn.Channel()
+		if err != nil {
+			return err
+		}
+
+		q, err := s.declareDeleteQueue(ch)
+		if err != nil {
+			return err
+		}
+
+		body := strconv.FormatInt(fileID, 10)
+		err = ch.Publish(
+			"",     // exchange
+			q.Name, // routing key
+			false,  // mandatory
+			false,  // immediate
+			amqp.Publishing{
+				ContentType: "text/plain",
+				Body:        []byte(body),
+			})
 		return err
 	}
-
-	q, err := s.declareDeleteQueue(ch)
-	if err != nil {
-		return err
-	}
-
-	body := strconv.FormatInt(fileID, 10)
-	err = ch.Publish(
-		"",     // exchange
-		q.Name, // routing key
-		false,  // mandatory
-		false,  // immediate
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(body),
-		})
-	return err
 
 }
 func (s *Server) declareDeleteQueue(ch *amqp.Channel) (amqp.Queue, error) {
@@ -398,57 +399,52 @@ func (s *Server) consumeDeleteQueue() {
 		case <-s.shutdown:
 			s.log.Notice("AMQP connection is shutting down..")
 			return
-		default:
-		}
-
-		conn, ok := <-s.amqp.Conn()
-		if !ok {
-			s.log.Error("Failed to create amqp connection for consuming delete queue.")
-			continue
-		}
-		ch, err := conn.Channel()
-		if err != nil {
-			s.log.Error("Failed to open a channel for consuming delete task.", err)
-			continue
-		}
-
-		q, err := s.declareDeleteQueue(ch)
-		if err != nil {
-			s.log.Infof("Failed to declare a queue", err)
-			continue
-		}
-
-		pid := os.Getpid()
-		consumerTag := "efes-delete-worker:" + strconv.Itoa(pid) + "@" + s.hostname + "/" + strconv.FormatUint(s.devid, 10)
-		messages, err := ch.Consume(
-			q.Name,      // queue
-			consumerTag, // consumer
-			false,       // auto-ack
-			false,       // exclusive
-			false,       // no-local
-			false,       // no-wait
-			nil,         // args
-		)
-		for msg := range messages {
-			msgBody := string(msg.Body)
-			fileID, err := strconv.ParseInt(msgBody, 10, 64)
+		case conn := <-s.amqp.Conn():
+			ch, err := conn.Channel()
 			if err != nil {
-				s.log.Error("Error while parsing int", err)
+				s.log.Error("Failed to open a channel for consuming delete task.", err)
+				continue
 			}
 
-			err = s.deleteFidOnDisk(fileID)
+			q, err := s.declareDeleteQueue(ch)
 			if err != nil {
-				s.log.Errorf("Failed to delete fid %d, %s", fileID, err)
-				if err := msg.Nack(false, true); err != nil {
-					s.log.Errorf("NACK error: %s", err)
+				s.log.Infof("Failed to declare a queue", err)
+				continue
+			}
+
+			pid := os.Getpid()
+			consumerTag := "efes-delete-worker:" + strconv.Itoa(pid) + "@" + s.hostname + "/" + strconv.FormatUint(s.devid, 10)
+			messages, err := ch.Consume(
+				q.Name,      // queue
+				consumerTag, // consumer
+				false,       // auto-ack
+				false,       // exclusive
+				false,       // no-local
+				false,       // no-wait
+				nil,         // args
+			)
+			for msg := range messages {
+				msgBody := string(msg.Body)
+				fileID, err := strconv.ParseInt(msgBody, 10, 64)
+				if err != nil {
+					s.log.Error("Error while parsing int", err)
 				}
-			}
-			err = msg.Ack(false)
-			if err != nil {
-				s.log.Errorf("ACK error: %s", err)
-			}
 
+				err = s.deleteFidOnDisk(fileID)
+				if err != nil {
+					s.log.Errorf("Failed to delete fid %d, %s", fileID, err)
+					if err := msg.Nack(false, true); err != nil {
+						s.log.Errorf("NACK error: %s", err)
+					}
+				}
+				err = msg.Ack(false)
+				if err != nil {
+					s.log.Errorf("ACK error: %s", err)
+				}
+
+			}
 		}
+
 	}
 }
 
