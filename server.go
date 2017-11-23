@@ -456,6 +456,10 @@ func (s *Server) deleteFidOnDisk(fileID int64) error {
 	err := os.Remove(path)
 
 	if err != nil {
+		if err == os.ErrNotExist {
+			s.log.Debugf("Fid path does not exist %s. ", path)
+			return nil
+		}
 		return err
 	}
 	s.log.Debugf("Fid %d deleted. ", fileID)
