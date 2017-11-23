@@ -59,7 +59,7 @@ func main() {
 	app.Commands = []cli.Command{
 		{
 			Name:  "tracker",
-			Usage: "Runs Tracker process",
+			Usage: "runs Tracker process",
 			Action: func(c *cli.Context) error {
 				t, err := NewTracker(cfg)
 				if err != nil {
@@ -71,7 +71,7 @@ func main() {
 		},
 		{
 			Name:  "server",
-			Usage: "Runs Server process",
+			Usage: "runs Server process",
 			Action: func(c *cli.Context) error {
 				s, err := NewServer(cfg)
 				if err != nil {
@@ -82,92 +82,121 @@ func main() {
 			},
 		},
 		{
-			Name:  "client",
-			Usage: "Client for reading/writing files",
-			Subcommands: []cli.Command{
-				{
-					Name:      "write",
-					Usage:     "write file to efes",
-					ArgsUsage: "key path",
-					Flags: []cli.Flag{
-						cli.GenericFlag{
-							Name:  "chunk, c",
-							Usage: "chunk size",
-							Value: &chunkSize,
-						},
-					},
-					Action: func(c *cli.Context) error {
-						if c.NArg() < 2 {
-							cli.ShowAppHelpAndExit(c, 1)
-						}
-						key := c.Args().Get(0)
-						path := c.Args().Get(1)
-						if c.IsSet("chunk") {
-							cfg.Client.ChunkSize = chunkSize
-						}
-						client, err := NewClient(cfg)
-						if err != nil {
-							return err
-						}
-						return client.Write(key, path)
-					},
+			Name:      "write",
+			Usage:     "write file to efes",
+			ArgsUsage: "key path",
+			Flags: []cli.Flag{
+				cli.GenericFlag{
+					Name:  "chunk, c",
+					Usage: "chunk size",
+					Value: &chunkSize,
 				},
-				{
-					Name:      "read",
-					Usage:     "read file from efes",
-					ArgsUsage: "key path",
-					Action: func(c *cli.Context) error {
-						if c.NArg() < 2 {
-							cli.ShowAppHelpAndExit(c, 1)
-						}
-						key := c.Args().Get(0)
-						path := c.Args().Get(1)
-						client, err := NewClient(cfg)
-						if err != nil {
-							return err
-						}
-						return client.Read(key, path)
-					},
+			},
+			Action: func(c *cli.Context) error {
+				if c.NArg() < 2 {
+					cli.ShowAppHelpAndExit(c, 1)
+				}
+				key := c.Args().Get(0)
+				path := c.Args().Get(1)
+				if c.IsSet("chunk") {
+					cfg.Client.ChunkSize = chunkSize
+				}
+				client, err := NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				return client.Write(key, path)
+			},
+		},
+		{
+			Name:      "read",
+			Usage:     "read file from efes",
+			ArgsUsage: "key path",
+			Action: func(c *cli.Context) error {
+				if c.NArg() < 2 {
+					cli.ShowAppHelpAndExit(c, 1)
+				}
+				key := c.Args().Get(0)
+				path := c.Args().Get(1)
+				client, err := NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				return client.Read(key, path)
+			},
+		},
+		{
+			Name:      "delete",
+			Usage:     "delete file from efes",
+			ArgsUsage: "key",
+			Action: func(c *cli.Context) error {
+				if c.NArg() < 1 {
+					cli.ShowAppHelpAndExit(c, 1)
+				}
+				key := c.Args().Get(0)
+				client, err := NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				return client.Delete(key)
+			},
+		},
+		{
+			Name:      "exist",
+			Usage:     "check if a key exists in efes",
+			ArgsUsage: "key",
+			Action: func(c *cli.Context) error {
+				if c.NArg() < 1 {
+					cli.ShowAppHelpAndExit(c, 1)
+				}
+				key := c.Args().Get(0)
+				client, err := NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				exist, err := client.Exist(key)
+				if err != nil {
+					return err
+				}
+				if !exist {
+					return errors.New("key does not exist")
+				}
+				return nil
+			},
+		},
+		{
+			Name:  "status",
+			Usage: "show system status",
+			Action: func(c *cli.Context) error {
+				client, err := NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				s, err := client.Status()
+				if err != nil {
+					return err
+				}
+				s.Print()
+				return nil
+			},
+		},
+		{
+			Name:  "drain",
+			Usage: "drain device by moving files to another device",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "checksum, c",
+					Usage: "compare checksum after copy",
 				},
-				{
-					Name:      "delete",
-					Usage:     "delete file from efes",
-					ArgsUsage: "key",
-					Action: func(c *cli.Context) error {
-						if c.NArg() < 1 {
-							cli.ShowAppHelpAndExit(c, 1)
-						}
-						key := c.Args().Get(0)
-						client, err := NewClient(cfg)
-						if err != nil {
-							return err
-						}
-						return client.Delete(key)
-					},
-				},
-				{
-					Name:      "exist",
-					Usage:     "check if a key exists in efes",
-					ArgsUsage: "key",
-					Action: func(c *cli.Context) error {
-						if c.NArg() < 1 {
-							cli.ShowAppHelpAndExit(c, 1)
-						}
-						key := c.Args().Get(0)
-						client, err := NewClient(cfg)
-						if err != nil {
-							return err
-						}
-						exist, err := client.Exist(key)
-						if err != nil {
-							return err
-						}
-						if !exist {
-							return errors.New("key does not exist")
-						}
-						return nil
-					},
-				},
+			},
+			Action: func(c *cli.Context) error {
+				d, err := NewDrainer(cfg)
+				if err != nil {
+					return err
+				}
+				d.checksum = c.Bool("checksum")
+				runUntilInterrupt(d)
+				return nil
 			},
 		},
 		{

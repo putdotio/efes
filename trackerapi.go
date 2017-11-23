@@ -20,7 +20,7 @@ type Device struct {
 	Status        string `json:"status"`
 	MbTotal       *int64 `json:"mb_total"`
 	MbUsed        *int64 `json:"mb_used"`
-	MbAsof        *int64 `json:"mb_asof"`
+	UpdatedAt     int64  `json:"mb_asof"`
 	IoUtilization *int64 `json:"io_utilization"`
 }
 

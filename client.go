@@ -2,106 +2,41 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
-	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cenkalti/log"
 )
 
 // Client is for reading and writing files on Efes.
 type Client struct {
-	config     ClientConfig
+	config     *Config
 	log        log.Logger
 	trackerURL *url.URL
 	httpClient http.Client
 }
 
 // NewClient creates a new Client.
-func NewClient(c *Config) (*Client, error) {
-	u, err := url.Parse(c.Client.TrackerURL)
+func NewClient(cfg *Config) (*Client, error) {
+	u, err := url.Parse(cfg.Client.TrackerURL)
 	if err != nil {
 		return nil, err
 	}
-	logger := log.NewLogger("client")
-	if c.Debug {
-		logger.SetLevel(log.DEBUG)
-	}
-	return &Client{
-		config:     c.Client,
+	c := &Client{
+		config:     cfg,
 		trackerURL: u,
-		log:        logger,
-	}, nil
-}
-
-func (c *Client) Read(key, path string) error {
-	paths, err := c.getPaths(key)
-	if err != nil {
-		return err
+		log:        log.NewLogger("client"),
 	}
-	if len(paths) == 0 {
-		return errors.New("no path returned from tracker")
+	c.httpClient.Timeout = time.Duration(cfg.Client.SendTimeout) * time.Second
+	if cfg.Debug {
+		c.log.SetLevel(log.DEBUG)
 	}
-	resp, err := http.Get(paths[0])
-	if err != nil {
-		return err
-	}
-	err = checkResponseError(resp)
-	if err != nil {
-		return err
-	}
-	var w io.Writer
-	var cl io.Closer
-	if path == "-" {
-		w = os.Stdout
-		cl = os.Stdout
-	} else {
-		f, err := os.Create(path)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		w = f
-		cl = f
-		if c.config.ShowProgress {
-			size := c.getContentLength(resp)
-			p := newWriteProgress(f, size)
-			defer p.Close()
-			w = p
-		}
-	}
-	_, err = io.Copy(w, resp.Body)
-	if err != nil {
-		return err
-	}
-	return cl.Close()
-}
-
-func (c *Client) getContentLength(resp *http.Response) int64 {
-	contentLengthHeader := resp.Header.Get("Content-Length")
-	if contentLengthHeader == "" {
-		c.log.Warning("server sent no conent-length header")
-		return -1
-	}
-	contentLength, err := strconv.ParseInt(contentLengthHeader, 10, 64)
-	if err != nil {
-		c.log.Errorln("cannot parse content-length header:", err.Error())
-		return -1
-	}
-	return contentLength
-}
-
-func (c *Client) getPaths(key string) ([]string, error) {
-	form := url.Values{}
-	form.Add("key", key)
-	var response GetPaths
-	err := c.request(http.MethodGet, "get-paths", form, &response)
-	return response.Paths, err
+	return c, nil
 }
 
 func (c *Client) request(method, urlPath string, params url.Values, response interface{}) error {
@@ -141,179 +76,6 @@ func (c *Client) request(method, urlPath string, params url.Values, response int
 	return nil
 }
 
-func (c *Client) Write(key, path string) error {
-	if path == "-" {
-		return c.writeReader(key, path, os.Stdin)
-	}
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close() // nolint: errcheck
-	return c.writeFile(key, path, f)
-}
-
-func (c *Client) writeReader(key, path string, r io.Reader) error {
-	path, fid, devid, err := c.createOpen(-1)
-	if err != nil {
-		return err
-	}
-	n, err := c.sendReader(path, r)
-	if err != nil {
-		return err
-	}
-	// Because we don't know the length of the stream,
-	// we need to DELETE the ".offset" file on the server.
-	err = c.deleteOffset(path)
-	if err != nil {
-		return err
-	}
-	return c.createClose(key, n, fid, devid)
-}
-
-func (c *Client) writeFile(key, path string, f *os.File) error {
-	fi, err := f.Stat()
-	if err != nil {
-		return err
-	}
-	size := fi.Size()
-	path, fid, devid, err := c.createOpen(size)
-	if err != nil {
-		return err
-	}
-	n, err := c.sendFile(path, f, size)
-	if err != nil {
-		return err
-	}
-	return c.createClose(key, n, fid, devid)
-}
-
-func (c *Client) sendReader(path string, r io.Reader) (int64, error) {
-	var offset int64
-	if c.config.ShowProgress {
-		p := newReadProgress(r, -1)
-		defer p.Close()
-		r = p
-	}
-	for {
-		n, err := c.send(path, r, offset, -1)
-		offset += n
-		if cerr, ok := err.(*ClientError); ok {
-			return offset, cerr
-		}
-		if err != nil {
-			c.log.Errorln("error while sending the stream:", err)
-			continue
-		}
-		return offset, nil
-	}
-}
-
-func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
-	var offset int64
-	var r io.Reader
-	if c.config.ShowProgress {
-		p := newReadProgress(f, size)
-		defer p.Close()
-		r = p
-	} else {
-		r = f
-	}
-	for {
-		n, err := c.send(path, r, offset, size)
-		offset += n
-		if cerr, ok := err.(*ClientError); ok {
-			// Get the offset from server and try again.
-			if cerr.Code == http.StatusConflict {
-				actualOffsetString := cerr.Header.Get("efes-file-offset")
-				if actualOffsetString != "" {
-					var actualOffset int64
-					actualOffset, err = strconv.ParseInt(actualOffsetString, 10, 64)
-					if err != nil {
-						c.log.Errorln("got invalid offset from server:", actualOffsetString)
-						return offset, err
-					}
-					_, err = f.Seek(actualOffset, os.SEEK_SET)
-					if err != nil {
-						return offset, err
-					}
-					offset = actualOffset
-					c.log.Infoln("offset is reset from server:", offset)
-					continue
-				}
-			}
-			return offset, cerr
-		}
-		if err != nil {
-			c.log.Errorln("error while sending the file:", err)
-			continue
-		}
-		return offset, nil
-	}
-}
-
-// send a patch request until and error occurs or stream is finished
-func (c *Client) send(path string, r io.Reader, offset, size int64) (int64, error) {
-	c.log.Debugln("client chunk size:", c.config.ChunkSize)
-	totalCounter := newReadCounter(r)
-	currentOffset := offset
-	for i := 0; ; i++ {
-		c.log.Debugf("sending chunk #%d from offset=%d", i, currentOffset)
-		chunkReader := io.LimitReader(totalCounter, int64(c.config.ChunkSize))
-		requestOffset := currentOffset
-		err := c.patch(path, chunkReader, requestOffset, size)
-		if err != nil {
-			return totalCounter.Count(), err
-		}
-		currentOffset = offset + totalCounter.Count()
-		c.log.Debugln("sent", currentOffset-requestOffset, "bytes")
-		switch currentOffset {
-		case size:
-			// EOF is reached. Do not make a new PATCH request with empty body.
-			return totalCounter.Count(), nil
-		case requestOffset:
-			// No bytes sent in last request.
-			return totalCounter.Count(), nil
-		}
-	}
-}
-
-// send a single patch request to file receiver
-func (c *Client) patch(path string, body io.Reader, offset, size int64) error {
-	req, err := http.NewRequest(http.MethodPatch, path, body)
-	if err != nil {
-		return err
-	}
-	req.Header.Add("efes-file-offset", strconv.FormatInt(offset, 10))
-	if size > -1 {
-		req.Header.Add("efes-file-length", strconv.FormatInt(size, 10))
-	}
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	return checkResponseError(resp)
-}
-
-func (c *Client) createOpen(size int64) (path string, fid, devid int64, err error) {
-	form := url.Values{}
-	if size > -1 {
-		form.Add("size", strconv.FormatInt(size, 10))
-	}
-	var response CreateOpen
-	err = c.request(http.MethodPost, "create-open", form, &response)
-	return response.Path, response.Fid, response.Devid, err
-}
-
-func (c *Client) createClose(key string, size, fid, devid int64) error {
-	form := url.Values{}
-	form.Add("key", key)
-	form.Add("size", strconv.FormatInt(size, 10))
-	form.Add("fid", strconv.FormatInt(fid, 10))
-	form.Add("devid", strconv.FormatInt(devid, 10))
-	return c.request(http.MethodPost, "create-close", form, nil)
-}
-
 func (c *Client) deleteOffset(path string) error {
 	req, err := http.NewRequest(http.MethodDelete, path, nil)
 	if err != nil {
@@ -340,4 +102,24 @@ func (c *Client) Exist(key string) (bool, error) {
 		return false, err
 	}
 	return len(paths) > 0, nil
+}
+
+func (c *Client) crc32(path string) (string, error) {
+	req, err := http.NewRequest("CRC32", path, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	err = checkResponseError(resp)
+	if err != nil {
+		return "", err
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }

@@ -33,6 +33,7 @@ type ServerConfig struct {
 type ClientConfig struct {
 	TrackerURL   string    `toml:"tracker_url"`
 	ChunkSize    ChunkSize `toml:"chunk_size"`
+	SendTimeout  uint32    `toml:"send_timeout"`
 	ShowProgress bool      `toml:"show_progress"`
 }
 
@@ -62,7 +63,8 @@ var defaultConfig = Config{
 	},
 	Client: ClientConfig{
 		TrackerURL:   "http://127.0.0.1:8001",
-		ChunkSize:    1024 * 1024,
+		ChunkSize:    100 * 1024 * 1024,
+		SendTimeout:  10,
 		ShowProgress: true,
 	},
 	Database: DatabaseConfig{

@@ -25,7 +25,6 @@ type Server struct {
 	deleteQueueName      string
 	hostname             string
 	config               *Config
-	dir                  string
 	devid                uint64
 	db                   *sql.DB
 	log                  log.Logger
@@ -50,43 +49,42 @@ func NewServer(c *Config) (*Server, error) {
 	if !fi.IsDir() {
 		return nil, fmt.Errorf("Path must be a directory: %s", c.Server.DataDir)
 	}
+	devid, err := strconv.ParseUint(strings.TrimPrefix(filepath.Base(c.Server.DataDir), "dev"), 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", c.Server.DataDir)
+	}
+	db, err := sql.Open("mysql", c.Database.DSN)
+	if err != nil {
+		return nil, err
+	}
 	logger := log.NewLogger("server")
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 	s := &Server{
-		hostname:            hostname,
-		deleteQueueName:     "delete_queue",
-		config:              c,
-		dir:                 c.Server.DataDir,
-		log:                 logger,
-		shutdown:            make(chan struct{}),
-		Ready:               make(chan struct{}),
-		diskStatsUpdated:    make(chan struct{}),
-		diskStatsStopped:    make(chan struct{}),
-		diskCleanStopped:    make(chan struct{}),
-		amqpRedialerStopped: make(chan struct{}),
+		deleteQueueName:  "delete_queue",
+		hostname:         hostname,
+		config:           c,
+		devid:            devid,
+		db:               db,
+		log:              logger,
+		shutdown:         make(chan struct{}),
+		Ready:            make(chan struct{}),
+		diskStatsUpdated: make(chan struct{}),
+		diskStatsStopped: make(chan struct{}),
+		diskCleanStopped: make(chan struct{}),
 	}
-	devicePrefix := "/" + filepath.Base(s.dir)
-	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.dir, s.log))
-	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(s.dir)))
+	devicePrefix := "/" + filepath.Base(s.config.Server.DataDir)
+	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.config.Server.DataDir, s.log))
+	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(s.config.Server.DataDir)))
 	if s.config.Debug {
 		s.log.SetLevel(log.DEBUG)
-	}
-	s.devid, err = strconv.ParseUint(strings.TrimPrefix(filepath.Base(s.dir), "dev"), 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", s.dir)
-	}
-	s.db, err = sql.Open("mysql", s.config.Database.DSN)
-	if err != nil {
-		return nil, err
 	}
 	s.amqp, err = amqpredialer.New(c.AMQP.URL)
 	if err != nil {
 		return nil, err
 	}
-
 	return s, nil
 }
 
@@ -181,9 +179,9 @@ func (s *Server) Shutdown() error {
 func (s *Server) updateDiskStats() {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-	iostat, err := newIOStat(s.dir)
+	iostat, err := newIOStat(s.config.Server.DataDir)
 	if err != nil {
-		s.log.Warningln("Cannot get stats for dir:", s.dir, "err:", err.Error())
+		s.log.Warningln("Cannot get stats for dir:", s.config.Server.DataDir, "err:", err.Error())
 	}
 	for {
 		select {
@@ -204,7 +202,7 @@ func (s *Server) updateDiskStats() {
 }
 
 func (s *Server) getDiskUsage() (used, total sql.NullInt64) {
-	usage, err := disk.Usage(s.dir)
+	usage, err := disk.Usage(s.config.Server.DataDir)
 	if err != nil {
 		s.log.Errorln("Cannot get disk usage:", err.Error())
 		return
@@ -258,7 +256,7 @@ func (s *Server) cleanDisk() {
 				s.log.Error("Error during updating last disk clean time", err)
 				continue
 			}
-			s.removeUnusedFids(s.dir)
+			s.removeUnusedFids(s.config.Server.DataDir)
 		case <-s.shutdown:
 			close(s.diskCleanStopped)
 			return
