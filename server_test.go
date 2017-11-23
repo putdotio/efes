@@ -90,7 +90,7 @@ func TestDeleteFidOnDisk(t *testing.T) {
 	var fid int64
 	fid = 123
 	sfid := fmt.Sprintf("%010d", fid)
-	path := fmt.Sprintf("%s/%s/%s/%s/%s.fid", s.dir, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
+	path := fmt.Sprintf("%s/%s/%s/%s/%s.fid", s.config.Server.DataDir, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
 	_, err := os.Create(path)
 
 	if err != nil {

@@ -449,7 +449,7 @@ func (s *Server) consumeDeleteQueue() {
 func (s *Server) deleteFidOnDisk(fileID int64) error {
 	s.log.Debug("Deleting fid on disk ", fileID)
 	sfid := fmt.Sprintf("%010d", fileID)
-	path := fmt.Sprintf("%s/%s/%s/%s/%s.fid", s.dir, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
+	path := fmt.Sprintf("%s/%s/%s/%s/%s.fid", s.config.Server.DataDir, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
 
 	err := os.Remove(path)
 
