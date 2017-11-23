@@ -377,13 +377,14 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 
 }
 func (s *Server) declareDeleteQueue(ch *amqp.Channel) (amqp.Queue, error) {
+	queueName := s.deleteQueueName + "." + s.hostname
 	q, err := ch.QueueDeclare(
-		s.deleteQueueName, // name
-		true,              // durable
-		false,             // delete when unused
-		false,             // exclusive
-		false,             // no-wait
-		nil,               // arguments
+		queueName, // name
+		true,      // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
 	)
 	if err != nil {
 		return amqp.Queue{}, err
@@ -459,10 +460,5 @@ func (s *Server) deleteFidOnDisk(fileID int64) error {
 	}
 	s.log.Debugf("Fid %d deleted. ", fileID)
 	return nil
-
-}
-
-func (s *Server) getDeleteQueueName() string {
-	return s.deleteQueueName + "." + s.hostname
 
 }
