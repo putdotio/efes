@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/cenkalti/log"
 )
@@ -21,20 +22,21 @@ type Client struct {
 }
 
 // NewClient creates a new Client.
-func NewClient(c *Config) (*Client, error) {
-	u, err := url.Parse(c.Client.TrackerURL)
+func NewClient(cfg *Config) (*Client, error) {
+	u, err := url.Parse(cfg.Client.TrackerURL)
 	if err != nil {
 		return nil, err
 	}
-	logger := log.NewLogger("client")
-	if c.Debug {
-		logger.SetLevel(log.DEBUG)
-	}
-	return &Client{
-		config:     c,
+	c := &Client{
+		config:     cfg,
 		trackerURL: u,
-		log:        logger,
-	}, nil
+		log:        log.NewLogger("client"),
+	}
+	c.httpClient.Timeout = time.Duration(cfg.Client.SendTimeout) * time.Second
+	if cfg.Debug {
+		c.log.SetLevel(log.DEBUG)
+	}
+	return c, nil
 }
 
 func (c *Client) request(method, urlPath string, params url.Values, response interface{}) error {
