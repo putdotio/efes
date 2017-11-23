@@ -22,18 +22,18 @@ import (
 
 // Server runs on storage servers.
 type Server struct {
-	deleteQueueName      string
-	hostname             string
 	config               *Config
-	devid                uint64
 	db                   *sql.DB
 	log                  log.Logger
 	readServer           http.Server
 	writeServer          http.Server
-	shutdown             chan struct{}
-	Ready                chan struct{}
 	amqp                 *amqpredialer.AMQPRedialer
 	onceDiskStatsUpdated sync.Once
+	devid                uint64
+	hostname             string
+	deleteQueueName      string
+	shutdown             chan struct{}
+	Ready                chan struct{}
 	diskStatsUpdated     chan struct{}
 	diskStatsStopped     chan struct{}
 	diskCleanStopped     chan struct{}
