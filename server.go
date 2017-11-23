@@ -63,17 +63,18 @@ func NewServer(c *Config) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		deleteQueueName:  "delete_queue",
-		hostname:         hostname,
-		config:           c,
-		devid:            devid,
-		db:               db,
-		log:              logger,
-		shutdown:         make(chan struct{}),
-		Ready:            make(chan struct{}),
-		diskStatsUpdated: make(chan struct{}),
-		diskStatsStopped: make(chan struct{}),
-		diskCleanStopped: make(chan struct{}),
+		deleteQueueName:     "delete_queue",
+		hostname:            hostname,
+		config:              c,
+		devid:               devid,
+		db:                  db,
+		log:                 logger,
+		shutdown:            make(chan struct{}),
+		Ready:               make(chan struct{}),
+		diskStatsUpdated:    make(chan struct{}),
+		diskStatsStopped:    make(chan struct{}),
+		diskCleanStopped:    make(chan struct{}),
+		amqpRedialerStopped: make(chan struct{}),
 	}
 	devicePrefix := "/" + filepath.Base(s.config.Server.DataDir)
 	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.config.Server.DataDir, s.log))
