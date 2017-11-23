@@ -158,7 +158,11 @@ func (d *Drainer) moveFile(fid int64) error {
 	if err != nil {
 		return err
 	}
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return os.Remove(fidpath)
 }
 
 func calculateRemoteChecksum(path string) (string, error) {
