@@ -135,10 +135,12 @@ func (d *Drainer) moveFile(fid int64) error {
 				return
 			}
 		}()
+		d.log.Infoln("Calculating CRC32...")
 		localChecksum, err := crc32file(fidpath)
 		if err != nil {
 			return err
 		}
+		d.log.Infoln("CRC32:", localChecksum)
 		<-remoteChecksumCalculated
 		if remoteChecksum != localChecksum {
 			return fmt.Errorf("crc32 mismatch: local=%s, remote=%s", localChecksum, remoteChecksum)
