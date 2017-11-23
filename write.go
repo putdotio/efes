@@ -115,8 +115,9 @@ func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
 			c.log.Errorln("error while sending the file:", err)
 			continue
 		}
-		return offset, nil
+		break
 	}
+	return offset, nil
 }
 
 // send a patch request until and error occurs or stream is finished
