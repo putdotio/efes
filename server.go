@@ -178,7 +178,7 @@ func (s *Server) Shutdown() error {
 func (s *Server) updateDiskStats() {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-	iostat, err := newIOStat(s.config.Server.DataDir)
+	iostat, err := newIOStat(s.config.Server.DataDir, 10*time.Second)
 	if err != nil {
 		s.log.Warningln("Cannot get stats for dir:", s.config.Server.DataDir, "err:", err.Error())
 	}
@@ -219,8 +219,7 @@ func (s *Server) getDiskUtilization(iostat *IOStat) (utilization sql.NullInt64) 
 		return
 	}
 	value, err := iostat.Utilization()
-	if err == errFirstRun {
-		// We don't know the utilization level on the first call.
+	if err == errUtilizationNotAvailable {
 		return
 	} else if err != nil {
 		s.log.Errorln("Cannot get disk IO utilization:", err.Error())

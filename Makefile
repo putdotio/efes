@@ -3,7 +3,7 @@
 NAME := efes
 
 build:
-	GOOS=linux GOARCH=amd64 go build -o $(NAME)
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $(NAME)
 
 up:
 	docker build -t $(NAME) -f Dockerfile .
