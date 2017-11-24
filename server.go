@@ -31,7 +31,6 @@ type Server struct {
 	onceDiskStatsUpdated sync.Once
 	devid                uint64
 	hostname             string
-	deleteQueueName      string
 	shutdown             chan struct{}
 	Ready                chan struct{}
 	diskStatsUpdated     chan struct{}
@@ -68,7 +67,6 @@ func NewServer(c *Config) (*Server, error) {
 		db:                  db,
 		log:                 logger,
 		hostname:            hostname,
-		deleteQueueName:     "delete_queue",
 		shutdown:            make(chan struct{}),
 		Ready:               make(chan struct{}),
 		diskStatsUpdated:    make(chan struct{}),
@@ -377,14 +375,13 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 
 }
 func (s *Server) declareDeleteQueue(ch *amqp.Channel) (amqp.Queue, error) {
-	queueName := s.deleteQueueName + "." + s.hostname
 	q, err := ch.QueueDeclare(
-		queueName, // name
-		true,      // durable
-		false,     // delete when unused
-		false,     // exclusive
-		false,     // no-wait
-		nil,       // arguments
+		"delete."+s.hostname, // name
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
 	)
 	if err != nil {
 		return amqp.Queue{}, err
