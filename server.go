@@ -63,12 +63,12 @@ func NewServer(c *Config) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		deleteQueueName:     "delete_queue",
-		hostname:            hostname,
 		config:              c,
 		devid:               devid,
 		db:                  db,
 		log:                 logger,
+		hostname:            hostname,
+		deleteQueueName:     "delete_queue",
 		shutdown:            make(chan struct{}),
 		Ready:               make(chan struct{}),
 		diskStatsUpdated:    make(chan struct{}),
