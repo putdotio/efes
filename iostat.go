@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/list"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -12,52 +13,75 @@ import (
 
 // IOStat implements some functionality of the "iostat" command.
 type IOStat struct {
-	device string
-	ioTime uint64
-	t      time.Time
+	device       string
+	window       time.Duration
+	measurements *list.List
 }
 
-func newIOStat(path string) (*IOStat, error) {
-	r, err := disk.IOCounters()
-	if err != nil {
-		return nil, err
-	}
+func newIOStat(path string, window time.Duration) (*IOStat, error) {
 	device, err := findDevice(path)
 	if err != nil {
 		return nil, err
 	}
-	device = filepath.Base(device)
-	c, ok := r[device]
-	if !ok {
-		return nil, fmt.Errorf("Cannot find stats for device: %s", device)
+	s := &IOStat{
+		device:       filepath.Base(device),
+		window:       window,
+		measurements: list.New(),
 	}
-	return &IOStat{
-		device: device,
-		ioTime: c.IoTime,
-		t:      time.Now(),
-	}, nil
+	return s, s.measure()
 }
 
-var errFirstRun = errors.New("first utilization call")
+type IOMeasurement struct {
+	t time.Time
+	c uint64
+}
 
-// Utilization returns the utilization level of the disk.
-func (d *IOStat) Utilization() (percent uint8, err error) {
-	now := time.Now()
+func (d *IOStat) measure() error {
 	r, err := disk.IOCounters()
 	if err != nil {
-		return
+		return err
 	}
 	c, ok := r[d.device]
 	if !ok {
-		err = fmt.Errorf("Cannot find stats for device: %s", d.device)
+		return fmt.Errorf("Cannot find stats for device: %s", d.device)
+	}
+	m := IOMeasurement{
+		t: time.Now(),
+		c: c.IoTime,
+	}
+	d.measurements.PushFront(m)
+	return nil
+}
+
+var errUtilizationNotAvailable = errors.New("disk utilization is not available yet")
+
+// Utilization returns the utilization level of the disk.
+func (d *IOStat) Utilization() (percent uint8, err error) {
+	err = d.measure()
+	if err != nil {
 		return
 	}
-	diffIO := time.Duration(c.IoTime-d.ioTime) * time.Millisecond
-	d.ioTime = c.IoTime
-
-	diffTime := now.Sub(d.t)
-	d.t = now
-
+	frameEnd := d.measurements.Front().Value.(IOMeasurement)
+	frameBegin := d.measurements.Back().Value.(IOMeasurement)
+	expired := make([]*list.Element, 0, 1)
+	for e := d.measurements.Back(); e != nil; e = e.Prev() {
+		m := e.Value.(IOMeasurement)
+		if frameEnd.t.Sub(m.t) >= d.window+time.Second/2 {
+			expired = append(expired, e)
+			continue
+		}
+		frameBegin = m
+		break
+	}
+	for _, e := range expired {
+		d.measurements.Remove(e)
+	}
+	diffTime := frameEnd.t.Sub(frameBegin.t)
+	if diffTime == 0 {
+		err = errUtilizationNotAvailable
+		return
+	}
+	diffIO := time.Duration(frameEnd.c-frameBegin.c) * time.Millisecond
 	percent = uint8((100 * diffIO) / diffTime)
 	return
 }
