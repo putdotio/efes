@@ -377,7 +377,7 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 
 }
 func (s *Server) declareDeleteQueue(ch *amqp.Channel) (amqp.Queue, error) {
-	q, err := ch.QueueDeclare(
+	return ch.QueueDeclare(
 		"delete."+s.hostname, // name
 		true,  // durable
 		false, // delete when unused
@@ -385,10 +385,6 @@ func (s *Server) declareDeleteQueue(ch *amqp.Channel) (amqp.Queue, error) {
 		false, // no-wait
 		nil,   // arguments
 	)
-	if err != nil {
-		return amqp.Queue{}, err
-	}
-	return q, nil
 }
 
 func (s *Server) consumeDeleteQueue() {
