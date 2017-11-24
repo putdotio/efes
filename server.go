@@ -355,6 +355,8 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 			return err
 		}
 
+		defer ch.Close()
+
 		q, err := s.declareDeleteQueue(ch)
 		if err != nil {
 			return err
@@ -394,54 +396,68 @@ func (s *Server) consumeDeleteQueue() {
 	for {
 		select {
 		case <-s.shutdown:
-			s.log.Notice("AMQP connection is shutting down..")
 			return
 		case conn := <-s.amqp.Conn():
-			ch, err := conn.Channel()
+			err := s.processDeleteTasks(conn)
 			if err != nil {
-				s.log.Error("Failed to open a channel for consuming delete task.", err)
-				continue
-			}
-
-			q, err := s.declareDeleteQueue(ch)
-			if err != nil {
-				s.log.Infof("Failed to declare a queue", err)
-				continue
-			}
-
-			pid := os.Getpid()
-			consumerTag := "efes-delete-worker:" + strconv.Itoa(pid) + "@" + s.hostname + "/" + strconv.FormatUint(s.devid, 10)
-			messages, err := ch.Consume(
-				q.Name,      // queue
-				consumerTag, // consumer
-				false,       // auto-ack
-				false,       // exclusive
-				false,       // no-local
-				false,       // no-wait
-				nil,         // args
-			)
-			for msg := range messages {
-				msgBody := string(msg.Body)
-				fileID, err := strconv.ParseInt(msgBody, 10, 64)
-				if err != nil {
-					s.log.Error("Error while parsing int", err)
-				}
-
-				err = s.deleteFidOnDisk(fileID)
-				if err != nil {
-					s.log.Errorf("Failed to delete fid %d, %s", fileID, err)
-					if err := msg.Nack(false, true); err != nil {
-						s.log.Errorf("NACK error: %s", err)
-					}
-				}
-				err = msg.Ack(false)
-				if err != nil {
-					s.log.Errorf("ACK error: %s", err)
-				}
-
+				s.log.Error("Error while processing delete task", err)
 			}
 		}
+	}
+}
 
+func (s *Server) processDeleteTasks(conn *amqp.Connection) error {
+	ch, err := conn.Channel()
+	if err != nil {
+		return err
+	}
+	defer ch.Close()
+
+	q, err := s.declareDeleteQueue(ch)
+	if err != nil {
+		return err
+	}
+
+	pid := os.Getpid()
+	consumerTag := "efes-delete-worker:" + strconv.Itoa(pid) + "@" + s.hostname + "/" + strconv.FormatUint(s.devid, 10)
+	messages, err := ch.Consume(
+		q.Name,      // queue
+		consumerTag, // consumer
+		false,       // auto-ack
+		false,       // exclusive
+		false,       // no-local
+		false,       // no-wait
+		nil,         // args
+	)
+	for {
+		select {
+		case <-s.shutdown:
+			return nil
+		case msg, ok := <-messages:
+			if !ok {
+				return amqp.ErrClosed
+			}
+			msgBody := string(msg.Body)
+			fileID, err := strconv.ParseInt(msgBody, 10, 64)
+			if err != nil {
+				s.log.Error("Error while parsing int", err)
+				continue
+			}
+
+			err = s.deleteFidOnDisk(fileID)
+			if err != nil {
+				s.log.Errorf("Failed to delete fid %d, %s", fileID, err)
+				if err := msg.Nack(false, false); err != nil {
+					s.log.Errorf("NACK error: %s", err)
+				}
+				continue
+			}
+			err = msg.Ack(false)
+			if err != nil {
+				s.log.Errorf("ACK error: %s", err)
+				continue
+			}
+		}
 	}
 }
 
