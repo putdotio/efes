@@ -103,6 +103,7 @@ func (s *efesStatus) Print() {
 	})
 
 	// Add data to the table
+	now := time.Now().UTC()
 	data := make([][]string, len(s.devices))
 	for i, d := range s.devices {
 		data[i] = []string{
@@ -114,7 +115,7 @@ func (s *efesStatus) Print() {
 			d.Free(),
 			d.Use(),
 			d.IO(),
-			humanize.Time(d.UpdatedAt),
+			now.Sub(d.UpdatedAt).Truncate(time.Second).String(),
 		}
 
 	}

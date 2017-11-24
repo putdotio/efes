@@ -111,6 +111,7 @@ func (p *Progress) printSpeed(now time.Time) {
 		if remainingTime < 0 {
 			remainingTime = 0
 		}
+		remainingTime = remainingTime.Truncate(time.Second)
 		remainingTimeString = remainingTime.String()
 	}
 
