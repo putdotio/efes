@@ -208,7 +208,7 @@ func (s *Server) getDiskUsage() (used, total sql.NullInt64) {
 	}
 	const mb = 1 << 20
 	used.Valid = true
-	used.Int64 = int64(usage.Used) / mb
+	used.Int64 = int64(usage.Total-usage.Free) / mb
 	total.Valid = true
 	total.Int64 = int64(usage.Total) / mb
 	return
