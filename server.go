@@ -29,7 +29,7 @@ type Server struct {
 	writeServer          http.Server
 	amqp                 *amqpredialer.AMQPRedialer
 	onceDiskStatsUpdated sync.Once
-	devid                uint64
+	devid                int64
 	hostname             string
 	shutdown             chan struct{}
 	Ready                chan struct{}
@@ -48,7 +48,7 @@ func NewServer(c *Config) (*Server, error) {
 	if !fi.IsDir() {
 		return nil, fmt.Errorf("Path must be a directory: %s", c.Server.DataDir)
 	}
-	devid, err := strconv.ParseUint(strings.TrimPrefix(filepath.Base(c.Server.DataDir), "dev"), 10, 32)
+	devid, err := strconv.ParseInt(strings.TrimPrefix(filepath.Base(c.Server.DataDir), "dev"), 10, 32)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", c.Server.DataDir)
 	}
@@ -373,7 +373,7 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 }
 func (s *Server) declareDeleteQueue(ch *amqp.Channel) (amqp.Queue, error) {
 	return ch.QueueDeclare(
-		"delete."+s.hostname, // name
+		"delete.dev"+strconv.FormatInt(s.devid, 10), // name
 		true,  // durable
 		false, // delete when unused
 		false, // exclusive
@@ -410,7 +410,7 @@ func (s *Server) processDeleteTasks(conn *amqp.Connection) error {
 	}
 
 	pid := os.Getpid()
-	consumerTag := "efes-delete-worker:" + strconv.Itoa(pid) + "@" + s.hostname + "/" + strconv.FormatUint(s.devid, 10)
+	consumerTag := "efes-delete-worker:" + strconv.Itoa(pid) + "@" + s.hostname + "/" + strconv.FormatInt(s.devid, 10)
 	messages, err := ch.Consume(
 		q.Name,      // queue
 		consumerTag, // consumer
