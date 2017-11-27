@@ -348,21 +348,18 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 		s.log.Notice("AMQP connection is shutting down..")
 		return nil
 	case conn := <-s.amqp.Conn():
-
 		ch, err := conn.Channel()
 		if err != nil {
 			return err
 		}
-
 		defer ch.Close()
 
 		q, err := s.declareDeleteQueue(ch)
 		if err != nil {
 			return err
 		}
-
 		body := strconv.FormatInt(fileID, 10)
-		err = ch.Publish(
+		return ch.Publish(
 			"",     // exchange
 			q.Name, // routing key
 			false,  // mandatory
@@ -371,7 +368,6 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 				ContentType: "text/plain",
 				Body:        []byte(body),
 			})
-		return err
 	}
 
 }
