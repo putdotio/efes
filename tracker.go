@@ -340,6 +340,11 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
 	}
+	devids, err := getDevicesOfFid(tx, fid)
+	if err != nil {
+		t.internalServerError("cannot get devices of fid", err, r, w)
+		return
+	}
 	_, err = tx.Exec("delete from file where fid=?", fid)
 	if err != nil {
 		t.internalServerError("cannot delete file", err, r, w)
@@ -355,7 +360,44 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot commit transaction", err, r, w)
 		return
 	}
-	// TODO send task to host for removing from disk
+
+	// Send a task to devices that fid is on.
+	select {
+	case conn := <-t.amqp.Conn():
+		ch, err := conn.Channel()
+		if err != nil {
+			log.Errorln("cannot open amqp channel:", err.Error())
+			return
+		}
+		defer ch.Close()
+		for _, devid := range devids {
+			err = publishDeleteTask(ch, devid, fid)
+			if err != nil {
+				log.Errorln("cannot publish delete task:", err.Error())
+			}
+		}
+	case <-t.shutdown:
+		t.log.Warningf("Not sending delete task for fid=%d because shutdown is requested while waiting for amqp connection", fid)
+	}
+}
+
+func getDevicesOfFid(tx *sql.Tx, fid int64) (devices []int64, err error) {
+	rows, err := tx.Query("select devid from file_on where fid=? for update", fid)
+	if err != nil {
+		return nil, err
+	}
+	devids := make([]int64, 0)
+	defer rows.Close() // nolint: errcheck
+	for rows.Next() {
+		var devid int64
+		err = rows.Scan(&devid)
+		if err != nil {
+			return nil, err
+		}
+		devids = append(devids, devid)
+	}
+	err = rows.Err()
+	return
 }
 
 func (t *Tracker) removeOldTempfiles() {

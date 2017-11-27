@@ -359,32 +359,41 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 		}
 		defer ch.Close()
 
-		q, err := s.declareDeleteQueue(ch)
+		_, err = declareDeleteQueue(ch, s.devid)
 		if err != nil {
 			return err
 		}
-		body := strconv.FormatInt(fileID, 10)
-		return ch.Publish(
-			"",     // exchange
-			q.Name, // routing key
-			false,  // mandatory
-			false,  // immediate
-			amqp.Publishing{
-				ContentType: "text/plain",
-				Body:        []byte(body),
-			})
+		return publishDeleteTask(ch, s.devid, fileID)
 	}
 
 }
-func (s *Server) declareDeleteQueue(ch *amqp.Channel) (amqp.Queue, error) {
+
+func publishDeleteTask(ch *amqp.Channel, devid int64, fileID int64) error {
+	body := strconv.FormatInt(fileID, 10)
+	return ch.Publish(
+		"", // exchange
+		deleteQueueName(devid), // routing key
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(body),
+		})
+}
+
+func declareDeleteQueue(ch *amqp.Channel, devid int64) (amqp.Queue, error) {
 	return ch.QueueDeclare(
-		"delete.dev"+strconv.FormatInt(s.devid, 10), // name
+		deleteQueueName(devid),
 		true,  // durable
 		false, // delete when unused
 		false, // exclusive
 		false, // no-wait
 		nil,   // arguments
 	)
+}
+
+func deleteQueueName(devid int64) string {
+	return "delete.dev" + strconv.FormatInt(devid, 10)
 }
 
 func (s *Server) consumeDeleteQueue() {
@@ -409,7 +418,7 @@ func (s *Server) processDeleteTasks(conn *amqp.Connection) error {
 	}
 	defer ch.Close()
 
-	q, err := s.declareDeleteQueue(ch)
+	q, err := declareDeleteQueue(ch, s.devid)
 	if err != nil {
 		return err
 	}

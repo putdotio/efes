@@ -164,6 +164,11 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	go tr.Run()
+	defer tr.Shutdown()
+	<-tr.Ready
+
 	req, err := http.NewRequest("POST", "/delete?key=foo", nil)
 	if err != nil {
 		t.Fatal(err)
