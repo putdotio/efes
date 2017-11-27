@@ -330,7 +330,6 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 			return nil
 		}
 		if s.shouldDeleteFile(fileID, f.ModTime()) {
-			// TODO: Add delete logic.
 			s.log.Infof("Fid %d is too old and there is no record on DB for it. Deleting...", fileID)
 			err = s.publishDeleteTask(fileID)
 			if err != nil {
