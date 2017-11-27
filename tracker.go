@@ -360,8 +360,10 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot commit transaction", err, r, w)
 		return
 	}
+	go t.publishDeleteTask(devids, fid)
+}
 
-	// Send a task to devices that fid is on.
+func (t *Tracker) publishDeleteTask(devids []int64, fid int64) {
 	select {
 	case conn := <-t.amqp.Conn():
 		ch, err := conn.Channel()
