@@ -269,32 +269,21 @@ func (s *Server) cleanDisk() {
 
 func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 	var fid int
-	existFile := true
-	existTempFile := true
-	// check file
-	row := s.db.QueryRow("select fid from file where fid=?", fileID)
-	err := row.Scan(&fid)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			existFile = false
-		} else {
-			s.log.Error("Error after querying file table ", err)
+	switch err := s.db.QueryRow("select fid from file where fid=?", fileID).Scan(&fid); err {
+	case sql.ErrNoRows:
+		switch err := s.db.QueryRow("select fid from tempfile where fid=?", fileID).Scan(&fid); err {
+		case sql.ErrNoRows:
+			return false, nil
+		case nil:
+			return true, nil
+		default:
 			return true, err
 		}
+	case nil:
+		return true, nil
+	default:
+		return true, err
 	}
-	// check tempfile
-	row = s.db.QueryRow("select fid from tempfile where fid=?", fileID)
-	err = row.Scan(&fid)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			existTempFile = false
-		} else {
-			s.log.Error("Error after querying tempfile table ", err)
-			return true, err
-		}
-	}
-	return existFile || existTempFile, nil
-
 }
 
 func (s *Server) removeUnusedFids(root string) {
@@ -303,13 +292,12 @@ func (s *Server) removeUnusedFids(root string) {
 	if err != nil {
 		s.log.Error("Error during walk through files", err)
 	}
-
 }
 
 func (s *Server) shouldDeleteFile(fileID int64, fileModtime time.Time) bool {
 	existsOnDB, err := s.fidExistsOnDatabase(fileID)
 	if err != nil {
-		s.log.Error("Can not querying database ", err)
+		s.log.Errorln("Cannot query database:", err)
 		return false
 	}
 	if existsOnDB {
