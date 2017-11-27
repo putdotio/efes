@@ -136,7 +136,11 @@ func getOffset(path string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return strconv.ParseInt(string(b), 10, 64)
+	offset, err := strconv.ParseInt(string(b), 10, 64)
+	if err != nil {
+		return 0, errNotExist
+	}
+	return offset, nil
 }
 
 func saveOffset(path string, offset int64) error {
