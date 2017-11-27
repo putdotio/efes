@@ -68,7 +68,7 @@ var defaultConfig = Config{
 		ShowProgress: true,
 	},
 	Database: DatabaseConfig{
-		DSN: "test:test@(127.0.0.1:3306)/mogilefs",
+		DSN: "test:test@(127.0.0.1:3306)/efes",
 	},
 	AMQP: AMQPConfig{
 		URL: "amqp://guest:guest@127.0.0.1:5672/",

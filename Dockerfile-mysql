@@ -1,8 +1,8 @@
 FROM mysql:5.7.20
 
-ARG MYSQL_USER=mogilefs
+ARG MYSQL_USER=efes
 ARG MYSQL_PASSWORD=123
-ARG MYSQL_DATABASE=mogilefs
+ARG MYSQL_DATABASE=efes
 
 ADD docker-init-mysql.sh /tmp/
 ADD schema.sql /tmp/
