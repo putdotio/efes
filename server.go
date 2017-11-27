@@ -319,24 +319,25 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 	case <-s.shutdown:
 		return io.EOF
 	default:
-		if filepath.Ext(path) != ".fid" {
-			return nil
-		}
-		// Example file name: 0000000789.fid
-		fileName := strings.Split(f.Name(), ".")
-		fileID, err := strconv.ParseInt(strings.TrimLeft(fileName[0], "0,"), 10, 64)
-		if err != nil {
-			s.log.Error("Can not parse file name ", err)
-			return nil
-		}
-		if s.shouldDeleteFile(fileID, f.ModTime()) {
-			s.log.Infof("Fid %d is too old and there is no record on DB for it. Deleting...", fileID)
-			err = s.publishDeleteTask(fileID)
-			if err != nil {
-				s.log.Error("Error while publishing delete task", err)
-			}
-			return nil
-		}
+	}
+	if filepath.Ext(path) != ".fid" {
+		s.log.Debugln("extension is not fid:", path)
+		return nil
+	}
+	// Example file name: 0000000789.fid
+	fileName := strings.Split(f.Name(), ".")
+	fileID, err := strconv.ParseInt(strings.TrimLeft(fileName[0], "0,"), 10, 64)
+	if err != nil {
+		s.log.Error("Can not parse file name ", err)
+		return nil
+	}
+	if !s.shouldDeleteFile(fileID, f.ModTime()) {
+		return nil
+	}
+	s.log.Infof("Fid %d is too old and there is no record on DB for it. Deleting...", fileID)
+	err = s.publishDeleteTask(fileID)
+	if err != nil {
+		s.log.Error("Error while publishing delete task", err)
 	}
 	return nil
 }
