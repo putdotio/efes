@@ -99,7 +99,7 @@ func (s *Server) Run() error {
 	}
 	go s.cleanDisk()
 	go s.updateDiskStats()
-	// go s.consumeDeleteQueue()
+	go s.consumeDeleteQueue()
 	s.log.Notice("Server is started.")
 	errCh := make(chan error, 2)
 	go func() {
