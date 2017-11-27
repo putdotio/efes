@@ -231,12 +231,12 @@ func (s *Server) getDiskUtilization(iostat *IOStat) (utilization sql.NullInt64) 
 }
 
 func (s *Server) cleanDisk() {
-	var devid int64
 	ticker := time.NewTicker(time.Minute * 1)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
+			var devid int64
 			row := s.db.QueryRow("select devid from device where devid=? and ADDDATE(last_disk_clean_time, INTERVAL ? SECOND) < CURRENT_TIMESTAMP", s.devid, s.config.Server.CleanDiskRunPeriod)
 			err := row.Scan(&devid)
 			if err != nil {
@@ -247,14 +247,19 @@ func (s *Server) cleanDisk() {
 					continue
 				}
 			}
-
-			s.log.Debug("Updating disk clean time on db..")
 			_, err = s.db.Exec("update device set last_disk_clean_time=current_timestamp where devid=?", s.devid)
 			if err != nil {
 				s.log.Error("Error during updating last disk clean time", err)
 				continue
 			}
 			s.removeUnusedFids(s.config.Server.DataDir)
+			// Updating last_disk_clean_time at the end of traversal helps to
+			// spread the load on database more uniform in time.
+			_, err = s.db.Exec("update device set last_disk_clean_time=current_timestamp where devid=?", s.devid)
+			if err != nil {
+				s.log.Error("Error during updating last disk clean time", err)
+				continue
+			}
 		case <-s.shutdown:
 			close(s.diskCleanStopped)
 			return
