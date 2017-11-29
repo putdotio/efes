@@ -317,6 +317,9 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 		s.log.Errorln("Error while walking data dir:", err.Error())
 		return nil
 	}
+	if f.IsDir() {
+		return nil
+	}
 	if filepath.Ext(path) != ".fid" {
 		s.log.Debugln("extension is not fid:", path)
 		return nil
