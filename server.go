@@ -243,7 +243,7 @@ func (s *Server) cleanDisk() {
 				if err == sql.ErrNoRows {
 					continue
 				} else {
-					s.log.Error("Error getting last disk clean time", err)
+					s.log.Errorln("Error getting last disk clean time:", err)
 					continue
 				}
 			}
@@ -252,12 +252,16 @@ func (s *Server) cleanDisk() {
 				s.log.Error("Error during updating last disk clean time", err)
 				continue
 			}
-			s.removeUnusedFids(s.config.Server.DataDir)
+			s.log.Debug("Cleaning data dir...")
+			err = filepath.Walk(s.config.Server.DataDir, s.visitFiles)
+			if err != nil {
+				s.log.Errorln("Error while walking on files:", err)
+			}
 			// Updating last_disk_clean_time at the end of traversal helps to
 			// spread the load on database more uniform in time.
 			_, err = s.db.Exec("update device set last_disk_clean_time=current_timestamp where devid=?", s.devid)
 			if err != nil {
-				s.log.Error("Error during updating last disk clean time", err)
+				s.log.Errorln("Error during updating last disk clean time:", err)
 				continue
 			}
 		case <-s.shutdown:
@@ -283,14 +287,6 @@ func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 		return true, nil
 	default:
 		return true, err
-	}
-}
-
-func (s *Server) removeUnusedFids(root string) {
-	s.log.Debug("Remove unused fids started..")
-	err := filepath.Walk(root, s.visitFiles)
-	if err != nil {
-		s.log.Error("Error during walk through files", err)
 	}
 }
 
