@@ -31,7 +31,7 @@ func NewClient(cfg *Config) (*Client, error) {
 		trackerURL: u,
 		log:        log.NewLogger("client"),
 	}
-	c.httpClient.Timeout = time.Duration(cfg.Client.SendTimeout) * time.Second
+	c.httpClient.Timeout = time.Duration(cfg.Client.SendTimeout)
 	if cfg.Debug {
 		c.log.SetLevel(log.DEBUG)
 	}

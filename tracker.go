@@ -96,8 +96,7 @@ func (t *Tracker) Run() error {
 func (t *Tracker) Shutdown() error {
 	close(t.shutdown)
 
-	timeout := time.Duration(t.config.Tracker.ShutdownTimeout) * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(t.config.Tracker.ShutdownTimeout))
 	_ = cancel
 	err := t.server.Shutdown(ctx)
 	if err != nil {
@@ -408,8 +407,7 @@ func (t *Tracker) removeOldTempfiles() {
 	for {
 		select {
 		case now := <-ticker.C:
-			tooOld := time.Duration(t.config.Tracker.TempfileTooOld) * time.Millisecond
-			deadline := now.Add(-tooOld)
+			deadline := now.Add(-time.Duration(t.config.Tracker.TempfileTooOld))
 			res, err := t.db.Exec("delete from tempfile where createtime < ?", deadline)
 			if err != nil {
 				t.log.Errorln("cannot delete old tempfile records:", err.Error())

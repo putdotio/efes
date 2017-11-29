@@ -142,9 +142,7 @@ func (s *Server) notifyReady() {
 func (s *Server) Shutdown() error {
 	close(s.shutdown)
 
-	timeout := time.Duration(s.config.Server.ShutdownTimeout) * time.Millisecond
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(s.config.Server.ShutdownTimeout))
 	_ = cancel
 
 	err := s.readServer.Shutdown(ctx)
@@ -233,11 +231,12 @@ func (s *Server) getDiskUtilization(iostat *IOStat) (utilization sql.NullInt64) 
 func (s *Server) cleanDisk() {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
+	period := time.Duration(s.config.Server.CleanDiskRunPeriod) / time.Second
 	for {
 		select {
 		case <-ticker.C:
 			var devid int64
-			row := s.db.QueryRow("select devid from device where devid=? and ADDDATE(last_disk_clean_time, INTERVAL ? SECOND) < CURRENT_TIMESTAMP", s.devid, s.config.Server.CleanDiskRunPeriod)
+			row := s.db.QueryRow("select devid from device where devid=? and ADDDATE(last_disk_clean_time, INTERVAL ? SECOND) < CURRENT_TIMESTAMP", s.devid, period)
 			err := row.Scan(&devid)
 			if err != nil {
 				if err == sql.ErrNoRows {
@@ -299,7 +298,7 @@ func (s *Server) shouldDeleteFile(fileID int64, fileModtime time.Time) bool {
 	if existsOnDB {
 		return false
 	}
-	ttl := time.Duration(s.config.Server.CleanDiskFileTTL) * time.Second
+	ttl := time.Duration(s.config.Server.CleanDiskFileTTL)
 	return time.Since(fileModtime) > ttl
 }
 

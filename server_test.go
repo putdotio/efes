@@ -39,7 +39,7 @@ func TestFidExistsOnDatabase(t *testing.T) {
 }
 
 func TestShouldDeleteFileExistsOnDbNewOnDisk(t *testing.T) {
-	testConfig.Server.CleanDiskFileTTL = 300
+	testConfig.Server.CleanDiskFileTTL = Duration(300 * time.Second)
 	s := setupServer(t, 1)
 
 	modTime := time.Now().Add(-time.Duration(200 * time.Second))
@@ -51,7 +51,7 @@ func TestShouldDeleteFileExistsOnDbNewOnDisk(t *testing.T) {
 
 }
 func TestShouldDeleteFileExistsOnDbOldOnDisk(t *testing.T) {
-	testConfig.Server.CleanDiskFileTTL = 300
+	testConfig.Server.CleanDiskFileTTL = Duration(300 * time.Second)
 	s := setupServer(t, 1)
 
 	modTime := time.Now().Add(-time.Duration(400 * time.Second))
@@ -62,7 +62,7 @@ func TestShouldDeleteFileExistsOnDbOldOnDisk(t *testing.T) {
 	}
 }
 func TestShouldDeleteFileNotExistsOnDbNewOnDisk(t *testing.T) {
-	testConfig.Server.CleanDiskFileTTL = 300
+	testConfig.Server.CleanDiskFileTTL = Duration(300 * time.Second)
 	s := setupServer(t, 1)
 
 	modTime := time.Now().Add(-time.Duration(200 * time.Second))
@@ -73,7 +73,7 @@ func TestShouldDeleteFileNotExistsOnDbNewOnDisk(t *testing.T) {
 	}
 }
 func TestShouldDeleteFileNotExistsOnDbOldOnDisk(t *testing.T) {
-	testConfig.Server.CleanDiskFileTTL = 300
+	testConfig.Server.CleanDiskFileTTL = Duration(300 * time.Second)
 	s := setupServer(t, 1)
 
 	modTime := time.Now().Add(-time.Duration(400 * time.Second))
