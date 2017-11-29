@@ -35,7 +35,6 @@ func (c *Client) Read(key, path string) error {
 		if err2 != nil {
 			return err2
 		}
-		defer logCloseFile(c.log, f)
 		w = f
 		cl = f
 	}
@@ -50,6 +49,10 @@ func (c *Client) Read(key, path string) error {
 	}
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
+		err2 := cl.Close()
+		if err2 != nil {
+			c.log.Errorln("Cannot close file:", err)
+		}
 		return err
 	}
 	return cl.Close()
