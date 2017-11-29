@@ -271,7 +271,7 @@ func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 	var fid int
 	switch err := s.db.QueryRow("select fid from file where fid=?", fileID).Scan(&fid); err {
 	case sql.ErrNoRows:
-		switch err := s.db.QueryRow("select fid from tempfile where fid=?", fileID).Scan(&fid); err {
+		switch err = s.db.QueryRow("select fid from tempfile where fid=?", fileID).Scan(&fid); err {
 		case sql.ErrNoRows:
 			return false, nil
 		case nil:
@@ -304,7 +304,7 @@ func (s *Server) shouldDeleteFile(fileID int64, fileModtime time.Time) bool {
 		return false
 	}
 	ttl := time.Duration(s.config.Server.CleanDiskFileTTL) * time.Second
-	return time.Now().Sub(fileModtime) > ttl
+	return time.Since(fileModtime) > ttl
 }
 
 func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
@@ -312,6 +312,10 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 	case <-s.shutdown:
 		return io.EOF
 	default:
+	}
+	if err != nil {
+		s.log.Errorln("Error while walking data dir:", err.Error())
+		return nil
 	}
 	if filepath.Ext(path) != ".fid" {
 		s.log.Debugln("extension is not fid:", path)
@@ -345,7 +349,7 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 		if err != nil {
 			return err
 		}
-		defer ch.Close()
+		defer logCloseAMQPChannel(s.log, ch)
 
 		_, err = declareDeleteQueue(ch, s.devid)
 		if err != nil {
@@ -404,7 +408,7 @@ func (s *Server) processDeleteTasks(conn *amqp.Connection) error {
 	if err != nil {
 		return err
 	}
-	defer ch.Close()
+	defer logCloseAMQPChannel(s.log, ch)
 
 	q, err := declareDeleteQueue(ch, s.devid)
 	if err != nil {
@@ -422,6 +426,9 @@ func (s *Server) processDeleteTasks(conn *amqp.Connection) error {
 		false,       // no-wait
 		nil,         // args
 	)
+	if err != nil {
+		return err
+	}
 	for {
 		select {
 		case <-s.shutdown:
@@ -436,19 +443,20 @@ func (s *Server) processDeleteTasks(conn *amqp.Connection) error {
 				s.log.Error("Error while parsing int", err)
 				continue
 			}
-
 			err = s.deleteFidOnDisk(fileID)
 			if err != nil {
 				s.log.Errorf("Failed to delete fid %d, %s", fileID, err)
-				if err := msg.Nack(false, false); err != nil {
-					s.log.Errorf("NACK error: %s", err)
+				err2 := msg.Nack(false, false)
+				if err2 != nil {
+					s.log.Errorf("NACK error: %s", err2)
+					return err2
 				}
 				continue
 			}
 			err = msg.Ack(false)
 			if err != nil {
 				s.log.Errorf("ACK error: %s", err)
-				continue
+				return err
 			}
 		}
 	}

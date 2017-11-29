@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/redialer/amqpredialer"
+	"github.com/cenkalti/log"
+	"github.com/streadway/amqp"
 )
 
 func readyMysql(cfg DatabaseConfig, timeout time.Duration, exec string) error {
@@ -13,7 +14,7 @@ func readyMysql(cfg DatabaseConfig, timeout time.Duration, exec string) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer logCloseDB(log.DefaultLogger, db)
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	timeoutC := time.After(timeout)
@@ -36,17 +37,17 @@ func readyMysql(cfg DatabaseConfig, timeout time.Duration, exec string) error {
 }
 
 func readyRabbitmq(cfg AMQPConfig, timeout time.Duration) error {
-	amqp, err := amqpredialer.New(cfg.URL)
-	if err != nil {
-		return err
-	}
-	go amqp.Run()
-	defer amqp.Close()
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 	timeoutC := time.After(timeout)
 	for {
 		select {
-		case <-amqp.Conn():
-			return nil
+		case <-ticker.C:
+			conn, err := amqp.Dial(cfg.URL)
+			if err != nil {
+				continue
+			}
+			return conn.Close()
 		case <-timeoutC:
 			return fmt.Errorf("mysql did not become ready in %s", timeout)
 		}

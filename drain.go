@@ -16,7 +16,7 @@ import (
 type Drainer struct {
 	config   *Config
 	checksum bool
-	devid    uint64
+	devid    int64
 	db       *sql.DB
 	client   *Client
 	log      log.Logger
@@ -32,7 +32,7 @@ func NewDrainer(c *Config) (*Drainer, error) {
 	if !fi.IsDir() {
 		return nil, fmt.Errorf("Path must be a directory: %s", c.Server.DataDir)
 	}
-	devid, err := strconv.ParseUint(strings.TrimPrefix(filepath.Base(c.Server.DataDir), "dev"), 10, 32)
+	devid, err := strconv.ParseInt(strings.TrimPrefix(filepath.Base(c.Server.DataDir), "dev"), 10, 32)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", c.Server.DataDir)
 	}
@@ -107,7 +107,7 @@ func (d *Drainer) moveFile(fid int64) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer logCloseFile(d.log, f)
 	fi, err := f.Stat()
 	if err != nil {
 		return err
@@ -131,9 +131,9 @@ func (d *Drainer) moveFile(fid int64) error {
 		}()
 
 		d.log.Infoln("Calculating CRC32...")
-		localChecksum, err := crc32file(fidpath)
-		if err != nil {
-			return err
+		localChecksum, err2 := crc32file(fidpath, d.log)
+		if err2 != nil {
+			return err2
 		}
 		d.log.Infoln("CRC32:", localChecksum)
 
@@ -149,13 +149,9 @@ func (d *Drainer) moveFile(fid int64) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
-	_, err = tx.Exec("insert into file_on(fid, devid) values(?, ?)", fid, ad.devid)
+	err = moveFidOnDB(tx, fid, d.devid, ad.devid)
 	if err != nil {
-		return err
-	}
-	_, err = tx.Exec("delete from file_on where fid=? and devid=?", fid, d.devid)
-	if err != nil {
+		logRollbackTx(d.log, tx)
 		return err
 	}
 	err = tx.Commit()
@@ -163,6 +159,15 @@ func (d *Drainer) moveFile(fid int64) error {
 		return err
 	}
 	return os.Remove(fidpath)
+}
+
+func moveFidOnDB(tx *sql.Tx, fid, oldDevid, newDevid int64) error {
+	_, err := tx.Exec("insert into file_on(fid, devid) values(?, ?)", fid, newDevid)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("delete from file_on where fid=? and devid=?", fid, oldDevid)
+	return err
 }
 
 func calculateRemoteChecksum(path string) (string, error) {

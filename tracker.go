@@ -371,7 +371,7 @@ func (t *Tracker) publishDeleteTask(devids []int64, fid int64) {
 			log.Errorln("cannot open amqp channel:", err.Error())
 			return
 		}
-		defer ch.Close()
+		defer logCloseAMQPChannel(t.log, ch)
 		for _, devid := range devids {
 			err = publishDeleteTask(ch, devid, fid)
 			if err != nil {
@@ -383,12 +383,12 @@ func (t *Tracker) publishDeleteTask(devids []int64, fid int64) {
 	}
 }
 
-func getDevicesOfFid(tx *sql.Tx, fid int64) (devices []int64, err error) {
+func getDevicesOfFid(tx *sql.Tx, fid int64) (devids []int64, err error) {
 	rows, err := tx.Query("select devid from file_on where fid=? for update", fid)
 	if err != nil {
 		return nil, err
 	}
-	devids := make([]int64, 0)
+	devids = make([]int64, 0)
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var devid int64
@@ -433,8 +433,6 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var err error
-
-	type device Device
 	devices := make([]Device, 0)
 
 	rows, err := t.db.Query("select devid, hostid, status, mb_total, mb_used, unix_timestamp(updated_at), io_utilization from device")
@@ -485,8 +483,6 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var err error
-
-	type host Host
 	hosts := make([]Host, 0)
 
 	var rows *sql.Rows

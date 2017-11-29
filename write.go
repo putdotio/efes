@@ -10,17 +10,17 @@ import (
 
 func (c *Client) Write(key, path string) error {
 	if path == "-" {
-		return c.writeReader(key, path, os.Stdin)
+		return c.writeReader(key, os.Stdin)
 	}
 	f, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close() // nolint: errcheck
-	return c.writeFile(key, path, f)
+	return c.writeFile(key, f)
 }
 
-func (c *Client) writeReader(key, path string, r io.Reader) error {
+func (c *Client) writeReader(key string, r io.Reader) error {
 	path, fid, devid, err := c.createOpen(-1)
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func (c *Client) writeReader(key, path string, r io.Reader) error {
 	return c.createClose(key, n, fid, devid)
 }
 
-func (c *Client) writeFile(key, path string, f *os.File) error {
+func (c *Client) writeFile(key string, f *os.File) error {
 	fi, err := f.Stat()
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
 						c.log.Errorln("got invalid offset from server:", actualOffsetString)
 						return offset, err
 					}
-					_, err = f.Seek(actualOffset, os.SEEK_SET)
+					_, err = f.Seek(actualOffset, io.SeekStart)
 					if err != nil {
 						return offset, err
 					}

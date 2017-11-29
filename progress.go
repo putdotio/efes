@@ -115,5 +115,5 @@ func (p *Progress) printSpeed(now time.Time) {
 		remainingTimeString = remainingTime.String()
 	}
 
-	fmt.Fprintf(os.Stderr, "%s %s%% %s/s %s\n", humanize.Comma(count), percent, speed, remainingTimeString)
+	fmt.Fprintf(os.Stderr, "%s %s%% %s/s %s\n", humanize.Comma(count), percent, speed, remainingTimeString) // nolint: errcheck, gas
 }

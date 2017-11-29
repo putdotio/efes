@@ -97,12 +97,12 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "CRC32":
-		s, err := crc32file(path)
+		s, err := crc32file(path, f.log)
 		if err != nil {
 			f.internalServerError("cannot calculate crc32 of file", err, r, w)
 			return
 		}
-		w.Write([]byte(s))
+		w.Write([]byte(s)) // nolint: errcheck, gas
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
@@ -212,12 +212,12 @@ func (e *OffsetMismatchError) Error() string {
 	return fmt.Sprintf("given offset (%d) does not match required offset (%d)", e.Given, e.Required)
 }
 
-func crc32file(name string) (string, error) {
+func crc32file(name string, log log.Logger) (string, error) {
 	f, err := os.Open(name)
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer logCloseFile(log, f)
 	h := crc32.NewIEEE()
 	_, err = io.Copy(h, f)
 	if err != nil {

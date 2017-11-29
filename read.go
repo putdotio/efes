@@ -31,11 +31,11 @@ func (c *Client) Read(key, path string) error {
 		w = os.Stdout
 		cl = os.Stdout
 	} else {
-		f, err := os.Create(path)
-		if err != nil {
-			return err
+		f, err2 := os.Create(path)
+		if err2 != nil {
+			return err2
 		}
-		defer f.Close()
+		defer logCloseFile(c.log, f)
 		w = f
 		cl = f
 	}

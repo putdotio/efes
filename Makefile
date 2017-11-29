@@ -22,4 +22,9 @@ upload: build
 	@rm $(NAME) $(NAME).md5
 
 lint:
-	gometalinter --vendor -D gotype --cyclo-over=20 ./...
+	gometalinter \
+		--vendor \
+		--disable golint \
+		--disable gocyclo \
+		--disable aligncheck \
+		--disable maligned
