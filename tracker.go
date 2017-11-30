@@ -364,7 +364,11 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 
 func (t *Tracker) publishDeleteTask(devids []int64, fid int64) {
 	select {
-	case conn := <-t.amqp.Conn():
+	case conn, ok := <-t.amqp.Conn():
+		if !ok {
+			log.Error("Cannot publish delete task. AMQP connection is closed.")
+			return
+		}
 		ch, err := conn.Channel()
 		if err != nil {
 			log.Errorln("cannot open amqp channel:", err.Error())

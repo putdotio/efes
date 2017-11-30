@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -342,7 +343,10 @@ func (s *Server) publishDeleteTask(fileID int64) error {
 	case <-s.shutdown:
 		s.log.Notice("AMQP connection is shutting down..")
 		return nil
-	case conn := <-s.amqp.Conn():
+	case conn, ok := <-s.amqp.Conn():
+		if !ok {
+			return errors.New("Cannot publish delete task. AMQP connection is closed.")
+		}
 		ch, err := conn.Channel()
 		if err != nil {
 			return err
@@ -392,7 +396,12 @@ func (s *Server) consumeDeleteQueue() {
 		select {
 		case <-s.shutdown:
 			return
-		case conn := <-s.amqp.Conn():
+		case conn, ok := <-s.amqp.Conn():
+			if !ok {
+				s.log.Error("Cannot consume delete queue. AMQP connection is not open.")
+				time.Sleep(time.Second)
+				continue
+			}
 			err := s.processDeleteTasks(conn)
 			if err != nil {
 				s.log.Error("Error while processing delete task", err)
