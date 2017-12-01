@@ -14,6 +14,7 @@ import (
 
 	"github.com/cenkalti/log"
 	"github.com/cenkalti/redialer/amqpredialer"
+	"github.com/streadway/amqp"
 )
 
 // TODO remove hardcoded constants
@@ -384,6 +385,19 @@ func (t *Tracker) publishDeleteTask(devids []int64, fid int64) {
 	case <-t.shutdown:
 		t.log.Warningf("Not sending delete task for fid=%d because shutdown is requested while waiting for amqp connection", fid)
 	}
+}
+
+func publishDeleteTask(ch *amqp.Channel, devid int64, fileID int64) error {
+	body := strconv.FormatInt(fileID, 10)
+	return ch.Publish(
+		"", // exchange
+		deleteQueueName(devid), // routing key
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(body),
+		})
 }
 
 func getDevicesOfFid(tx *sql.Tx, fid int64) (devids []int64, err error) {

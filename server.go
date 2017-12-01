@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -337,43 +336,6 @@ func (s *Server) visitFile(path string, f os.FileInfo, err error) error {
 		s.log.Errorln("Cannot remove file:", err.Error())
 	}
 	return nil
-}
-
-func (s *Server) publishDeleteTask(fileID int64) error {
-	select {
-	case <-s.shutdown:
-		s.log.Notice("AMQP connection is shutting down..")
-		return nil
-	case conn, ok := <-s.amqp.Conn():
-		if !ok {
-			return errors.New("Cannot publish delete task. AMQP connection is closed.")
-		}
-		ch, err := conn.Channel()
-		if err != nil {
-			return err
-		}
-		defer logCloseAMQPChannel(s.log, ch)
-
-		_, err = declareDeleteQueue(ch, s.devid)
-		if err != nil {
-			return err
-		}
-		return publishDeleteTask(ch, s.devid, fileID)
-	}
-
-}
-
-func publishDeleteTask(ch *amqp.Channel, devid int64, fileID int64) error {
-	body := strconv.FormatInt(fileID, 10)
-	return ch.Publish(
-		"", // exchange
-		deleteQueueName(devid), // routing key
-		false, // mandatory
-		false, // immediate
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(body),
-		})
 }
 
 func declareDeleteQueue(ch *amqp.Channel, devid int64) (amqp.Queue, error) {
