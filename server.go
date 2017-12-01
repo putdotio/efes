@@ -253,7 +253,7 @@ func (s *Server) cleanDisk() {
 				continue
 			}
 			s.log.Debug("Cleaning data dir...")
-			err = filepath.Walk(s.config.Server.DataDir, s.visitFiles)
+			err = filepath.Walk(s.config.Server.DataDir, s.visitFile)
 			if err != nil {
 				s.log.Errorln("Error while walking on files:", err)
 			}
@@ -290,20 +290,7 @@ func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 	}
 }
 
-func (s *Server) shouldDeleteFile(fileID int64, fileModtime time.Time) bool {
-	existsOnDB, err := s.fidExistsOnDatabase(fileID)
-	if err != nil {
-		s.log.Errorln("Cannot query database:", err)
-		return false
-	}
-	if existsOnDB {
-		return false
-	}
-	ttl := time.Duration(s.config.Server.CleanDiskFileTTL)
-	return time.Since(fileModtime) > ttl
-}
-
-func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
+func (s *Server) visitFile(path string, f os.FileInfo, err error) error {
 	select {
 	case <-s.shutdown:
 		return io.EOF
@@ -316,8 +303,17 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 	if f.IsDir() {
 		return nil
 	}
+	ttl := time.Duration(s.config.Server.CleanDiskFileTTL)
+	if time.Since(f.ModTime()) < ttl {
+		s.log.Debugln("File is newer than", ttl)
+		return nil
+	}
 	if filepath.Ext(path) != ".fid" {
-		s.log.Debugln("extension is not fid:", path)
+		s.log.Infoln("extension is not fid:", path, "; removing...")
+		err = os.Remove(path)
+		if err != nil {
+			s.log.Errorln("Cannot remove file:", err.Error())
+		}
 		return nil
 	}
 	// Example file name: 0000000789.fid
@@ -327,13 +323,18 @@ func (s *Server) visitFiles(path string, f os.FileInfo, err error) error {
 		s.log.Error("Can not parse file name ", err)
 		return nil
 	}
-	if !s.shouldDeleteFile(fileID, f.ModTime()) {
+	existsOnDB, err := s.fidExistsOnDatabase(fileID)
+	if err != nil {
+		s.log.Errorln("Cannot query database:", err)
+		return nil
+	}
+	if existsOnDB {
 		return nil
 	}
 	s.log.Infof("Fid %d is too old and there is no record on DB for it. Deleting...", fileID)
-	err = s.publishDeleteTask(fileID)
+	err = os.Remove(path)
 	if err != nil {
-		s.log.Error("Error while publishing delete task", err)
+		s.log.Errorln("Cannot remove file:", err.Error())
 	}
 	return nil
 }
@@ -475,7 +476,6 @@ func (s *Server) deleteFidOnDisk(fileID int64) error {
 	path := fmt.Sprintf("%s/%s/%s/%s/%s.fid", s.config.Server.DataDir, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
 
 	err := os.Remove(path)
-
 	if err != nil {
 		if os.IsNotExist(err) {
 			s.log.Debugf("Fid path does not exist %s. ", path)
@@ -485,5 +485,4 @@ func (s *Server) deleteFidOnDisk(fileID int64) error {
 	}
 	s.log.Debugf("Fid %d deleted. ", fileID)
 	return nil
-
 }
