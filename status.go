@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 
@@ -123,7 +124,7 @@ func (s *efesStatus) Print() {
 	table.Render()
 }
 
-func (c *Client) Status() (*efesStatus, error) {
+func (c *Client) Status(sortBy string) (*efesStatus, error) {
 	ret := &efesStatus{
 		devices: make([]deviceStatus, 0),
 	}
@@ -155,6 +156,20 @@ func (c *Client) Status() (*efesStatus, error) {
 			UpdatedAt: time.Unix(d.UpdatedAt, 0),
 		}
 		ret.devices = append(ret.devices, ds)
+	}
+	switch sortBy {
+	case "host":
+		sort.Sort(byHostname{ret.devices})
+	case "device":
+		sort.Sort(byDevID{ret.devices})
+	case "size":
+		sort.Sort(bySize{ret.devices})
+	case "used":
+		sort.Sort(byUsed{ret.devices})
+	case "free":
+		sort.Sort(byFree{ret.devices})
+	default:
+		c.log.Warningln("Sort key is not valid:", sortBy)
 	}
 	return ret, nil
 }

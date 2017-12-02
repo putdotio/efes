@@ -167,12 +167,19 @@ func main() {
 		{
 			Name:  "status",
 			Usage: "show system status",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "sort, s",
+					Usage: "sort devices by column",
+					Value: "host",
+				},
+			},
 			Action: func(c *cli.Context) error {
 				client, err := NewClient(cfg)
 				if err != nil {
 					return err
 				}
-				s, err := client.Status()
+				s, err := client.Status(c.String("sort"))
 				if err != nil {
 					return err
 				}
