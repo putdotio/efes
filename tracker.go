@@ -420,13 +420,13 @@ func getDevicesOfFid(tx *sql.Tx, fid int64) (devids []int64, err error) {
 }
 
 func (t *Tracker) removeOldTempfiles() {
+	tempfileTooOld := time.Duration(t.config.Tracker.TempfileTooOld) / time.Second
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 	for {
 		select {
-		case now := <-ticker.C:
-			deadline := now.Add(-time.Duration(t.config.Tracker.TempfileTooOld))
-			res, err := t.db.Exec("delete from tempfile where createtime < ?", deadline)
+		case <-ticker.C:
+			res, err := t.db.Exec("delete from tempfile where ADDDATE(createtime, INTERVAL ? SECOND < CURRENT_TIMESTAMP", tempfileTooOld)
 			if err != nil {
 				t.log.Errorln("cannot delete old tempfile records:", err.Error())
 				continue
