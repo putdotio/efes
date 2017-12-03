@@ -103,18 +103,18 @@ func (s *Server) Run() error {
 	s.log.Notice("Server is started.")
 	errCh := make(chan error, 2)
 	go func() {
-		err = s.writeServer.Serve(writeListener)
-		if err == http.ErrServerClosed {
+		err2 := s.writeServer.Serve(writeListener)
+		if err2 == http.ErrServerClosed {
 			s.log.Notice("Write server is shutting down.")
 		}
-		errCh <- err
+		errCh <- err2
 	}()
 	go func() {
-		err = s.readServer.Serve(readListener)
-		if err == http.ErrServerClosed {
+		err2 := s.readServer.Serve(readListener)
+		if err2 == http.ErrServerClosed {
 			s.log.Notice("Read server is shutting down.")
 		}
-		errCh <- err
+		errCh <- err2
 	}()
 	go func() {
 		s.amqp.Run()
