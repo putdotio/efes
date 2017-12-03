@@ -58,7 +58,7 @@ func TestShouldDeleteFileExistsOnDbNewOnDisk(t *testing.T) {
 
 func insertToDB(t *testing.T, db *sql.DB, fid int64) {
 	t.Helper()
-	_, err := db.Exec("insert into file(fid, dmid, classid, devcount) values(?, 1, 1, 1)", fid)
+	_, err := db.Exec("insert into file(fid, devcount) values(?, 1)", fid)
 	if err != nil {
 		t.Fatal(err)
 	}

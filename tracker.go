@@ -17,12 +17,6 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// TODO remove hardcoded constants
-const (
-	dmid    = 1
-	classid = 1
-)
-
 // Tracker tracks the info of files in database.
 // Tracker responds to client requests.
 // Tracker sends jobs to servers.
@@ -133,7 +127,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 	var response GetPaths
 	response.Paths = make([]string, 0)
 	key := r.FormValue("key")
-	rows, err := t.db.Query("select h.hostip, d.read_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=? and f.dmid=?", key, dmid)
+	rows, err := t.db.Query("select h.hostip, d.read_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=?", key)
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -188,7 +182,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot find a device", err, r, w)
 		return
 	}
-	res, err := t.db.Exec("insert into tempfile(createtime, classid, dmid) values(?, ?, ?)", time.Now().UTC().Unix(), classid, dmid)
+	res, err := t.db.Exec("insert into tempfile(createtime) values(?)", time.Now().UTC().Unix())
 	if err != nil {
 		t.internalServerError("cannot insert tempfile", err, r, w)
 		return
@@ -297,7 +291,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("replace into file(fid, dmid, dkey, length, classid, devcount) values(?,?,?,?,?,1)", fid, dmid, key, size, classid)
+	_, err = tx.Exec("replace into file(fid, dkey, length, devcount) values(?,?,?,1)", fid, key, size)
 	if err != nil {
 		t.internalServerError("cannot insert or replace file", err, r, w)
 		return
@@ -330,7 +324,7 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer tx.Rollback() // nolint: errcheck
-	row := tx.QueryRow("select fid from file where dkey=? and dmid=? for update", key, dmid)
+	row := tx.QueryRow("select fid from file where dkey=? for update", key)
 	var fid int64
 	err = row.Scan(&fid)
 	if err == sql.ErrNoRows {

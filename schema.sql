@@ -14,14 +14,11 @@ CREATE TABLE `device` (
 ) ENGINE=InnoDB;
 CREATE TABLE `file` (
   `fid` bigint(10) unsigned NOT NULL,
-  `dmid` smallint(5) unsigned NOT NULL,
   `dkey` varchar(255) DEFAULT NULL,
   `length` bigint(20) unsigned DEFAULT NULL,
-  `classid` tinyint(3) unsigned NOT NULL,
   `devcount` tinyint(3) unsigned NOT NULL,
   PRIMARY KEY (`fid`),
-  UNIQUE KEY `dkey` (`dmid`,`dkey`),
-  KEY `devcount` (`dmid`,`classid`,`devcount`)
+  UNIQUE KEY `dkey` (`dkey`)
 ) ENGINE=InnoDB;
 CREATE TABLE `file_on` (
   `fid` bigint(20) unsigned NOT NULL,
@@ -39,8 +36,6 @@ CREATE TABLE `host` (
 CREATE TABLE `tempfile` (
   `fid` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `createtime` int(10) unsigned NOT NULL,
-  `classid` tinyint(3) unsigned NOT NULL,
-  `dmid` smallint(5) unsigned NOT NULL,
   `dkey` varchar(255) DEFAULT NULL,
   `devids` varchar(5000) DEFAULT NULL,
   PRIMARY KEY (`fid`),
