@@ -420,7 +420,7 @@ func (t *Tracker) removeOldTempfiles() {
 	for {
 		select {
 		case <-ticker.C:
-			res, err := t.db.Exec("delete from tempfile where ADDDATE(createtime, INTERVAL ? SECOND < CURRENT_TIMESTAMP", tempfileTooOld)
+			res, err := t.db.Exec("delete from tempfile where ADDDATE(createtime, INTERVAL ? SECOND) < CURRENT_TIMESTAMP", tempfileTooOld)
 			if err != nil {
 				t.log.Errorln("cannot delete old tempfile records:", err.Error())
 				continue
