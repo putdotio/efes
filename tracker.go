@@ -133,7 +133,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		"join device d on d.devid=fo.devid "+
 		"join host h on h.hostid=d.hostid "+
 		"where h.status='alive' "+
-		"and d.status in ('alive', 'readonly', 'drain') "+
+		"and d.status in ('alive', 'drain') "+
 		"and f.dkey=?", key)
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
