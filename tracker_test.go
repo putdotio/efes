@@ -44,7 +44,7 @@ func TestGetPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into file(fid, dkey, length) values(42, 'foo', 500)")
+	_, err = tr.db.Exec("insert into file(fid, dkey) values(42, 'foo')")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +156,7 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into file(fid, dkey, length) values(42, 'foo', 500)")
+	_, err = tr.db.Exec("insert into file(fid, dkey) values(42, 'foo')")
 	if err != nil {
 		t.Fatal(err)
 	}

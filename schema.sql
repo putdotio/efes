@@ -27,7 +27,6 @@ CREATE TABLE `device` (
 CREATE TABLE `file` (
   `fid` bigint(10) unsigned NOT NULL,
   `dkey` varchar(255) DEFAULT NULL,
-  `length` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`fid`),
   UNIQUE KEY `dkey` (`dkey`)
 );
