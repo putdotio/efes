@@ -431,7 +431,7 @@ func (t *Tracker) removeOldTempfiles() {
 				continue
 			}
 			count, err := res.RowsAffected()
-			if err != nil {
+			if err == nil {
 				t.log.Infoln(count, "old tempfile records are deleted")
 			}
 		case <-t.shutdown:
