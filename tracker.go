@@ -270,11 +270,6 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	size, err := strconv.ParseUint(r.FormValue("size"), 10, 64)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 	key := r.FormValue("key")
 	if key == "" {
 		http.Error(w, "required parameter: key", http.StatusBadRequest)
@@ -301,7 +296,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("replace into file(fid, dkey, length) values(?,?,?)", fid, key, size)
+	_, err = tx.Exec("replace into file(fid, dkey) values(?,?)", fid, key)
 	if err != nil {
 		t.internalServerError("cannot insert or replace file", err, r, w)
 		return
