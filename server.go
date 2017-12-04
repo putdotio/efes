@@ -434,9 +434,7 @@ func (s *Server) processDeleteTasks(conn *amqp.Connection) error {
 
 func (s *Server) deleteFidOnDisk(fileID int64) error {
 	s.log.Debug("Deleting fid on disk ", fileID)
-	sfid := fmt.Sprintf("%010d", fileID)
-	path := fmt.Sprintf("%s/%s/%s/%s/%s.fid", s.config.Server.DataDir, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
-
+	path := filepath.Join(s.config.Server.DataDir, vivify(fileID))
 	err := os.Remove(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -447,4 +445,9 @@ func (s *Server) deleteFidOnDisk(fileID int64) error {
 	}
 	s.log.Debugf("Fid %d deleted. ", fileID)
 	return nil
+}
+
+func vivify(fid int64) string {
+	s := fmt.Sprintf("%010d", fid)
+	return fmt.Sprintf("%s/%s/%s/%s.fid", s[0:1], s[1:4], s[4:7], s)
 }

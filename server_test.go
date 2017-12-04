@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -185,8 +184,7 @@ func TestShouldDeleteJunkNew(t *testing.T) {
 func TestDeleteFidOnDisk(t *testing.T) {
 	s := setupServer(t, 1)
 	var fid int64 = 123
-	sfid := fmt.Sprintf("%010d", fid)
-	path := fmt.Sprintf("%s/%s/%s/%s/%s.fid", s.config.Server.DataDir, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
+	path := filepath.Join(s.config.Server.DataDir, vivify(fid))
 	_, err := os.Create(path)
 
 	if err != nil {

@@ -150,8 +150,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 			t.internalServerError("cannot scan rows", err, r, w)
 			return
 		}
-		sfid := fmt.Sprintf("%010d", fid)
-		path := fmt.Sprintf("http://%s:%d/dev%d/%s/%s/%s/%s.fid", hostip, httpPort, devid, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
+		path := fmt.Sprintf("http://%s:%d/dev%d/%s", hostip, httpPort, devid, vivify(fid))
 		response.Paths = append(response.Paths, path)
 	}
 	err = rows.Err()
@@ -218,8 +217,7 @@ type aliveDevice struct {
 }
 
 func (d *aliveDevice) PatchURL(fid int64) string {
-	sfid := fmt.Sprintf("%010d", fid)
-	return fmt.Sprintf("http://%s:%d/dev%d/%s/%s/%s/%s.fid", d.hostip, d.httpPort, d.devid, sfid[0:1], sfid[1:4], sfid[4:7], sfid)
+	return fmt.Sprintf("http://%s:%d/dev%d/%s", d.hostip, d.httpPort, d.devid, vivify(fid))
 }
 
 func findAliveDevice(db *sql.DB, size int64) (*aliveDevice, error) {
