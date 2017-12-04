@@ -40,7 +40,7 @@ func TestGetPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, read_port) values(2, 'alive', 1, 1000, 500, 1234)")
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, read_port) values(2, 'alive', 1, 1234)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestCreateOpen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, write_port) values(2, 'alive', 1, 1000, 500, 1234)")
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, bytes_total, bytes_used, bytes_free, write_port) values(2, 'alive', 1, 1000, 500, 500, 1234)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ func TestCreateClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used) values(2, 'alive', 1, 1000, 500)")
+	_, err = tr.db.Exec("insert into device(devid, status, hostid) values(2, 'alive', 1)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used) values(2, 'alive', 1, 1000, 500)")
+	_, err = tr.db.Exec("insert into device(devid, hostid) values(2, 1)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +197,7 @@ func TestGetDevices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, updated_at) values(2, 'alive', 1, 1000, 500, from_unixtime(1510216046))")
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, bytes_total, bytes_used, bytes_free, updated_at) values(2, 'alive', 1, 1000, 500, 500, from_unixtime(1510216046))")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +212,7 @@ func TestGetDevices(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := "{\"devices\":[{\"devid\":2,\"hostid\":1,\"status\":\"alive\",\"mb_total\":1000,\"mb_used\":500,\"mb_asof\":1510216046,\"io_utilization\":null}]}\n"
+	expected := "{\"devices\":[{\"devid\":2,\"hostid\":1,\"status\":\"alive\",\"bytes_total\":1000,\"bytes_used\":500,\"bytes_free\":500,\"updated_at\":1510216046,\"io_utilization\":null}]}\n"
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)

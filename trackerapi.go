@@ -18,9 +18,10 @@ type Device struct {
 	Devid         int64  `json:"devid"`
 	Hostid        int64  `json:"hostid"`
 	Status        string `json:"status"`
-	MbTotal       *int64 `json:"mb_total"`
-	MbUsed        *int64 `json:"mb_used"`
-	UpdatedAt     int64  `json:"mb_asof"`
+	BytesTotal    *int64 `json:"bytes_total"`
+	BytesUsed     *int64 `json:"bytes_used"`
+	BytesFree     *int64 `json:"bytes_free"`
+	UpdatedAt     int64  `json:"updated_at"`
 	IoUtilization *int64 `json:"io_utilization"`
 }
 

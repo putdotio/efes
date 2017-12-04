@@ -22,32 +22,31 @@ type deviceStatus struct {
 }
 
 func (d deviceStatus) Size() string {
-	if d.MbTotal == nil {
+	if d.BytesTotal == nil {
 		return ""
 	}
-	return humanize.Comma(*d.MbTotal / 1024)
+	return humanize.Comma(*d.BytesTotal / G)
 }
 
 func (d deviceStatus) Used() string {
-	if d.MbUsed == nil {
+	if d.BytesUsed == nil {
 		return ""
 	}
-	return humanize.Comma(*d.MbUsed / 1024)
+	return humanize.Comma(*d.BytesUsed / G)
 }
 
 func (d deviceStatus) Free() string {
-	if d.MbUsed == nil || d.MbTotal == nil {
+	if d.BytesFree == nil {
 		return ""
 	}
-	free := *d.MbTotal - *d.MbUsed
-	return humanize.Comma(free / 1024)
+	return humanize.Comma(*d.BytesFree / G)
 }
 
 func (d deviceStatus) Use() string {
-	if d.MbUsed == nil || d.MbTotal == nil {
+	if d.BytesUsed == nil || d.BytesTotal == nil {
 		return ""
 	}
-	use := (*d.MbUsed * 100) / *d.MbTotal
+	use := (*d.BytesUsed * 100) / *d.BytesTotal
 	return strconv.FormatInt(use, 10)
 }
 
@@ -62,20 +61,25 @@ func (s *efesStatus) Print() {
 	// Sum totals
 	var totalUsed, totalSize int64 // in MB
 	for _, d := range s.devices {
-		if d.MbUsed != nil {
-			totalUsed += *d.MbUsed
+		if d.BytesUsed != nil {
+			totalUsed += *d.BytesUsed
 		}
-		if d.MbTotal != nil {
-			totalSize += *d.MbTotal
+		if d.BytesTotal != nil {
+			totalSize += *d.BytesTotal
 		}
 	}
 	totalFree := totalSize - totalUsed
-	totalUse := (100 * totalUsed) / totalSize
+	var totalUse int64
+	if totalSize == 0 {
+		totalUse = 0
+	} else {
+		totalUse = (100 * totalUsed) / totalSize
+	}
 
 	// Convert to GB
-	totalUsed /= 1024
-	totalFree /= 1024
-	totalSize /= 1024
+	totalUsed /= G
+	totalFree /= G
+	totalSize /= G
 
 	// Setup table
 	table := tablewriter.NewWriter(os.Stdout)

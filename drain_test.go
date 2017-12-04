@@ -24,7 +24,7 @@ func TestDrain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, read_port, write_port) values(2, 'alive', 1, 1000, 500, 8500, 8501)")
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, read_port, write_port) values(2, 'alive', 1, 8500, 8501)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestDrain(t *testing.T) {
 
 	// setup second server
 	fmt.Println("setting up second server")
-	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, read_port, write_port) values(3, 'alive', 1, 1000, 500, 8502, 8503)")
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, bytes_total, bytes_used, bytes_free, read_port, write_port) values(3, 'alive', 1, 1000000000, 500000000, 500000000, 8502, 8503)")
 	if err != nil {
 		t.Fatal(err)
 	}

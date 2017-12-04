@@ -14,8 +14,6 @@ CREATE TABLE `device` (
   `read_port` mediumint(8) unsigned NOT NULL DEFAULT '8500',
   `write_port` mediumint(8) unsigned NOT NULL DEFAULT '8501',
   `status` enum('alive','dead','down','drain') NOT NULL DEFAULT 'alive',
-  `mb_total` int(10) unsigned DEFAULT NULL,
-  `mb_used` int(10) unsigned DEFAULT NULL,
   `bytes_total` bigint(20) unsigned DEFAULT NULL,
   `bytes_used` bigint(20) unsigned DEFAULT NULL,
   `bytes_free` bigint(20) unsigned DEFAULT NULL,

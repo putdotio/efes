@@ -213,7 +213,6 @@ type aliveDevice struct {
 	hostip   string
 	httpPort int64
 	devid    int64
-	mbFree   int64
 }
 
 func (d *aliveDevice) PatchURL(fid int64) string {
@@ -221,15 +220,14 @@ func (d *aliveDevice) PatchURL(fid int64) string {
 }
 
 func findAliveDevice(db *sql.DB, size int64) (*aliveDevice, error) {
-	size = (size / M) + 1
-	rows, err := db.Query("select h.hostip, d.write_port, d.devid, (d.mb_total-d.mb_used) mb_free "+
+	rows, err := db.Query("select h.hostip, d.write_port, d.devid "+
 		"from device d "+
 		"join host h on d.hostid=h.hostid "+
 		"where h.status='alive' "+
 		"and d.status='alive' "+
-		"and (d.mb_total-d.mb_used)>= ? "+
+		"and bytes_free>= ? "+
 		"and timestampdiff(second, updated_at, current_timestamp) < 60 "+
-		"order by mb_free desc", size)
+		"order by bytes_free desc", size)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +235,7 @@ func findAliveDevice(db *sql.DB, size int64) (*aliveDevice, error) {
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var d aliveDevice
-		err = rows.Scan(&d.hostip, &d.httpPort, &d.devid, &d.mbFree)
+		err = rows.Scan(&d.hostip, &d.httpPort, &d.devid)
 		if err != nil {
 			return nil, err
 		}
@@ -457,7 +455,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	var err error
 	devices := make([]Device, 0)
 
-	rows, err := t.db.Query("select devid, hostid, status, mb_total, mb_used, unix_timestamp(updated_at), io_utilization from device")
+	rows, err := t.db.Query("select devid, hostid, status, bytes_total, bytes_used, bytes_free, unix_timestamp(updated_at), io_utilization from device")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -466,19 +464,21 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var d Device
-		var mbTotal sql.NullInt64
-		var mbUsed sql.NullInt64
+		var bytesTotal, bytesUsed, bytesFree sql.NullInt64
 		var ioUtilization sql.NullInt64
-		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &mbTotal, &mbUsed, &d.UpdatedAt, &ioUtilization)
+		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &bytesTotal, &bytesUsed, &bytesFree, &d.UpdatedAt, &ioUtilization)
 		if err != nil {
 			t.internalServerError("cannot scan rows", err, r, w)
 			return
 		}
-		if mbTotal.Valid {
-			d.MbTotal = &mbTotal.Int64
+		if bytesTotal.Valid {
+			d.BytesTotal = &bytesTotal.Int64
 		}
-		if mbUsed.Valid {
-			d.MbUsed = &mbUsed.Int64
+		if bytesUsed.Valid {
+			d.BytesUsed = &bytesUsed.Int64
+		}
+		if bytesFree.Valid {
+			d.BytesFree = &bytesFree.Int64
 		}
 		if ioUtilization.Valid {
 			d.IoUtilization = &ioUtilization.Int64

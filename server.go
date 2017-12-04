@@ -183,10 +183,9 @@ func (s *Server) updateDiskStats() {
 	for {
 		select {
 		case <-ticker.C:
-			usedMB, totalMB := s.getDiskUsageOld()
 			total, used, free := s.getDiskUsage()
 			utilization := s.getDiskUtilization(iostat)
-			_, err = s.db.Exec("update device set io_utilization=?, mb_used=?, mb_total=?, bytes_total=?, bytes_used=?, bytes_free=?, updated_at=current_timestamp where devid=?", utilization, usedMB, totalMB, total, used, free, s.devid)
+			_, err = s.db.Exec("update device set io_utilization=?, bytes_total=?, bytes_used=?, bytes_free=?, updated_at=current_timestamp where devid=?", utilization, total, used, free, s.devid)
 			s.onceDiskStatsUpdated.Do(func() { close(s.diskStatsUpdated) })
 			if err != nil {
 				s.log.Errorln("Cannot update device stats:", err.Error())
@@ -211,20 +210,6 @@ func (s *Server) getDiskUsage() (total, used, free sql.NullInt64) {
 	free.Int64 = int64(usage.Free)
 	used.Valid = true
 	used.Int64 = total.Int64 - free.Int64
-	return
-}
-
-func (s *Server) getDiskUsageOld() (used, total sql.NullInt64) {
-	usage, err := disk.Usage(s.config.Server.DataDir)
-	if err != nil {
-		s.log.Errorln("Cannot get disk usage:", err.Error())
-		return
-	}
-	const mb = 1 << 20
-	used.Valid = true
-	used.Int64 = int64(usage.Total-usage.Free) / mb
-	total.Valid = true
-	total.Int64 = int64(usage.Total) / mb
 	return
 }
 

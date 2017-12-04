@@ -18,7 +18,7 @@ func (a byDevID) Less(i, j int) bool { return a.deviceStatuses[i].Devid < a.devi
 type bySize struct{ deviceStatuses }
 
 func (a bySize) Less(i, j int) bool {
-	t1, t2 := a.deviceStatuses[i].MbTotal, a.deviceStatuses[j].MbTotal
+	t1, t2 := a.deviceStatuses[i].BytesTotal, a.deviceStatuses[j].BytesTotal
 	if t1 == nil || t2 == nil {
 		return false
 	}
@@ -28,7 +28,7 @@ func (a bySize) Less(i, j int) bool {
 type byUsed struct{ deviceStatuses }
 
 func (a byUsed) Less(i, j int) bool {
-	t1, t2 := a.deviceStatuses[i].MbUsed, a.deviceStatuses[j].MbUsed
+	t1, t2 := a.deviceStatuses[i].BytesUsed, a.deviceStatuses[j].BytesUsed
 	if t1 == nil || t2 == nil {
 		return false
 	}
@@ -38,10 +38,9 @@ func (a byUsed) Less(i, j int) bool {
 type byFree struct{ deviceStatuses }
 
 func (a byFree) Less(i, j int) bool {
-	t1, t2 := a.deviceStatuses[i].MbTotal, a.deviceStatuses[j].MbTotal
-	u1, u2 := a.deviceStatuses[i].MbUsed, a.deviceStatuses[j].MbUsed
-	if t1 == nil || t2 == nil || u1 == nil || u2 == nil {
+	t1, t2 := a.deviceStatuses[i].BytesFree, a.deviceStatuses[j].BytesFree
+	if t1 == nil || t2 == nil {
 		return false
 	}
-	return *t1-*u1 < *t2-*u2
+	return *t1 < *t2
 }
