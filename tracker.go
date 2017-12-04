@@ -301,7 +301,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("replace into file(fid, dkey, length, devcount) values(?,?,?,1)", fid, key, size)
+	_, err = tx.Exec("replace into file(fid, dkey, length) values(?,?,?)", fid, key, size)
 	if err != nil {
 		t.internalServerError("cannot insert or replace file", err, r, w)
 		return
