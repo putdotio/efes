@@ -20,7 +20,7 @@ func TestDrain(t *testing.T) {
 	cleanDB(t, tr.db)
 	go tr.Run()
 	defer tr.Shutdown()
-	_, err = tr.db.Exec("insert into host(hostid, status, hostip) values(1, 'alive', '127.0.0.1')")
+	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '127.0.0.1')")
 	if err != nil {
 		t.Fatal(err)
 	}

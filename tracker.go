@@ -353,14 +353,14 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot get devices of fid", err, r, w)
 		return
 	}
-	_, err = tx.Exec("delete from file where fid=?", fid)
-	if err != nil {
-		t.internalServerError("cannot delete file", err, r, w)
-		return
-	}
 	_, err = tx.Exec("delete from file_on where fid=?", fid)
 	if err != nil {
 		t.internalServerError("cannot delete file_on records", err, r, w)
+		return
+	}
+	_, err = tx.Exec("delete from file where fid=?", fid)
+	if err != nil {
+		t.internalServerError("cannot delete file", err, r, w)
 		return
 	}
 	err = tx.Commit()

@@ -36,7 +36,7 @@ func TestGetPaths(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, status, hostip) values(1, 'alive', '1.2.3.4')")
+	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '1.2.3.4')")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func TestCreateOpen(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, status, hostip) values(1, 'alive', '1.2.3.4')")
+	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '1.2.3.4')")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func TestCreateClose(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, status, hostip) values(1, 'alive', '1.2.3.4')")
+	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '1.2.3.4')")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, status, hostip) values(1, 'alive', '1.2.3.4')")
+	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '1.2.3.4')")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,6 +193,10 @@ func TestGetDevices(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
+	_, err = tr.db.Exec("insert into host(hostid, hostname, hostip, status) values(1, 'foo', '127.0.0.1', 'alive')")
+	if err != nil {
+		t.Fatal(err)
+	}
 	_, err = tr.db.Exec("insert into device(devid, status, hostid, mb_total, mb_used, updated_at) values(2, 'alive', 1, 1000, 500, from_unixtime(1510216046))")
 	if err != nil {
 		t.Fatal(err)

@@ -1,17 +1,31 @@
+SET default_storage_engine=INNODB;
+
+CREATE TABLE `host` (
+  `hostid` mediumint(8) unsigned NOT NULL,
+  `status` enum('alive','dead','down') NOT NULL DEFAULT 'alive',
+  `hostname` varchar(40) NOT NULL,
+  `hostip` varchar(40) NOT NULL,
+  PRIMARY KEY (`hostid`)
+);
+
 CREATE TABLE `device` (
   `devid` mediumint(8) unsigned NOT NULL,
   `hostid` mediumint(8) unsigned NOT NULL,
-  `read_port` mediumint(8) unsigned DEFAULT '8500',
-  `write_port` mediumint(8) unsigned DEFAULT '8501',
-  `status` enum('alive','dead','down','drain') DEFAULT NULL,
+  `read_port` mediumint(8) unsigned NOT NULL DEFAULT '8500',
+  `write_port` mediumint(8) unsigned NOT NULL DEFAULT '8501',
+  `status` enum('alive','dead','down','drain') NOT NULL DEFAULT 'alive',
   `mb_total` int(10) unsigned DEFAULT NULL,
   `mb_used` int(10) unsigned DEFAULT NULL,
+  `bytes_total` bigint(20) unsigned DEFAULT NULL,
+  `bytes_used` bigint(20) unsigned DEFAULT NULL,
+  `bytes_free` bigint(20) unsigned DEFAULT NULL,
   `io_utilization` tinyint(3) unsigned DEFAULT NULL,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `last_disk_clean_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`devid`),
-  KEY `status` (`status`)
-) ENGINE=InnoDB;
+  FOREIGN KEY (`hostid`) REFERENCES `host` (`hostid`)
+);
+
 CREATE TABLE `file` (
   `fid` bigint(10) unsigned NOT NULL,
   `dkey` varchar(255) DEFAULT NULL,
@@ -19,20 +33,8 @@ CREATE TABLE `file` (
   `devcount` tinyint(3) unsigned NOT NULL,
   PRIMARY KEY (`fid`),
   UNIQUE KEY `dkey` (`dkey`)
-) ENGINE=InnoDB;
-CREATE TABLE `file_on` (
-  `fid` bigint(20) unsigned NOT NULL,
-  `devid` mediumint(8) unsigned NOT NULL,
-  PRIMARY KEY (`fid`,`devid`),
-  KEY `devid` (`devid`)
-) ENGINE=InnoDB;
-CREATE TABLE `host` (
-  `hostid` mediumint(8) unsigned NOT NULL,
-  `status` enum('alive','dead','down') DEFAULT NULL,
-  `hostname` varchar(40) DEFAULT NULL,
-  `hostip` varchar(40) DEFAULT NULL,
-  PRIMARY KEY (`hostid`)
-) ENGINE=InnoDB;
+);
+
 CREATE TABLE `tempfile` (
   `fid` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `createtime` int(10) unsigned NOT NULL,
@@ -40,4 +42,12 @@ CREATE TABLE `tempfile` (
   `devids` varchar(5000) DEFAULT NULL,
   PRIMARY KEY (`fid`),
   KEY `ndx_createtime` (`createtime`)
-) ENGINE=InnoDB;
+);
+
+CREATE TABLE `file_on` (
+  `fid` bigint(20) unsigned NOT NULL,
+  `devid` mediumint(8) unsigned NOT NULL,
+  PRIMARY KEY (`fid`,`devid`),
+  FOREIGN KEY (`fid`) REFERENCES `file` (`fid`),
+  FOREIGN KEY (`devid`) REFERENCES `device` (`devid`)
+);

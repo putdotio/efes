@@ -16,9 +16,9 @@ func init() {
 }
 
 func cleanDB(t *testing.T, db *sql.DB) {
-	tables := []string{"file", "file_on", "tempfile", "device", "host"}
+	tables := []string{"file_on", "tempfile", "file", "device", "host"}
 	for _, table := range tables {
-		_, err := db.Exec("truncate table " + table)
+		_, err := db.Exec("delete from " + table)
 		if err != nil {
 			t.Fatal(err)
 		}
