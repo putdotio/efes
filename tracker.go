@@ -127,7 +127,14 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 	var response GetPaths
 	response.Paths = make([]string, 0)
 	key := r.FormValue("key")
-	rows, err := t.db.Query("select h.hostip, d.read_port, d.devid, f.fid from file f join file_on fo on f.fid=fo.fid join device d on d.devid=fo.devid join host h on h.hostid=d.hostid where f.dkey=?", key)
+	rows, err := t.db.Query("select h.hostip, d.read_port, d.devid, f.fid "+
+		"from file f "+
+		"join file_on fo on f.fid=fo.fid "+
+		"join device d on d.devid=fo.devid "+
+		"join host h on h.hostid=d.hostid "+
+		"where h.status='alive' "+
+		"and d.status in ('alive', 'readonly', 'drain') "+
+		"and f.dkey=?", key)
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -217,7 +224,14 @@ func (d *aliveDevice) PatchURL(fid int64) string {
 
 func findAliveDevice(db *sql.DB, size int64) (*aliveDevice, error) {
 	size = (size / M) + 1
-	rows, err := db.Query("select h.hostip, d.write_port, d.devid, (d.mb_total-d.mb_used) mb_free from device d join host h on d.hostid=h.hostid where h.status='alive' and d.status='alive' and (d.mb_total-d.mb_used)>= ? and timestampdiff(second, updated_at, current_timestamp) < 60 order by mb_free desc", size)
+	rows, err := db.Query("select h.hostip, d.write_port, d.devid, (d.mb_total-d.mb_used) mb_free "+
+		"from device d "+
+		"join host h on d.hostid=h.hostid "+
+		"where h.status='alive' "+
+		"and d.status='alive' "+
+		"and (d.mb_total-d.mb_used)>= ? "+
+		"and timestampdiff(second, updated_at, current_timestamp) < 60 "+
+		"order by mb_free desc", size)
 	if err != nil {
 		return nil, err
 	}
