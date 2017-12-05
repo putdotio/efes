@@ -34,7 +34,6 @@ CREATE TABLE `file` (
 CREATE TABLE `tempfile` (
   `fid` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `createtime` int(10) unsigned NOT NULL,
-  `dkey` varchar(255) DEFAULT NULL,
   `devids` varchar(5000) DEFAULT NULL,
   PRIMARY KEY (`fid`),
   KEY `ndx_createtime` (`createtime`)
