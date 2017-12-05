@@ -6,6 +6,9 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"time"
+
+	"github.com/cenkalti/backoff"
 )
 
 func (c *Client) Write(key, path string) error {
@@ -86,6 +89,7 @@ func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
 	} else {
 		r = f
 	}
+	b := backoff.NewExponentialBackOff()
 	for {
 		n, err := c.send(path, r, offset, size)
 		offset += n
@@ -102,6 +106,7 @@ func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
 					}
 					_, err = f.Seek(actualOffset, io.SeekStart)
 					if err != nil {
+						c.log.Errorln("cannot seek to position:", actualOffset)
 						return offset, err
 					}
 					offset = actualOffset
@@ -112,7 +117,13 @@ func (c *Client) sendFile(path string, f *os.File, size int64) (int64, error) {
 			return offset, cerr
 		}
 		if err != nil {
-			c.log.Errorln("error while sending the file:", err)
+			d := b.NextBackOff()
+			if d == backoff.Stop {
+				c.log.Errorln("fatal error while sending the file:", err)
+				return offset, err
+			}
+			c.log.Errorln("error while sending the file:", err, "; operation will be retried after", d)
+			time.Sleep(d)
 			continue
 		}
 		break
