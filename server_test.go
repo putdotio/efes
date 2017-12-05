@@ -27,7 +27,7 @@ func setupServer(t *testing.T, ttl time.Duration) *Server {
 
 func TestFidExistsOnDatabase(t *testing.T) {
 	s := setupServer(t, 0)
-	insertToDB(t, s.db, 1)
+	insertToDB(t, s.db, 1, "foo")
 
 	res, err := s.fidExistsOnDatabase(1)
 	if err != nil {
@@ -41,7 +41,7 @@ func TestFidExistsOnDatabase(t *testing.T) {
 
 func TestShouldDeleteFileExistsOnDbNewOnDisk(t *testing.T) {
 	s := setupServer(t, 300*time.Second)
-	insertToDB(t, s.db, 1)
+	insertToDB(t, s.db, 1, "foo")
 	fidPath := writeToDisk(t, 1, "fid", time.Now().Add(-200*time.Second))
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
@@ -55,9 +55,9 @@ func TestShouldDeleteFileExistsOnDbNewOnDisk(t *testing.T) {
 	}
 }
 
-func insertToDB(t *testing.T, db *sql.DB, fid int64) {
+func insertToDB(t *testing.T, db *sql.DB, fid int64, key string) {
 	t.Helper()
-	_, err := db.Exec("insert into file(fid) values(?)", fid)
+	_, err := db.Exec("insert into file(fid, dkey) values(?, ?)", fid, key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func writeToDisk(t *testing.T, fid int64, ext string, modTime time.Time) string 
 
 func TestShouldDeleteFileExistsOnDbOldOnDisk(t *testing.T) {
 	s := setupServer(t, 300*time.Second)
-	insertToDB(t, s.db, 1)
+	insertToDB(t, s.db, 1, "foo")
 	fidPath := writeToDisk(t, 1, "fid", time.Now().Add(-400*time.Second))
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)

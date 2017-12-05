@@ -26,16 +26,18 @@ CREATE TABLE `device` (
 
 CREATE TABLE `file` (
   `fid` bigint(10) unsigned NOT NULL,
-  `dkey` varchar(255) DEFAULT NULL,
+  `dkey` varchar(255) NOT NULL,
   PRIMARY KEY (`fid`),
   UNIQUE KEY `dkey` (`dkey`)
 );
 
 CREATE TABLE `tempfile` (
   `fid` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `createtime` int(10) unsigned NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `devid` mediumint(8) unsigned NOT NULL,
   PRIMARY KEY (`fid`),
-  KEY `ndx_createtime` (`createtime`)
+  FOREIGN KEY (`devid`) REFERENCES `device` (`devid`),
+  KEY `ndx_created_at` (`created_at`)
 );
 
 CREATE TABLE `file_on` (

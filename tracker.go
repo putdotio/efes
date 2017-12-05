@@ -188,7 +188,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot find a device", err, r, w)
 		return
 	}
-	res, err := t.db.Exec("insert into tempfile(createtime) values(UNIX_TIMESTAMP())")
+	res, err := t.db.Exec("insert into tempfile(devid) values(?)", d.devid)
 	if err != nil {
 		t.internalServerError("cannot insert tempfile", err, r, w)
 		return
@@ -419,13 +419,13 @@ func getDevicesOfFid(tx *sql.Tx, fid int64) (devids []int64, err error) {
 }
 
 func (t *Tracker) removeOldTempfiles() {
-	tempfileTooOld := time.Duration(t.config.Tracker.TempfileTooOld) / time.Second
+	tempfileTooOld := time.Duration(t.config.Tracker.TempfileTooOld) / time.Microsecond
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			res, err := t.db.Exec("delete from tempfile where createtime < UNIX_TIMESTAMP() - ?", tempfileTooOld)
+			res, err := t.db.Exec("delete from tempfile where created_at < CURRENT_TIMESTAMP - INTERVAL ? MICROSECOND", tempfileTooOld)
 			if err != nil {
 				t.log.Errorln("cannot delete old tempfile records:", err.Error())
 				continue

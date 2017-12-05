@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 func TestPing(t *testing.T) {
@@ -120,7 +119,7 @@ func TestCreateClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into tempfile(fid, createtime) values(9, ?)", time.Now().UTC().Unix())
+	_, err = tr.db.Exec("insert into tempfile(fid, devid) values(9, 2)")
 	if err != nil {
 		t.Fatal(err)
 	}
