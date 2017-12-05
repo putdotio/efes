@@ -379,7 +379,6 @@ func (s *Server) processDeleteTasks(conn *amqp.Connection) error {
 	if err != nil {
 		return err
 	}
-	defer logCloseAMQPChannel(s.log, ch)
 
 	q, err := declareDeleteQueue(ch, s.devid)
 	if err != nil {

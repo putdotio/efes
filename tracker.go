@@ -374,12 +374,15 @@ func (t *Tracker) publishDeleteTask(devids []int64, fid int64) {
 			log.Errorln("cannot open amqp channel:", err.Error())
 			return
 		}
-		defer logCloseAMQPChannel(t.log, ch)
 		for _, devid := range devids {
 			err = publishDeleteTask(ch, devid, fid)
 			if err != nil {
 				log.Errorln("cannot publish delete task:", err.Error())
 			}
+		}
+		err = ch.Close()
+		if err != nil {
+			log.Errorln("cannot close amqp channel:", err.Error())
 		}
 	case <-t.shutdown:
 		t.log.Warningf("Not sending delete task for fid=%d because shutdown is requested while waiting for amqp connection", fid)

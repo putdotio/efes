@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/cenkalti/log"
-	"github.com/streadway/amqp"
 )
 
 func logCloseFile(log log.Logger, f *os.File) {
@@ -26,12 +25,5 @@ func logCloseDB(log log.Logger, db *sql.DB) {
 	err := db.Close()
 	if err != nil {
 		log.Errorf("Error while closing DB connection: %s", err.Error())
-	}
-}
-
-func logCloseAMQPChannel(log log.Logger, ch *amqp.Channel) {
-	err := ch.Close()
-	if err != nil {
-		log.Errorf("Error while closing amqp channel: %s", err.Error())
 	}
 }
