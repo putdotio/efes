@@ -21,15 +21,15 @@ import (
 // Tracker responds to client requests.
 // Tracker sends jobs to servers.
 type Tracker struct {
-	config                    *Config
-	db                        *sql.DB
-	log                       log.Logger
-	server                    http.Server
-	amqp                      *amqpredialer.AMQPRedialer
-	shutdown                  chan struct{}
-	Ready                     chan struct{}
-	removeOldTempfilesStopped chan struct{}
-	amqpRedialerStopped       chan struct{}
+	config                 *Config
+	db                     *sql.DB
+	log                    log.Logger
+	server                 http.Server
+	amqp                   *amqpredialer.AMQPRedialer
+	shutdown               chan struct{}
+	Ready                  chan struct{}
+	tempfileCleanerStopped chan struct{}
+	amqpRedialerStopped    chan struct{}
 }
 
 // NewTracker returns a new Tracker instance.
@@ -39,8 +39,8 @@ func NewTracker(c *Config) (*Tracker, error) {
 		log:      log.NewLogger("tracker"),
 		shutdown: make(chan struct{}),
 		Ready:    make(chan struct{}),
-		removeOldTempfilesStopped: make(chan struct{}),
-		amqpRedialerStopped:       make(chan struct{}),
+		tempfileCleanerStopped: make(chan struct{}),
+		amqpRedialerStopped:    make(chan struct{}),
 	}
 	m := http.NewServeMux()
 	m.HandleFunc("/ping", t.ping)
@@ -73,7 +73,7 @@ func (t *Tracker) Run() error {
 		return err
 	}
 	t.log.Notice("Tracker is started.")
-	go t.removeOldTempfiles()
+	go t.tempfileCleaner()
 	go func() {
 		t.amqp.Run()
 		close(t.amqpRedialerStopped)
@@ -99,7 +99,7 @@ func (t *Tracker) Shutdown() error {
 		return err
 	}
 
-	<-t.removeOldTempfilesStopped
+	<-t.tempfileCleanerStopped
 	err = t.db.Close()
 	if err != nil {
 		t.log.Error("Error while closing database connection")
@@ -416,29 +416,6 @@ func getDevicesOfFid(tx *sql.Tx, fid int64) (devids []int64, err error) {
 	}
 	err = rows.Err()
 	return
-}
-
-func (t *Tracker) removeOldTempfiles() {
-	tempfileTooOld := time.Duration(t.config.Tracker.TempfileTooOld) / time.Microsecond
-	ticker := time.NewTicker(time.Minute)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			res, err := t.db.Exec("delete from tempfile where created_at < CURRENT_TIMESTAMP - INTERVAL ? MICROSECOND", tempfileTooOld)
-			if err != nil {
-				t.log.Errorln("cannot delete old tempfile records:", err.Error())
-				continue
-			}
-			count, err := res.RowsAffected()
-			if err == nil {
-				t.log.Infoln(count, "old tempfile records are deleted")
-			}
-		case <-t.shutdown:
-			close(t.removeOldTempfilesStopped)
-			return
-		}
-	}
 }
 
 func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
