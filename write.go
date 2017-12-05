@@ -19,7 +19,7 @@ func (c *Client) Write(key, path string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close() // nolint: errcheck
+	defer logCloseFile(c.log, f)
 	return c.writeFile(key, f)
 }
 

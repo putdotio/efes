@@ -72,7 +72,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		err = saveFile(path, offset, length, r.Body)
+		err = saveFile(path, offset, length, r.Body, f.log)
 		if oerr, ok := err.(*OffsetMismatchError); ok {
 			// Cannot use http.Error() because we want to set "efes-file-offset" header.
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -147,7 +147,7 @@ func saveOffset(path string, offset int64) error {
 	return ioutil.WriteFile(path+".offset", []byte(strconv.FormatInt(offset, 10)), 0666)
 }
 
-func saveFile(path string, offset int64, length int64, r io.Reader) error {
+func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logger) error {
 	if offset == 0 {
 		// File can be saved without a prior POST for creating offset file.
 		err := createFile(path)
@@ -172,12 +172,12 @@ func saveFile(path string, offset int64, length int64, r io.Reader) error {
 	}
 	_, err = f.Seek(offset, io.SeekStart)
 	if err != nil {
-		f.Close() // nolint: errcheck, gas
+		logCloseFile(log, f)
 		return err
 	}
 	n, err := io.Copy(f, r)
 	if err != nil {
-		f.Close() // nolint: errcheck, gas
+		logCloseFile(log, f)
 		return err
 	}
 	err = f.Close()
