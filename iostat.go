@@ -28,7 +28,11 @@ func newIOStat(path string, window time.Duration) (*IOStat, error) {
 		window:       window,
 		measurements: list.New(),
 	}
-	return s, s.measure()
+	err = s.measure()
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 type IOMeasurement struct {
