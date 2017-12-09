@@ -50,6 +50,7 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m.HandleFunc("/create-open", t.createOpen)
 	m.HandleFunc("/create-close", t.createClose)
 	m.HandleFunc("/delete", t.deleteFile)
+	m.HandleFunc("/iter-files", t.iterFiles)
 	t.server.Handler = m
 	if t.config.Debug {
 		t.log.SetLevel(log.DEBUG)
