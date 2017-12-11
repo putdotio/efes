@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 func (t *Tracker) iterFiles(w http.ResponseWriter, r *http.Request) {
@@ -43,13 +45,13 @@ func (t *Tracker) iterFiles(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var f file
-		var createdAt time.Time
+		var createdAt mysql.NullTime
 		err = rows.Scan(&f.ID, &f.Key, &createdAt)
 		if err != nil {
 			t.internalServerError("cannot scan row", err, r, w)
 			return
 		}
-		f.CreatedAt = createdAt.Format(time.RFC3339)
+		f.CreatedAt = createdAt.Time.Format(time.RFC3339)
 		files = append(files, f)
 	}
 	err = rows.Err()
