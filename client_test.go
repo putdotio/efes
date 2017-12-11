@@ -25,9 +25,12 @@ func createTempfile(t *testing.T, content string) string {
 
 func TestClient(t *testing.T) {
 	const chunkSize = 2
-	content := "12345" // a string length of 5 for testing chunk size of 2
+	content := "12345"   // a string length of 5 for testing chunk size of 2
+	content2 := "qwerty" // a string length of 5 for testing chunk size of 2
 	source := createTempfile(t, content)
+	source2 := createTempfile(t, content2)
 	defer os.Remove(source)
+	defer os.Remove(source2)
 
 	tr, err := NewTracker(testConfig)
 	if err != nil {
@@ -100,6 +103,28 @@ func TestClient(t *testing.T) {
 		t.Fatal("invalid content:", copyContent)
 	}
 
+	// test overwrite case
+	err = clt.Write("foo", source2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	copied2 := createTempfile(t, "")
+	defer os.Remove(copied2)
+	err = clt.Read("foo", copied2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	copyContent2, err := ioutil.ReadFile(copied2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(copyContent2) != content2 {
+		t.Fatal("invalid content:", copyContent2)
+	}
+
+	// test delete
 	err = clt.Delete("foo")
 	if err != nil {
 		t.Fatal(err)

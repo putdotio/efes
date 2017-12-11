@@ -123,7 +123,56 @@ func TestCreateClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req, err := http.NewRequest("POST", "/create-close?fid=9&devid=2&key=foo&size=42", nil)
+	req, err := http.NewRequest("POST", "/create-close?fid=9&devid=2&key=foo", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+
+	tr.server.Handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+	expected := ""
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			rr.Body.String(), expected)
+	}
+}
+
+func TestCreateCloseOverwrite(t *testing.T) {
+	tr, err := NewTracker(testConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cleanDB(t, tr.db)
+	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '1.2.3.4')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into device(devid, status, hostid) values(2, 'alive', 1)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into file(fid, dkey) values(8, 'foo')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into file_on(fid, devid) values(8, 2)")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = tr.db.Exec("insert into device(devid, status, hostid) values(3, 'alive', 1)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into tempfile(fid, devid) values(9, 3)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := http.NewRequest("POST", "/create-close?fid=9&key=foo", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

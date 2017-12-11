@@ -266,11 +266,6 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	devid, err := strconv.ParseInt(r.FormValue("devid"), 10, 64)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 	key := r.FormValue("key")
 	if key == "" {
 		http.Error(w, "required parameter: key", http.StatusBadRequest)
@@ -282,22 +277,46 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer tx.Rollback() // nolint: errcheck
-	res, err := tx.Exec("delete from tempfile where fid=?", fid)
+	var devid int64
+	row := tx.QueryRow("select devid from tempfile where fid=? for update", fid)
+	err = row.Scan(&devid)
+	if err == sql.ErrNoRows {
+		http.Error(w, "no tempfile found", http.StatusNotFound)
+		return
+	}
+	_, err = tx.Exec("delete from tempfile where fid=?", fid)
 	if err != nil {
 		t.internalServerError("cannot delete tempfile", err, r, w)
 		return
 	}
-	count, err := res.RowsAffected()
-	if err != nil {
-		t.internalServerError("cannot get rows affected", err, r, w)
+	var oldfid int64
+	var olddevids []int64
+	row = tx.QueryRow("select fid from file where dkey=?", key)
+	err = row.Scan(&oldfid)
+	switch err {
+	case sql.ErrNoRows:
+	case nil:
+		// Delete old fid
+		olddevids, err = getDevicesOfFid(tx, oldfid)
+		if err != nil {
+			t.internalServerError("cannot get devices of fid", err, r, w)
+			return
+		}
+		_, err = tx.Exec("delete from file_on where fid=?", oldfid)
+		if err != nil {
+			t.internalServerError("cannot delete file_on records", err, r, w)
+			return
+		}
+		_, err = tx.Exec("delete from file where fid=?", oldfid)
+		if err != nil {
+			t.internalServerError("cannot delete file", err, r, w)
+			return
+		}
+	default:
+		t.internalServerError("cannot select old fid record", err, r, w)
 		return
 	}
-	if count == 0 {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-
-	_, err = tx.Exec("replace into file(fid, dkey) values(?,?)", fid, key)
+	_, err = tx.Exec("insert into file(fid, dkey) values(?,?)", fid, key)
 	if err != nil {
 		t.internalServerError("cannot insert or replace file", err, r, w)
 		return
@@ -311,6 +330,9 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		t.internalServerError("cannot commit transaction", err, r, w)
 		return
+	}
+	if olddevids != nil {
+		go t.publishDeleteTask(olddevids, oldfid)
 	}
 }
 
