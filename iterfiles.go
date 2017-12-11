@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func (t *Tracker) iterFiles(w http.ResponseWriter, r *http.Request) {
@@ -29,11 +30,12 @@ func (t *Tracker) iterFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type file struct {
-		ID  int64  `json:"id"`
-		Key string `json:"key"`
+		ID        int64  `json:"id"`
+		Key       string `json:"key"`
+		CreatedAt string `json:"created_at"`
 	}
 	files := make([]file, 0)
-	rows, err := t.db.Query("select fid, dkey from file where fid > ? limit ?", from, count)
+	rows, err := t.db.Query("select fid, dkey, created_at from file where fid > ? limit ?", from, count)
 	if err != nil {
 		t.internalServerError("cannot get keys from database", err, r, w)
 		return
@@ -41,11 +43,13 @@ func (t *Tracker) iterFiles(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var f file
-		err = rows.Scan(&f.ID, &f.Key)
+		var createdAt time.Time
+		err = rows.Scan(&f.ID, &f.Key, &createdAt)
 		if err != nil {
 			t.internalServerError("cannot scan row", err, r, w)
 			return
 		}
+		f.CreatedAt = createdAt.Format(time.RFC3339)
 		files = append(files, f)
 	}
 	err = rows.Err()
