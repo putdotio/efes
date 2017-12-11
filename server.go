@@ -273,9 +273,9 @@ func (s *Server) cleanDisk() {
 
 func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {
 	var fid int
-	switch err := s.db.QueryRow("select fid from file where fid=?", fileID).Scan(&fid); err {
+	switch err := s.db.QueryRow("select fid from file_on where fid=? and devid=?", fileID, s.devid).Scan(&fid); err {
 	case sql.ErrNoRows:
-		switch err = s.db.QueryRow("select fid from tempfile where fid=?", fileID).Scan(&fid); err {
+		switch err = s.db.QueryRow("select fid from tempfile where fid=? and devid=?", fileID, s.devid).Scan(&fid); err {
 		case sql.ErrNoRows:
 			return false, nil
 		case nil:
