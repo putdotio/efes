@@ -257,9 +257,12 @@ type process interface {
 func runUntilInterrupt(p process) {
 	shutdown := make(chan struct{})
 	go handleSignals(p, shutdown)
-	if err := p.Run(); err != nil {
-		log.Fatal(err)
+	err := p.Run()
+	if err == nil {
+		log.Notice("Process end successfully.")
+		return
 	}
+	log.Fatal(err)
 	// Run returned with no error. Wait process.Shutdown to return before exit.
 	<-shutdown
 	log.Notice("Process shut down successfully.")
