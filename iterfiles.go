@@ -37,7 +37,7 @@ func (t *Tracker) iterFiles(w http.ResponseWriter, r *http.Request) {
 		CreatedAt string `json:"created_at"`
 	}
 	files := make([]file, 0)
-	rows, err := t.db.Query("select fid, dkey, created_at from file where fid > ? limit ?", from, count)
+	rows, err := t.db.Query("select fid, dkey, created_at from file where fid > ? order by fid limit ?", from, count)
 	if err != nil {
 		t.internalServerError("cannot get keys from database", err, r, w)
 		return
