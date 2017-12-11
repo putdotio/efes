@@ -147,29 +147,11 @@ func (d *Drainer) moveFile(fid int64) error {
 			return fmt.Errorf("crc32 mismatch: local=%s, remote=%s", localChecksum, remoteChecksum)
 		}
 	}
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-	err = moveFidOnDB(tx, fid, d.devid, ad.devid)
-	if err != nil {
-		logRollbackTx(d.log, tx)
-		return err
-	}
-	err = tx.Commit()
+	_, err = d.db.Exec("update file_on set devid=? where devid=? and fid=?", ad.devid, d.devid, fid)
 	if err != nil {
 		return err
 	}
 	return os.Remove(fidpath)
-}
-
-func moveFidOnDB(tx *sql.Tx, fid, oldDevid, newDevid int64) error {
-	_, err := tx.Exec("insert into file_on(fid, devid) values(?, ?)", fid, newDevid)
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec("delete from file_on where fid=? and devid=?", fid, oldDevid)
-	return err
 }
 
 func calculateRemoteChecksum(path string) (string, error) {
