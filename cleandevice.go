@@ -33,10 +33,12 @@ func (s *Server) cleanDevice() {
 			if ra == 0 {
 				continue
 			}
-			s.log.Debug("Cleaning file_on table...")
+			s.log.Debug("Cleanup has started on database table.")
 			err = s.walkOnDeviceFiles()
 			if err != nil {
-				s.log.Errorln("Error while walking on file_on table:", err)
+				s.log.Errorln("Error in database table cleanup:", err)
+			} else {
+				s.log.Info("Database table cleanup has finished successfully.")
 			}
 			// Updating last_device_clean_time at the end of traversal helps to
 			// spread the load on database more uniform in time.

@@ -30,10 +30,12 @@ func (s *Server) cleanDisk() {
 			if ra == 0 {
 				continue
 			}
-			s.log.Debug("Cleaning data dir...")
+			s.log.Info("Cleanup has started on data directory.")
 			err = filepath.Walk(s.config.Server.DataDir, s.visitFile)
 			if err != nil {
-				s.log.Errorln("Error while walking on disk files:", err)
+				s.log.Errorln("Error in data directory cleanup:", err)
+			} else {
+				s.log.Infoln("Data directory cleanup has finished successfully.")
 			}
 			// Updating last_disk_clean_time at the end of traversal helps to
 			// spread the load on database more uniform in time.
