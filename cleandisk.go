@@ -17,26 +17,23 @@ func (s *Server) cleanDisk() {
 	for {
 		select {
 		case <-ticker.C:
-			var devid int64
-			row := s.db.QueryRow("select devid from device where devid=? and ADDDATE(last_disk_clean_time, INTERVAL ? SECOND) < CURRENT_TIMESTAMP", s.devid, period)
-			err := row.Scan(&devid)
+			res, err := s.db.Exec("update device set last_disk_clean_time=current_timestamp where devid=? and ADDDATE(last_disk_clean_time, INTERVAL ? SECOND) < CURRENT_TIMESTAMP", s.devid, period)
 			if err != nil {
-				if err == sql.ErrNoRows {
-					continue
-				} else {
-					s.log.Errorln("Error getting last disk clean time:", err)
-					continue
-				}
+				s.log.Errorln("Error during updating last disk clean time:", err)
+				continue
 			}
-			_, err = s.db.Exec("update device set last_disk_clean_time=current_timestamp where devid=?", s.devid)
+			ra, err := res.RowsAffected()
 			if err != nil {
-				s.log.Error("Error during updating last disk clean time", err)
+				s.log.Errorln("Cannot get rows affected:", err)
+				continue
+			}
+			if ra == 0 {
 				continue
 			}
 			s.log.Debug("Cleaning data dir...")
 			err = filepath.Walk(s.config.Server.DataDir, s.visitFile)
 			if err != nil {
-				s.log.Errorln("Error while walking on files:", err)
+				s.log.Errorln("Error while walking on disk files:", err)
 			}
 			// Updating last_disk_clean_time at the end of traversal helps to
 			// spread the load on database more uniform in time.

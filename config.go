@@ -31,6 +31,7 @@ type ServerConfig struct {
 	ShutdownTimeout      Duration `toml:"shutdown_timeout"`
 	CleanDiskRunPeriod   Duration `toml:"clean_disk_run_period"`
 	CleanDiskFileTTL     Duration `toml:"clean_disk_file_ttl"`
+	CleanDeviceRunPeriod Duration `toml:"clean_device_run_period"`
 }
 
 // ClientConfig holds configuration values for Client.
@@ -64,6 +65,7 @@ var defaultConfig = Config{
 		ShutdownTimeout:      Duration(10 * time.Second),
 		CleanDiskFileTTL:     Duration(24 * time.Hour),
 		CleanDiskRunPeriod:   Duration(7 * 24 * time.Hour),
+		CleanDeviceRunPeriod: Duration(7 * 24 * time.Hour),
 	},
 	Client: ClientConfig{
 		TrackerURL:   "http://127.0.0.1:8001",

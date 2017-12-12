@@ -20,6 +20,7 @@ CREATE TABLE `device` (
   `io_utilization` tinyint(3) unsigned DEFAULT NULL,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `last_disk_clean_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_device_clean_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`devid`),
   FOREIGN KEY (`hostid`) REFERENCES `host` (`hostid`)
 );
