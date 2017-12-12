@@ -88,7 +88,7 @@ func (s *Server) checkFid(fid int64) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() // nolint: errcheck
 
 	devids, err := s.getAllDevidsForFid(tx, fid)
 	if err != nil {
