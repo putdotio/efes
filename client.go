@@ -94,11 +94,17 @@ func (c *Client) Delete(key string) error {
 	return c.request(http.MethodPost, "delete", form, nil)
 }
 
-// Exist checks the existing of a key on Efes.
-func (c *Client) Exist(key string) (bool, error) {
-	paths, err := c.getPaths(key)
+// Exists checks the existance of a key on Efes.
+func (c *Client) Exists(key string) (bool, error) {
+	_, err := c.getPath(key)
+	if errc, ok := err.(ClientError); ok {
+		if errc.Code == http.StatusNotFound {
+			return false, nil
+		}
+		return false, err
+	}
 	if err != nil {
 		return false, err
 	}
-	return len(paths) > 0, nil
+	return true, nil
 }

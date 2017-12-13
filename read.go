@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -10,14 +9,11 @@ import (
 )
 
 func (c *Client) Read(key, path string) error {
-	paths, err := c.getPaths(key)
+	path, err := c.getPath(key)
 	if err != nil {
 		return err
 	}
-	if len(paths) == 0 {
-		return errors.New("no path returned from tracker")
-	}
-	resp, err := http.Get(paths[0])
+	resp, err := http.Get(path)
 	if err != nil {
 		return err
 	}
@@ -56,6 +52,14 @@ func (c *Client) Read(key, path string) error {
 		return err
 	}
 	return cl.Close()
+}
+
+func (c *Client) getPath(key string) (string, error) {
+	form := url.Values{}
+	form.Add("key", key)
+	var response GetPath
+	err := c.request(http.MethodGet, "get-path", form, &response)
+	return response.Path, err
 }
 
 func (c *Client) getPaths(key string) ([]string, error) {

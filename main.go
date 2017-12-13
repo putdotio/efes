@@ -142,7 +142,7 @@ func main() {
 			},
 		},
 		{
-			Name:      "exist",
+			Name:      "exists",
 			Usage:     "check if a key exists in efes",
 			ArgsUsage: "key",
 			Action: func(c *cli.Context) error {
@@ -154,11 +154,11 @@ func main() {
 				if err != nil {
 					return err
 				}
-				exist, err := client.Exist(key)
+				exists, err := client.Exists(key)
 				if err != nil {
 					return err
 				}
-				if !exist {
+				if !exists {
 					return errors.New("key does not exist")
 				}
 				return nil
