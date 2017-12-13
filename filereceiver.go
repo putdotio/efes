@@ -48,10 +48,6 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case http.MethodHead:
 		offset, err := getOffset(path)
-		if err == errNotExist {
-			http.Error(w, "offset file does not exist", http.StatusNotFound)
-			return
-		}
 		if err != nil {
 			f.internalServerError("cannot get offset", err, r, w)
 			return
@@ -131,7 +127,7 @@ func createFile(path string) error {
 func getOffset(path string) (int64, error) {
 	b, err := ioutil.ReadFile(path + ".offset")
 	if os.IsNotExist(err) {
-		return 0, errNotExist
+		return 0, nil
 	}
 	if err != nil {
 		return 0, err
@@ -156,9 +152,6 @@ func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logg
 		}
 	} else {
 		fileOffset, err := getOffset(path)
-		if err == errNotExist {
-			return &OffsetMismatchError{offset, 0}
-		}
 		if err != nil {
 			return err
 		}
