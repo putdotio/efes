@@ -97,13 +97,10 @@ func (c *Client) Delete(key string) error {
 // Exists checks the existance of a key on Efes.
 func (c *Client) Exists(key string) (bool, error) {
 	_, err := c.getPath(key)
-	if errc, ok := err.(ClientError); ok {
-		if errc.Code == http.StatusNotFound {
+	if err != nil {
+		if errc, ok := err.(*ClientError); ok && errc.Code == http.StatusNotFound {
 			return false, nil
 		}
-		return false, err
-	}
-	if err != nil {
 		return false, err
 	}
 	return true, nil

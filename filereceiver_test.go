@@ -36,15 +36,15 @@ func TestFileReceiver(t *testing.T) {
 	setup(t)
 	defer tearDown()
 
-	testOffset(t, 404, false, 0)
+	testOffset(t, 0)
 	testCreate(t)
-	testOffset(t, 200, true, 0)
+	testOffset(t, 0)
 	testSend(t, 0, false, "foo")
-	testOffset(t, 200, true, 3)
+	testOffset(t, 3)
 	testSend(t, 3, false, "bar")
-	testOffset(t, 200, true, 6)
+	testOffset(t, 6)
 	testDelete(t)
-	testOffset(t, 404, false, 0)
+	testOffset(t, 0)
 }
 
 func TestFileReceiverNoCreate(t *testing.T) {
@@ -52,9 +52,9 @@ func TestFileReceiverNoCreate(t *testing.T) {
 	defer tearDown()
 
 	testSend(t, 0, false, "baz")
-	testOffset(t, 200, true, 3)
+	testOffset(t, 3)
 	testDelete(t)
-	testOffset(t, 404, false, 0)
+	testOffset(t, 0)
 }
 
 func TestFileReceiverNoDelete(t *testing.T) {
@@ -63,7 +63,7 @@ func TestFileReceiverNoDelete(t *testing.T) {
 
 	testCreate(t)
 	testSend(t, 0, true, "baz")
-	testOffset(t, 404, false, 0)
+	testOffset(t, 0)
 }
 
 func TestFileReceiverZeroByte(t *testing.T) {
@@ -72,7 +72,7 @@ func TestFileReceiverZeroByte(t *testing.T) {
 
 	testCreate(t)
 	testSend(t, 0, false, "")
-	testOffset(t, 200, true, 0)
+	testOffset(t, 0)
 	testDelete(t)
 }
 
@@ -81,7 +81,7 @@ func TestFileReceiverSingleRequest(t *testing.T) {
 	defer tearDown()
 
 	testSend(t, 0, true, "foo")
-	testOffset(t, 404, false, 0)
+	testOffset(t, 0)
 }
 
 func TestFileReceiverInvalidOffset(t *testing.T) {
@@ -128,7 +128,7 @@ func testDelete(t *testing.T) {
 	}
 }
 
-func testOffset(t *testing.T, statusCode int, checkValue bool, value int64) {
+func testOffset(t *testing.T, value int64) {
 	t.Helper()
 	req, err := http.NewRequest("HEAD", testPath, nil)
 	if err != nil {
@@ -136,17 +136,15 @@ func testOffset(t *testing.T, statusCode int, checkValue bool, value int64) {
 	}
 	rr := httptest.NewRecorder()
 	fr.ServeHTTP(rr, req)
-	if status := rr.Code; status != statusCode {
-		t.Fatalf("handler returned wrong status code: got %v want %v", status, statusCode)
+	if status := rr.Code; status != http.StatusOK {
+		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
-	if checkValue {
-		offset, err := strconv.ParseInt(rr.Header().Get("efes-file-offset"), 10, 64)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if offset != value {
-			t.Fatalf("invalid offset: %d", offset)
-		}
+	offset, err := strconv.ParseInt(rr.Header().Get("efes-file-offset"), 10, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if offset != value {
+		t.Fatalf("invalid offset: %d", offset)
 	}
 }
 
