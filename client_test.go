@@ -67,7 +67,7 @@ func TestClient(t *testing.T) {
 	<-tr.Ready
 	<-srv.Ready
 
-	exist, err := clt.Exist("foo")
+	exist, err := clt.Exists("foo")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	exist, err = clt.Exist("foo")
+	exist, err = clt.Exists("foo")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	exist, err = clt.Exist("foo")
+	exist, err = clt.Exists("foo")
 	if err != nil {
 		t.Fatal(err)
 	}

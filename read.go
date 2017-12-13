@@ -9,11 +9,11 @@ import (
 )
 
 func (c *Client) Read(key, path string) error {
-	path, err := c.getPath(key)
+	remotePath, err := c.getPath(key)
 	if err != nil {
 		return err
 	}
-	resp, err := http.Get(path)
+	resp, err := http.Get(remotePath)
 	if err != nil {
 		return err
 	}
@@ -60,14 +60,6 @@ func (c *Client) getPath(key string) (string, error) {
 	var response GetPath
 	err := c.request(http.MethodGet, "get-path", form, &response)
 	return response.Path, err
-}
-
-func (c *Client) getPaths(key string) ([]string, error) {
-	form := url.Values{}
-	form.Add("key", key)
-	var response GetPaths
-	err := c.request(http.MethodGet, "get-paths", form, &response)
-	return response.Paths, err
 }
 
 func (c *Client) getContentLength(resp *http.Response) int64 {
