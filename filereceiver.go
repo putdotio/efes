@@ -171,7 +171,6 @@ func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logg
 	n, err := io.Copy(f, r)
 	if err != nil {
 		logCloseFile(log, f)
-		return err
 	}
 	err = f.Close()
 	if err != nil {
