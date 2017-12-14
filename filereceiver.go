@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -12,10 +11,6 @@ import (
 	"strconv"
 
 	"github.com/cenkalti/log"
-)
-
-var (
-	errNotExist = errors.New("not valid upload")
 )
 
 // FileReceiver implements http.Handler for receiving files from clients in chunks.
@@ -84,7 +79,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case http.MethodDelete:
 		err := deleteOffset(path)
-		if err == errNotExist {
+		if os.IsNotExist(err) {
 			http.Error(w, "offset file does not exist", http.StatusNotFound)
 			return
 		}
@@ -134,7 +129,7 @@ func getOffset(path string) (int64, error) {
 	}
 	offset, err := strconv.ParseInt(string(b), 10, 64)
 	if err != nil {
-		return 0, errNotExist
+		return 0, nil
 	}
 	return offset, nil
 }
@@ -185,11 +180,7 @@ func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logg
 }
 
 func deleteOffset(path string) error {
-	err := os.Remove(path + ".offset")
-	if os.IsNotExist(err) {
-		return errNotExist
-	}
-	return err
+	return os.Remove(path + ".offset")
 }
 
 // OffsetMismatchError is returned when the offset specified in request does not match the actual offset on the disk.
