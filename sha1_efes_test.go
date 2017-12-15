@@ -7,7 +7,7 @@ import (
 
 func TestSha1PartialDigest(t *testing.T) {
 	b := []byte("hello world")
-	var d digest
+	var d sha1digest
 	d.Write(b)
 	hex1 := hex.EncodeToString(d.Sum(nil))
 
@@ -16,7 +16,7 @@ func TestSha1PartialDigest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var d2 digest
+	var d2 sha1digest
 	err = d2.UnmarshalText(b)
 	if err != nil {
 		t.Fatal(err)

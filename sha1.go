@@ -32,15 +32,15 @@ const (
 	init4 = 0xC3D2E1F0
 )
 
-// digest represents the partial evaluation of a checksum.
-type digest struct {
+// sha1digest represents the partial evaluation of a checksum.
+type sha1digest struct {
 	h   [5]uint32
 	x   [chunk]byte
 	nx  int
 	len uint64
 }
 
-func (d *digest) Reset() {
+func (d *sha1digest) Reset() {
 	d.h[0] = init0
 	d.h[1] = init1
 	d.h[2] = init2
@@ -52,16 +52,16 @@ func (d *digest) Reset() {
 
 // New returns a new hash.Hash computing the SHA1 checksum.
 func New() hash.Hash {
-	d := new(digest)
+	d := new(sha1digest)
 	d.Reset()
 	return d
 }
 
-func (d *digest) Size() int { return Size }
+func (d *sha1digest) Size() int { return Size }
 
-func (d *digest) BlockSize() int { return BlockSize }
+func (d *sha1digest) BlockSize() int { return BlockSize }
 
-func (d *digest) Write(p []byte) (nn int, err error) {
+func (d *sha1digest) Write(p []byte) (nn int, err error) {
 	nn = len(p)
 	d.len += uint64(nn)
 	if d.nx > 0 {
@@ -84,14 +84,14 @@ func (d *digest) Write(p []byte) (nn int, err error) {
 	return
 }
 
-func (d0 *digest) Sum(in []byte) []byte {
+func (d0 *sha1digest) Sum(in []byte) []byte {
 	// Make a copy of d0 so that caller can keep writing and summing.
 	d := *d0
 	hash := d.checkSum()
 	return append(in, hash[:]...)
 }
 
-func (d *digest) checkSum() [Size]byte {
+func (d *sha1digest) checkSum() [Size]byte {
 	len := d.len
 	// Padding.  Add a 1 bit and 0 bits until 56 bytes mod 64.
 	var tmp [64]byte
@@ -125,13 +125,13 @@ func (d *digest) checkSum() [Size]byte {
 }
 
 // ConstantTimeSum computes the same result of Sum() but in constant time
-func (d0 *digest) ConstantTimeSum(in []byte) []byte {
+func (d0 *sha1digest) ConstantTimeSum(in []byte) []byte {
 	d := *d0
 	hash := d.constSum()
 	return append(in, hash[:]...)
 }
 
-func (d *digest) constSum() [Size]byte {
+func (d *sha1digest) constSum() [Size]byte {
 	var length [8]byte
 	l := d.len << 3
 	for i := uint(0); i < 8; i++ {
@@ -194,7 +194,7 @@ func (d *digest) constSum() [Size]byte {
 
 // Sum returns the SHA-1 checksum of the data.
 func Sum(data []byte) [Size]byte {
-	var d digest
+	var d sha1digest
 	d.Reset()
 	d.Write(data) // nolint: errcheck, gas
 	return d.checkSum()
@@ -207,7 +207,7 @@ const (
 	_K3 = 0xCA62C1D6
 )
 
-func block(dig *digest, p []byte) {
+func block(dig *sha1digest, p []byte) {
 	var w [16]uint32
 
 	h0, h1, h2, h3, h4 := dig.h[0], dig.h[1], dig.h[2], dig.h[3], dig.h[4]

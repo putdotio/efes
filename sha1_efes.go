@@ -22,7 +22,7 @@ const (
 
 var errInvalidDigest = errors.New("invalid digest")
 
-func (d *digest) MarshalText() ([]byte, error) {
+func (d *sha1digest) MarshalText() ([]byte, error) {
 	b := bytes.NewBuffer(make([]byte, 0, digestsize))
 	binary.Write(b, binary.BigEndian, d.h[0]) // nolint: errcheck
 	binary.Write(b, binary.BigEndian, d.h[1]) // nolint: errcheck
@@ -37,7 +37,7 @@ func (d *digest) MarshalText() ([]byte, error) {
 	return ret, nil
 }
 
-func (d *digest) UnmarshalText(text []byte) error {
+func (d *sha1digest) UnmarshalText(text []byte) error {
 	if len(text) != hex.EncodedLen(digestsize) {
 		return errInvalidDigest
 	}
