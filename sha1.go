@@ -14,11 +14,11 @@ import (
 )
 
 func init() {
-	crypto.RegisterHash(crypto.SHA1, New)
+	crypto.RegisterHash(crypto.SHA1, NewSha1)
 }
 
 // The size of a SHA-1 checksum in bytes.
-const Size = 20
+const Sha1Size = 20
 
 // The blocksize of SHA-1 in bytes.
 const BlockSize = 64
@@ -51,13 +51,13 @@ func (d *sha1digest) Reset() {
 }
 
 // New returns a new hash.Hash computing the SHA1 checksum.
-func New() hash.Hash {
+func NewSha1() hash.Hash {
 	d := new(sha1digest)
 	d.Reset()
 	return d
 }
 
-func (d *sha1digest) Size() int { return Size }
+func (d *sha1digest) Size() int { return Sha1Size }
 
 func (d *sha1digest) BlockSize() int { return BlockSize }
 
@@ -91,7 +91,7 @@ func (d0 *sha1digest) Sum(in []byte) []byte {
 	return append(in, hash[:]...)
 }
 
-func (d *sha1digest) checkSum() [Size]byte {
+func (d *sha1digest) checkSum() [Sha1Size]byte {
 	len := d.len
 	// Padding.  Add a 1 bit and 0 bits until 56 bytes mod 64.
 	var tmp [64]byte
@@ -113,7 +113,7 @@ func (d *sha1digest) checkSum() [Size]byte {
 		panic("d.nx != 0")
 	}
 
-	var digest [Size]byte
+	var digest [Sha1Size]byte
 	for i, s := range d.h {
 		digest[i*4] = byte(s >> 24)
 		digest[i*4+1] = byte(s >> 16)
@@ -124,76 +124,8 @@ func (d *sha1digest) checkSum() [Size]byte {
 	return digest
 }
 
-// ConstantTimeSum computes the same result of Sum() but in constant time
-func (d0 *sha1digest) ConstantTimeSum(in []byte) []byte {
-	d := *d0
-	hash := d.constSum()
-	return append(in, hash[:]...)
-}
-
-func (d *sha1digest) constSum() [Size]byte {
-	var length [8]byte
-	l := d.len << 3
-	for i := uint(0); i < 8; i++ {
-		length[i] = byte(l >> (56 - 8*i))
-	}
-
-	nx := byte(d.nx)
-	t := nx - 56                 // if nx < 56 then the MSB of t is one
-	mask1b := byte(int8(t) >> 7) // mask1b is 0xFF iff one block is enough
-
-	separator := byte(0x80) // gets reset to 0x00 once used
-	for i := byte(0); i < chunk; i++ {
-		mask := byte(int8(i-nx) >> 7) // 0x00 after the end of data
-
-		// if we reached the end of the data, replace with 0x80 or 0x00
-		d.x[i] = (^mask & separator) | (mask & d.x[i])
-
-		// zero the separator once used
-		separator &= mask
-
-		if i >= 56 {
-			// we might have to write the length here if all fit in one block
-			d.x[i] |= mask1b & length[i-56]
-		}
-	}
-
-	// compress, and only keep the digest if all fit in one block
-	block(d, d.x[:])
-
-	var digest [Size]byte
-	for i, s := range d.h {
-		digest[i*4] = mask1b & byte(s>>24)
-		digest[i*4+1] = mask1b & byte(s>>16)
-		digest[i*4+2] = mask1b & byte(s>>8)
-		digest[i*4+3] = mask1b & byte(s)
-	}
-
-	for i := byte(0); i < chunk; i++ {
-		// second block, it's always past the end of data, might start with 0x80
-		if i < 56 {
-			d.x[i] = separator
-			separator = 0
-		} else {
-			d.x[i] = length[i-56]
-		}
-	}
-
-	// compress, and only keep the digest if we actually needed the second block
-	block(d, d.x[:])
-
-	for i, s := range d.h {
-		digest[i*4] |= ^mask1b & byte(s>>24)
-		digest[i*4+1] |= ^mask1b & byte(s>>16)
-		digest[i*4+2] |= ^mask1b & byte(s>>8)
-		digest[i*4+3] |= ^mask1b & byte(s)
-	}
-
-	return digest
-}
-
 // Sum returns the SHA-1 checksum of the data.
-func Sum(data []byte) [Size]byte {
+func Sum(data []byte) [Sha1Size]byte {
 	var d sha1digest
 	d.Reset()
 	d.Write(data) // nolint: errcheck, gas
