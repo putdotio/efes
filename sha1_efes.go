@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 )
 
@@ -15,51 +14,51 @@ import (
 //         len uint64
 // }
 
-var (
-	digestsize       = 100
-	errInvalidDigest = errors.New("invalid digest size")
+const (
+	digestsize = 100
+	MaxUint    = ^uint(0)
+	MaxInt     = int(MaxUint >> 1)
 )
 
-func (d *digest) MarshalJSON() ([]byte, error) {
-	var b bytes.Buffer
-	binary.Write(&b, binary.BigEndian, d.h[0])
-	binary.Write(&b, binary.BigEndian, d.h[1])
-	binary.Write(&b, binary.BigEndian, d.h[2])
-	binary.Write(&b, binary.BigEndian, d.h[3])
-	binary.Write(&b, binary.BigEndian, d.h[4])
+var errInvalidDigest = errors.New("invalid digest")
+
+func (d *digest) MarshalText() ([]byte, error) {
+	b := bytes.NewBuffer(make([]byte, 0, digestsize))
+	binary.Write(b, binary.BigEndian, d.h[0]) // nolint: errcheck
+	binary.Write(b, binary.BigEndian, d.h[1]) // nolint: errcheck
+	binary.Write(b, binary.BigEndian, d.h[2]) // nolint: errcheck
+	binary.Write(b, binary.BigEndian, d.h[3]) // nolint: errcheck
+	binary.Write(b, binary.BigEndian, d.h[4]) // nolint: errcheck
 	b.Write(d.x[:])
-	binary.Write(&b, binary.BigEndian, int64(d.nx))
-	binary.Write(&b, binary.BigEndian, d.len)
-	if b.Len() != digestsize {
-		return nil, errInvalidDigest
-	}
-	s := hex.EncodeToString(b.Bytes())
-	return []byte(`"` + s + `"`), nil
+	binary.Write(b, binary.BigEndian, int64(d.nx)) // nolint: errcheck
+	binary.Write(b, binary.BigEndian, d.len)       // nolint: errcheck
+	ret := make([]byte, hex.EncodedLen(digestsize))
+	hex.Encode(ret, b.Bytes())
+	return ret, nil
 }
 
-func (d *digest) UnmarshalJSON(b []byte) error {
-	var s string
-	err := json.Unmarshal(b, &s)
-	if err != nil {
-		return err
+func (d *digest) UnmarshalText(text []byte) error {
+	if len(text) != hex.EncodedLen(digestsize) {
+		return errInvalidDigest
 	}
-	b, err = hex.DecodeString(s)
+	b := make([]byte, digestsize)
+	_, err := hex.Decode(b, text)
 	if err != nil {
-		return err
-	}
-	if len(b) != digestsize {
 		return errInvalidDigest
 	}
 	r := bytes.NewReader(b)
-	binary.Read(r, binary.BigEndian, &d.h[0])
-	binary.Read(r, binary.BigEndian, &d.h[1])
-	binary.Read(r, binary.BigEndian, &d.h[2])
-	binary.Read(r, binary.BigEndian, &d.h[3])
-	binary.Read(r, binary.BigEndian, &d.h[4])
-	r.Read(d.x[:])
+	binary.Read(r, binary.BigEndian, &d.h[0]) // nolint: errcheck
+	binary.Read(r, binary.BigEndian, &d.h[1]) // nolint: errcheck
+	binary.Read(r, binary.BigEndian, &d.h[2]) // nolint: errcheck
+	binary.Read(r, binary.BigEndian, &d.h[3]) // nolint: errcheck
+	binary.Read(r, binary.BigEndian, &d.h[4]) // nolint: errcheck
+	r.Read(d.x[:])                            // nolint: errcheck
 	var nx int64
-	binary.Read(r, binary.BigEndian, &nx)
+	binary.Read(r, binary.BigEndian, &nx) // nolint: errcheck
+	if nx > int64(MaxInt) {
+		return errInvalidDigest
+	}
 	d.nx = int(nx)
-	binary.Read(r, binary.BigEndian, &d.len)
+	binary.Read(r, binary.BigEndian, &d.len) // nolint: errcheck
 	return nil
 }

@@ -11,13 +11,13 @@ func TestSha1PartialDigest(t *testing.T) {
 	d.Write(b)
 	hex1 := hex.EncodeToString(d.Sum(nil))
 
-	b, err := d.MarshalJSON()
+	b, err := d.MarshalText()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	var d2 digest
-	err = d2.UnmarshalJSON(b)
+	err = d2.UnmarshalText(b)
 	if err != nil {
 		t.Fatal(err)
 	}

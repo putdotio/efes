@@ -97,9 +97,9 @@ func (d *digest) checkSum() [Size]byte {
 	var tmp [64]byte
 	tmp[0] = 0x80
 	if len%64 < 56 {
-		d.Write(tmp[0 : 56-len%64])
+		d.Write(tmp[0 : 56-len%64]) // nolint: errcheck, gas
 	} else {
-		d.Write(tmp[0 : 64+56-len%64])
+		d.Write(tmp[0 : 64+56-len%64]) // nolint: errcheck, gas
 	}
 
 	// Length in bits.
@@ -107,7 +107,7 @@ func (d *digest) checkSum() [Size]byte {
 	for i := uint(0); i < 8; i++ {
 		tmp[i] = byte(len >> (56 - 8*i))
 	}
-	d.Write(tmp[0:8])
+	d.Write(tmp[0:8]) // nolint: errcheck, gas
 
 	if d.nx != 0 {
 		panic("d.nx != 0")
@@ -196,7 +196,7 @@ func (d *digest) constSum() [Size]byte {
 func Sum(data []byte) [Size]byte {
 	var d digest
 	d.Reset()
-	d.Write(data)
+	d.Write(data) // nolint: errcheck, gas
 	return d.checkSum()
 }
 
