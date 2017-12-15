@@ -15,15 +15,15 @@ import (
 // }
 
 const (
-	digestsize = 100
-	MaxUint    = ^uint(0)
-	MaxInt     = int(MaxUint >> 1)
+	sha1digestSize = 100
+	MaxUint        = ^uint(0)
+	MaxInt         = int(MaxUint >> 1)
 )
 
 var errInvalidDigest = errors.New("invalid digest")
 
 func (d *sha1digest) MarshalText() ([]byte, error) {
-	b := bytes.NewBuffer(make([]byte, 0, digestsize))
+	b := bytes.NewBuffer(make([]byte, 0, sha1digestSize))
 	binary.Write(b, binary.BigEndian, d.h[0]) // nolint: errcheck
 	binary.Write(b, binary.BigEndian, d.h[1]) // nolint: errcheck
 	binary.Write(b, binary.BigEndian, d.h[2]) // nolint: errcheck
@@ -32,16 +32,16 @@ func (d *sha1digest) MarshalText() ([]byte, error) {
 	b.Write(d.x[:])
 	binary.Write(b, binary.BigEndian, int64(d.nx)) // nolint: errcheck
 	binary.Write(b, binary.BigEndian, d.len)       // nolint: errcheck
-	ret := make([]byte, hex.EncodedLen(digestsize))
+	ret := make([]byte, hex.EncodedLen(sha1digestSize))
 	hex.Encode(ret, b.Bytes())
 	return ret, nil
 }
 
 func (d *sha1digest) UnmarshalText(text []byte) error {
-	if len(text) != hex.EncodedLen(digestsize) {
+	if len(text) != hex.EncodedLen(sha1digestSize) {
 		return errInvalidDigest
 	}
-	b := make([]byte, digestsize)
+	b := make([]byte, sha1digestSize)
 	_, err := hex.Decode(b, text)
 	if err != nil {
 		return errInvalidDigest

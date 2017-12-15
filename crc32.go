@@ -90,8 +90,8 @@ func MakeTable(poly uint32) *Table {
 	return simpleMakeTable(poly)
 }
 
-// digest represents the partial evaluation of a checksum.
-type digest struct {
+// crc32digest represents the partial evaluation of a checksum.
+type crc32digest struct {
 	crc uint32
 	tab *Table
 }
@@ -103,7 +103,7 @@ func NewCRC32(tab *Table) hash.Hash32 {
 	if tab == IEEETable {
 		ieeeOnce.Do(ieeeInit)
 	}
-	return &digest{0, tab}
+	return &crc32digest{0, tab}
 }
 
 // NewCRC32IEEE creates a new hash.Hash32 computing the CRC-32 checksum
@@ -111,11 +111,11 @@ func NewCRC32(tab *Table) hash.Hash32 {
 // Its Sum method will lay the value out in big-endian byte order.
 func NewCRC32IEEE() hash.Hash32 { return NewCRC32(IEEETable) }
 
-func (d *digest) Size() int { return CRC32Size }
+func (d *crc32digest) Size() int { return CRC32Size }
 
-func (d *digest) BlockSize() int { return 1 }
+func (d *crc32digest) BlockSize() int { return 1 }
 
-func (d *digest) Reset() { d.crc = 0 }
+func (d *crc32digest) Reset() { d.crc = 0 }
 
 // Update returns the result of adding the bytes in p to the crc.
 func Update(crc uint32, tab *Table, p []byte) uint32 {
@@ -132,7 +132,7 @@ func Update(crc uint32, tab *Table, p []byte) uint32 {
 	}
 }
 
-func (d *digest) Write(p []byte) (n int, err error) {
+func (d *crc32digest) Write(p []byte) (n int, err error) {
 	switch d.tab {
 	case castagnoliTable:
 		d.crc = updateCastagnoli(d.crc, p)
@@ -146,9 +146,9 @@ func (d *digest) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func (d *digest) Sum32() uint32 { return d.crc }
+func (d *crc32digest) Sum32() uint32 { return d.crc }
 
-func (d *digest) Sum(in []byte) []byte {
+func (d *crc32digest) Sum(in []byte) []byte {
 	s := d.Sum32()
 	return append(in, byte(s>>24), byte(s>>16), byte(s>>8), byte(s))
 }
