@@ -1,13 +1,13 @@
-FROM rabbitmq:3.6
+FROM ubuntu:xenial
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get -y install rabbitmq-server
 
 ARG RABBITMQ_USER=efes
 ARG RABBITMQ_PASS=123
 
-ENV HOME=/var/lib/rabbitmq2
-ENV RABBITMQ_MNESIA_BASE=/var/lib/rabbitmq2/mnesia
 ENV RABBITMQ_NODENAME=efes@localhost
 
-RUN mkdir $HOME
 RUN rabbitmq-plugins enable --offline rabbitmq_management
 EXPOSE 15671 15672
 
