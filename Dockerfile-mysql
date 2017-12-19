@@ -1,4 +1,7 @@
-FROM mysql:5.7.20
+FROM ubuntu:xenial
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get -y install mysql-server-5.7
 
 ARG MYSQL_USER=efes
 ARG MYSQL_PASSWORD=123
@@ -9,6 +12,6 @@ ADD schema.sql /tmp/
 
 RUN ["bash", "/tmp/docker-init-mysql.sh"]
 
-ENTRYPOINT ["mysqld", "--user=root", "--datadir=/var/lib/mysql2"]
+ENTRYPOINT ["mysqld"]
 
 EXPOSE 3306

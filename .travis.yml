@@ -1,9 +1,11 @@
+dist: trusty
+group: deprecated-2017Q4
 sudo: required
 language: go
 services:
   - docker
 env:
-  - DOCKER_COMPOSE_VERSION=1.16.1
+  - DOCKER_COMPOSE_VERSION=1.17.1
 before_install:
   # install latest version of docker
   - docker version
