@@ -115,14 +115,6 @@ func (d *sha1digest) checkSum() [Sha1Size]byte {
 	return digest
 }
 
-// Sum returns the SHA-1 checksum of the data.
-func Sum(data []byte) [Sha1Size]byte {
-	var d sha1digest
-	d.Reset()
-	d.Write(data) // nolint: errcheck, gas
-	return d.checkSum()
-}
-
 const (
 	_K0 = 0x5A827999
 	_K1 = 0x6ED9EBA1

@@ -22,46 +22,16 @@ const (
 	// IEEE is by far and away the most common CRC-32 polynomial.
 	// Used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
 	IEEE = 0xedb88320
-
-	// Castagnoli's polynomial, used in iSCSI.
-	// Has better error detection characteristics than IEEE.
-	// http://dx.doi.org/10.1109/26.231911
-	Castagnoli = 0x82f63b78
-
-	// Koopman's polynomial.
-	// Also has better error detection characteristics than IEEE.
-	// http://dx.doi.org/10.1109/DSN.2002.1028931
-	Koopman = 0xeb31d82e
 )
 
 // Table is a 256-word table representing the polynomial for efficient processing.
 type Table [256]uint32
-
-// castagnoliTable points to a lazily initialized Table for the Castagnoli
-// polynomial. MakeTable will always return this value when asked to make a
-// Castagnoli table so we can compare against it to find when the caller is
-// using this polynomial.
-var castagnoliTable *Table
-var castagnoliTable8 *slicing8Table
-var castagnoliArchImpl bool
-var updateCastagnoli func(crc uint32, p []byte) uint32
-var castagnoliOnce sync.Once
-
-func castagnoliInit() {
-	castagnoliTable = simpleMakeTable(Castagnoli)
-	// Initialize the slicing-by-8 table.
-	castagnoliTable8 = slicingMakeTable(Castagnoli)
-	updateCastagnoli = func(crc uint32, p []byte) uint32 {
-		return slicingUpdate(crc, castagnoliTable8, p)
-	}
-}
 
 // IEEETable is the table for the IEEE polynomial.
 var IEEETable = simpleMakeTable(IEEE)
 
 // ieeeTable8 is the slicing8Table for IEEE
 var ieeeTable8 *slicing8Table
-var ieeeArchImpl bool
 var updateIEEE func(crc uint32, p []byte) uint32
 var ieeeOnce sync.Once
 
@@ -71,20 +41,6 @@ func ieeeInit() {
 	updateIEEE = func(crc uint32, p []byte) uint32 {
 		return slicingUpdate(crc, ieeeTable8, p)
 	}
-}
-
-// MakeTable returns a Table constructed from the specified polynomial.
-// The contents of this Table must not be modified.
-func MakeTable(poly uint32) *Table {
-	switch poly {
-	case IEEE:
-		ieeeOnce.Do(ieeeInit)
-		return IEEETable
-	case Castagnoli:
-		castagnoliOnce.Do(castagnoliInit)
-		return castagnoliTable
-	}
-	return simpleMakeTable(poly)
 }
 
 // crc32digest represents the partial evaluation of a checksum.
@@ -114,25 +70,8 @@ func (d *crc32digest) BlockSize() int { return 1 }
 
 func (d *crc32digest) Reset() { d.crc = 0 }
 
-// Update returns the result of adding the bytes in p to the crc.
-func Update(crc uint32, tab *Table, p []byte) uint32 {
-	switch tab {
-	case castagnoliTable:
-		return updateCastagnoli(crc, p)
-	case IEEETable:
-		// Unfortunately, because IEEETable is exported, IEEE may be used without a
-		// call to MakeTable. We have to make sure it gets initialized in that case.
-		ieeeOnce.Do(ieeeInit)
-		return updateIEEE(crc, p)
-	default:
-		return simpleUpdate(crc, tab, p)
-	}
-}
-
 func (d *crc32digest) Write(p []byte) (n int, err error) {
 	switch d.tab {
-	case castagnoliTable:
-		d.crc = updateCastagnoli(d.crc, p)
 	case IEEETable:
 		// We only create digest objects through NewCRC32() which takes care of
 		// initialization in this case.
@@ -148,17 +87,6 @@ func (d *crc32digest) Sum32() uint32 { return d.crc }
 func (d *crc32digest) Sum(in []byte) []byte {
 	s := d.Sum32()
 	return append(in, byte(s>>24), byte(s>>16), byte(s>>8), byte(s))
-}
-
-// Checksum returns the CRC-32 checksum of data
-// using the polynomial represented by the Table.
-func Checksum(data []byte, tab *Table) uint32 { return Update(0, tab, data) }
-
-// ChecksumIEEE returns the CRC-32 checksum of data
-// using the IEEE polynomial.
-func ChecksumIEEE(data []byte) uint32 {
-	ieeeOnce.Do(ieeeInit)
-	return updateIEEE(0, data)
 }
 
 // simpleMakeTable allocates and constructs a Table for the specified

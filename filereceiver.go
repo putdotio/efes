@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -123,10 +122,6 @@ func createFile(path string) error {
 		return err
 	}
 	return SaveFileInfo(path, newFileInfo())
-}
-
-func saveOffset(path string, offset int64) error {
-	return ioutil.WriteFile(path+".offset", []byte(strconv.FormatInt(offset, 10)), 0666)
 }
 
 func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logger) (*Digest, error) {
