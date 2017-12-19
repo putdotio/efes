@@ -12,10 +12,7 @@
 // for information.
 package main
 
-import (
-	"hash"
-	"sync"
-)
+import "sync"
 
 // The size of a CRC-32 checksum in bytes.
 const CRC32Size = 4
@@ -99,7 +96,7 @@ type crc32digest struct {
 // NewCRC32 creates a new hash.Hash32 computing the CRC-32 checksum
 // using the polynomial represented by the Table.
 // Its Sum method will lay the value out in big-endian byte order.
-func NewCRC32(tab *Table) hash.Hash32 {
+func NewCRC32(tab *Table) *crc32digest {
 	if tab == IEEETable {
 		ieeeOnce.Do(ieeeInit)
 	}
@@ -109,7 +106,7 @@ func NewCRC32(tab *Table) hash.Hash32 {
 // NewCRC32IEEE creates a new hash.Hash32 computing the CRC-32 checksum
 // using the IEEE polynomial.
 // Its Sum method will lay the value out in big-endian byte order.
-func NewCRC32IEEE() hash.Hash32 { return NewCRC32(IEEETable) }
+func NewCRC32IEEE() *crc32digest { return NewCRC32(IEEETable) }
 
 func (d *crc32digest) Size() int { return CRC32Size }
 

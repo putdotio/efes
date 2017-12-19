@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -42,12 +43,12 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case http.MethodHead:
-		offset, err := getOffset(path)
+		fi, err := ReadFileInfo(path)
 		if err != nil {
 			f.internalServerError("cannot get offset", err, r, w)
 			return
 		}
-		w.Header().Set("efes-file-offset", strconv.FormatInt(offset, 10))
+		w.Header().Set("efes-file-offset", strconv.FormatInt(fi.Offset, 10))
 	case http.MethodPatch:
 		offset, err := strconv.ParseInt(r.Header.Get("efes-file-offset"), 10, 64)
 		if err != nil {
@@ -63,7 +64,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		err = saveFile(path, offset, length, r.Body, f.log)
+		digest, err := saveFile(path, offset, length, r.Body, f.log)
 		if oerr, ok := err.(*OffsetMismatchError); ok {
 			// Cannot use http.Error() because we want to set "efes-file-offset" header.
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -77,8 +78,12 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			f.internalServerError("cannot save file", err, r, w)
 			return
 		}
+		if digest != nil {
+			w.Header().Set("efes-file-sha1", hex.EncodeToString(digest.Sha1.Sum(nil)))
+			w.Header().Set("efes-file-crc32", hex.EncodeToString(digest.CRC32.Sum(nil)))
+		}
 	case http.MethodDelete:
-		err := deleteOffset(path)
+		err := DeleteFileInfo(path)
 		if os.IsNotExist(err) {
 			http.Error(w, "offset file does not exist", http.StatusNotFound)
 			return
@@ -87,6 +92,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			f.internalServerError("cannot delete offset file", err, r, w)
 			return
 		}
+	// TODO delete after impelement digest
 	case "CRC32":
 		s, err := crc32file(path, f.log)
 		if err != nil {
@@ -116,71 +122,56 @@ func createFile(path string) error {
 	if err != nil {
 		return err
 	}
-	return saveOffset(path, 0)
-}
-
-func getOffset(path string) (int64, error) {
-	b, err := ioutil.ReadFile(path + ".offset")
-	if os.IsNotExist(err) {
-		return 0, nil
-	}
-	if err != nil {
-		return 0, err
-	}
-	offset, err := strconv.ParseInt(string(b), 10, 64)
-	if err != nil {
-		return 0, nil
-	}
-	return offset, nil
+	return SaveFileInfo(path, newFileInfo())
 }
 
 func saveOffset(path string, offset int64) error {
 	return ioutil.WriteFile(path+".offset", []byte(strconv.FormatInt(offset, 10)), 0666)
 }
 
-func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logger) error {
+func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logger) (*Digest, error) {
+	var fi *FileInfo
+	var err error
 	if offset == 0 {
 		// File can be saved without a prior POST for creating offset file.
-		err := createFile(path)
+		err = createFile(path)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		fi = newFileInfo()
 	} else {
-		fileOffset, err := getOffset(path)
+		fi, err = ReadFileInfo(path)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if offset != fileOffset {
-			return &OffsetMismatchError{offset, fileOffset}
+		if offset != fi.Offset {
+			return nil, &OffsetMismatchError{offset, fi.Offset}
 		}
 	}
 	f, err := os.OpenFile(path, os.O_WRONLY, 0600)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	_, err = f.Seek(offset, io.SeekStart)
 	if err != nil {
 		logCloseFile(log, f)
-		return err
+		return nil, err
 	}
 	n, _ := io.Copy(f, r)
 	err = f.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	newOffset := offset + n
-	if newOffset == length {
+	fi.Offset = offset + n
+	if fi.Offset == length {
 		// If we know the length of the file, we can delete the ".offset"
 		// file without the need of a seperate DELETE from the client.
-		err = deleteOffset(path)
+		err = DeleteFileInfo(path)
+		return &fi.Digest, err
 	} else {
-		err = saveOffset(path, newOffset)
+		err = SaveFileInfo(path, fi)
+		return nil, err
 	}
-	return err
-}
-
-func deleteOffset(path string) error {
-	return os.Remove(path + ".offset")
 }
 
 // OffsetMismatchError is returned when the offset specified in request does not match the actual offset on the disk.

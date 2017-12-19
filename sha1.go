@@ -8,15 +8,6 @@
 // applications.
 package main
 
-import (
-	"crypto"
-	"hash"
-)
-
-func init() {
-	crypto.RegisterHash(crypto.SHA1, NewSha1)
-}
-
 // The size of a SHA-1 checksum in bytes.
 const Sha1Size = 20
 
@@ -51,7 +42,7 @@ func (d *sha1digest) Reset() {
 }
 
 // New returns a new hash.Hash computing the SHA1 checksum.
-func NewSha1() hash.Hash {
+func NewSha1() *sha1digest {
 	d := new(sha1digest)
 	d.Reset()
 	return d

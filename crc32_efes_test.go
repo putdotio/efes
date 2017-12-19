@@ -7,7 +7,7 @@ import (
 
 func TestCRC32PartialDigest(t *testing.T) {
 	b := []byte("hello world")
-	var d = NewCRC32IEEE().(*crc32digest)
+	var d = NewCRC32IEEE()
 	d.Write(b)
 	hex1 := hex.EncodeToString(d.Sum(nil))
 
@@ -16,7 +16,7 @@ func TestCRC32PartialDigest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var d2 = NewCRC32IEEE().(*crc32digest)
+	var d2 = NewCRC32IEEE()
 	err = d2.UnmarshalText(b)
 	if err != nil {
 		t.Fatal(err)
