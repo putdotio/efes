@@ -152,7 +152,8 @@ func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logg
 		logCloseFile(log, f)
 		return nil, err
 	}
-	n, _ := io.Copy(f, r)
+	w := io.MultiWriter(f, fi.Digest.CRC32, fi.Digest.Sha1)
+	n, _ := io.Copy(w, r)
 	err = f.Close()
 	if err != nil {
 		return nil, err
