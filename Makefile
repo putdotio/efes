@@ -22,9 +22,4 @@ upload: build
 	@rm $(NAME) $(NAME).md5
 
 lint:
-	gometalinter \
-		--vendor \
-		--disable golint \
-		--disable gocyclo \
-		--disable aligncheck \
-		--disable maligned
+	gometalinter --config=gometalinter.json
