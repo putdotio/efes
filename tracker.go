@@ -14,6 +14,7 @@ import (
 
 	"github.com/cenkalti/log"
 	"github.com/cenkalti/redialer/amqpredialer"
+	"github.com/getsentry/raven-go"
 	"github.com/streadway/amqp"
 )
 
@@ -45,7 +46,6 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m := http.NewServeMux()
 	m.HandleFunc("/ping", t.ping)
 	m.HandleFunc("/get-path", t.getPath)
-	// TODO detele get-paths
 	m.HandleFunc("/get-paths", t.getPaths)
 	m.HandleFunc("/get-devices", t.getDevices)
 	m.HandleFunc("/get-hosts", t.getHosts)
@@ -53,7 +53,7 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m.HandleFunc("/create-close", t.createClose)
 	m.HandleFunc("/delete", t.deleteFile)
 	m.HandleFunc("/iter-files", t.iterFiles)
-	t.server.Handler = m
+	t.server.Handler = http.HandlerFunc(raven.RecoveryHandler(m.ServeHTTP))
 	if t.config.Debug {
 		t.log.SetLevel(log.DEBUG)
 	}
@@ -121,6 +121,7 @@ func (t *Tracker) ping(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *Tracker) internalServerError(message string, err error, r *http.Request, w http.ResponseWriter) {
+	raven.CaptureError(err, nil, &raven.Message{Message: message})
 	message = message + ": " + err.Error()
 	t.log.Error(message + "; " + r.URL.Path)
 	http.Error(w, message, http.StatusInternalServerError)

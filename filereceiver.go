@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/cenkalti/log"
+	"github.com/getsentry/raven-go"
 )
 
 // FileReceiver implements http.Handler for receiving files from clients in chunks.
@@ -27,6 +28,7 @@ func newFileReceiver(dir string, logger log.Logger) *FileReceiver {
 }
 
 func (f *FileReceiver) internalServerError(message string, err error, r *http.Request, w http.ResponseWriter) {
+	raven.CaptureError(err, nil, &raven.Message{Message: message})
 	message = message + ": " + err.Error()
 	f.log.Error(message + "; " + r.URL.Path)
 	http.Error(w, message, http.StatusInternalServerError)

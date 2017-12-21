@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/getsentry/raven-go"
 )
 
 func (s *Server) cleanDevice() {
@@ -37,6 +39,7 @@ func (s *Server) cleanDevice() {
 			err = s.walkOnDeviceFiles()
 			if err != nil {
 				s.log.Errorln("Error in database table cleanup:", err)
+				raven.CaptureError(err, nil)
 			} else {
 				s.log.Info("Database table cleanup has finished successfully.")
 			}

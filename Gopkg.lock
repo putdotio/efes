@@ -15,12 +15,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/cenkalti/backoff"
-  packages = ["."]
-  revision = "309aa717adbf351e92864cbedf9cca0b769a4b5a"
-
-[[projects]]
-  branch = "master"
   name = "github.com/cenkalti/log"
   packages = ["."]
   revision = "958ee7afc008e65fe479a565819a25b30af0ec65"
@@ -32,10 +26,22 @@
   revision = "a6cc66445f9211e313b633cff591883030fac97a"
 
 [[projects]]
+  name = "github.com/certifi/gocertifi"
+  packages = ["."]
+  revision = "a4ab0227d360091084658029ec8ae45f989fba3e"
+  version = "2017.11.05"
+
+[[projects]]
   branch = "master"
   name = "github.com/dustin/go-humanize"
   packages = ["."]
   revision = "bb3d318650d48840a39aa21a027c6630e198e626"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/getsentry/raven-go"
+  packages = ["."]
+  revision = "32a13797442ccb601b11761d74232773c1402d14"
 
 [[projects]]
   name = "github.com/go-ole/go-ole"
@@ -80,6 +86,12 @@
   revision = "65fec0d89a572b4367094e2058d3ebe667de3b60"
 
 [[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/shirou/gopsutil"
   packages = ["disk","internal/common"]
@@ -99,12 +111,6 @@
 
 [[projects]]
   branch = "master"
-  name = "golang.org/x/net"
-  packages = ["context"]
-  revision = "a8b9294777976932365dabb6640cf1468d95c70f"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
   revision = "8b4580aae2a0dd0c231a45d3ccb8434ff533b840"
@@ -118,6 +124,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f54b3c1bf6987ad9621167365e8ae40e8b621586913268186537b13403cd0d22"
+  inputs-digest = "346e48681d142c813279aa8b0bfa35dbde2357d54687ce6b14660ff1b22fbb7b"
   solver-name = "gps-cdcl"
   solver-version = 1

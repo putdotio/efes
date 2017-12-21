@@ -44,12 +44,13 @@ type ClientConfig struct {
 
 // Config holds configuration values for all Efes components.
 type Config struct {
-	Debug    bool
-	Tracker  TrackerConfig
-	Server   ServerConfig
-	Client   ClientConfig
-	Database DatabaseConfig
-	AMQP     AMQPConfig
+	Debug     bool   `toml:"debug"`
+	SentryDSN string `toml:"sentry_dsn"`
+	Tracker   TrackerConfig
+	Server    ServerConfig
+	Client    ClientConfig
+	Database  DatabaseConfig
+	AMQP      AMQPConfig
 }
 
 var defaultConfig = Config{

@@ -15,6 +15,7 @@ import (
 
 	"github.com/cenkalti/log"
 	"github.com/cenkalti/redialer/amqpredialer"
+	"github.com/getsentry/raven-go"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/streadway/amqp"
 )
@@ -77,6 +78,7 @@ func NewServer(c *Config) (*Server, error) {
 	}
 	devicePrefix := "/" + filepath.Base(s.config.Server.DataDir)
 	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.config.Server.DataDir, s.log))
+	s.writeServer.Handler = http.HandlerFunc(raven.RecoveryHandler(s.writeServer.Handler.ServeHTTP))
 	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(s.config.Server.DataDir)))
 	if s.config.Debug {
 		s.log.SetLevel(log.DEBUG)
@@ -261,6 +263,7 @@ func (s *Server) consumeDeleteQueue() {
 			err := s.processDeleteTasks(conn)
 			if err != nil {
 				s.log.Error("Error while processing delete task", err)
+				raven.CaptureError(err, nil)
 			}
 		}
 	}
