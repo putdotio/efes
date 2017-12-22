@@ -23,10 +23,12 @@ jobs:
         - go get github.com/golang/dep/cmd/dep
       install:
         - dep ensure -vendor-only
+        - go get golang.org/x/tools/cmd/cover
+        - go get github.com/mattn/goveralls
       before_script:
         - echo "CREATE DATABASE efes" | mysql
         - echo "GRANT ALL ON efes.* TO travis@'%'" | mysql
         - echo 'FLUSH PRIVILEGES' | mysql
         - mysql efes < schema.sql
         - sudo cp config-travis.toml /etc/efes.toml
-      script: go test -v -race ./...
+      script: goveralls -v -race -package ./...
