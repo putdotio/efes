@@ -22,7 +22,7 @@ func init() {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	var cfg *Config
+	var cfg = NewConfig()
 	var chunkSize = ChunkSize(1 * M)
 
 	app := cli.NewApp()
@@ -44,8 +44,7 @@ func main() {
 		},
 	}
 	app.Before = func(c *cli.Context) error {
-		var err error
-		cfg, err = ReadConfig(c.GlobalString("config"))
+		err := cfg.ReadFile(c.GlobalString("config"))
 		if err != nil {
 			log.Warningln("Cannot read config:", err)
 		}

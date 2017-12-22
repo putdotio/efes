@@ -2,21 +2,32 @@ package main
 
 import (
 	"database/sql"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 	"time"
 )
 
-func setupServer(t *testing.T, ttl time.Duration) *Server {
+func setupServer(t *testing.T, ttl time.Duration) (s *Server, closeFunc func()) {
 	t.Helper()
 
+	tempDir, err := ioutil.TempDir("", "efes-test-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	devPath := filepath.Join(tempDir, "dev2")
+	err = os.Mkdir(devPath, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	c2 := *testConfig
+	c2.Server.DataDir = devPath
 	c2.Server.CleanDiskFileTTL = Duration(ttl)
 
-	s, err := NewServer(&c2)
+	s, err = NewServer(&c2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,11 +42,12 @@ func setupServer(t *testing.T, ttl time.Duration) *Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return s
+	return s, func() { os.RemoveAll(tempDir) }
 }
 
 func TestFidExistsOnDatabase(t *testing.T) {
-	s := setupServer(t, 0)
+	s, rm := setupServer(t, 0)
+	defer rm()
 	insertToDB(t, s.db, 1, s.devid, "foo")
 
 	res, err := s.fidExistsOnDatabase(1)
@@ -49,9 +61,10 @@ func TestFidExistsOnDatabase(t *testing.T) {
 }
 
 func TestShouldDeleteFileExistsOnDbNewOnDisk(t *testing.T) {
-	s := setupServer(t, 300*time.Second)
+	s, rm := setupServer(t, 300*time.Second)
+	defer rm()
 	insertToDB(t, s.db, 1, s.devid, "foo")
-	fidPath := writeToDisk(t, 1, "fid", time.Now().Add(-200*time.Second))
+	fidPath := writeToDisk(t, s, 1, "fid", time.Now().Add(-200*time.Second))
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
@@ -76,14 +89,14 @@ func insertToDB(t *testing.T, db *sql.DB, fid, devid int64, key string) {
 	}
 }
 
-func writeToDisk(t *testing.T, fid int64, ext string, modTime time.Time) string {
+func writeToDisk(t *testing.T, s *Server, fid int64, ext string, modTime time.Time) string {
 	t.Helper()
-	dirPath := "/srv/efes/dev1/0/000/000"
+	fidPath := filepath.Join(s.config.Server.DataDir, vivify(fid))
+	dirPath, _ := filepath.Split(fidPath)
 	err := os.MkdirAll(dirPath, 0700)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fidPath := "/srv/efes/dev1/0/000/000/000000000" + strconv.FormatInt(fid, 10) + "." + ext
 	f, err := os.Create(fidPath)
 	if err != nil {
 		t.Fatal(err)
@@ -100,9 +113,11 @@ func writeToDisk(t *testing.T, fid int64, ext string, modTime time.Time) string 
 }
 
 func TestShouldDeleteFileExistsOnDbOldOnDisk(t *testing.T) {
-	s := setupServer(t, 300*time.Second)
+	s, rm := setupServer(t, 300*time.Second)
+	defer rm()
+
 	insertToDB(t, s.db, 1, s.devid, "foo")
-	fidPath := writeToDisk(t, 1, "fid", time.Now().Add(-400*time.Second))
+	fidPath := writeToDisk(t, s, 1, "fid", time.Now().Add(-400*time.Second))
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
@@ -116,8 +131,10 @@ func TestShouldDeleteFileExistsOnDbOldOnDisk(t *testing.T) {
 }
 
 func TestShouldDeleteFileNotExistsOnDbNewOnDisk(t *testing.T) {
-	s := setupServer(t, 300*time.Second)
-	fidPath := writeToDisk(t, 1, "fid", time.Now().Add(-200*time.Second))
+	s, rm := setupServer(t, 300*time.Second)
+	defer rm()
+
+	fidPath := writeToDisk(t, s, 1, "fid", time.Now().Add(-200*time.Second))
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
@@ -131,8 +148,10 @@ func TestShouldDeleteFileNotExistsOnDbNewOnDisk(t *testing.T) {
 }
 
 func TestShouldDeleteFileNotExistsOnDbOldOnDisk(t *testing.T) {
-	s := setupServer(t, 300*time.Second)
-	fidPath := writeToDisk(t, 1, "fid", time.Now().Add(-400*time.Second))
+	s, rm := setupServer(t, 300*time.Second)
+	defer rm()
+
+	fidPath := writeToDisk(t, s, 1, "fid", time.Now().Add(-400*time.Second))
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
@@ -146,9 +165,11 @@ func TestShouldDeleteFileNotExistsOnDbOldOnDisk(t *testing.T) {
 }
 
 func TestShouldDeleteDir(t *testing.T) {
-	s := setupServer(t, 300*time.Second)
-	dirPath := "/srv/efes/dev1/0/000/000"
-	err := os.MkdirAll(dirPath, 0700)
+	s, rm := setupServer(t, 300*time.Second)
+	defer rm()
+
+	dirPath := filepath.Join(s.config.Server.DataDir, "1234")
+	err := os.Mkdir(dirPath, 0700)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,8 +186,10 @@ func TestShouldDeleteDir(t *testing.T) {
 }
 
 func TestShouldDeleteJunkOld(t *testing.T) {
-	s := setupServer(t, 300*time.Second)
-	fidPath := writeToDisk(t, 1, "notfid", time.Now().Add(-400*time.Second))
+	s, rm := setupServer(t, 300*time.Second)
+	defer rm()
+
+	fidPath := writeToDisk(t, s, 1, "notfid", time.Now().Add(-400*time.Second))
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
@@ -180,8 +203,10 @@ func TestShouldDeleteJunkOld(t *testing.T) {
 }
 
 func TestShouldDeleteJunkNew(t *testing.T) {
-	s := setupServer(t, 300*time.Second)
-	fidPath := writeToDisk(t, 1, "notfid", time.Now().Add(-200*time.Second))
+	s, rm := setupServer(t, 300*time.Second)
+	defer rm()
+
+	fidPath := writeToDisk(t, s, 1, "notfid", time.Now().Add(-200*time.Second))
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
@@ -195,11 +220,17 @@ func TestShouldDeleteJunkNew(t *testing.T) {
 }
 
 func TestDeleteFidOnDisk(t *testing.T) {
-	s := setupServer(t, 1)
+	s, rm := setupServer(t, 1)
+	defer rm()
+
 	var fid int64 = 123
 	path := filepath.Join(s.config.Server.DataDir, vivify(fid))
-	_, err := os.Create(path)
-
+	dirPath, _ := filepath.Split(path)
+	err := os.MkdirAll(dirPath, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = os.Create(path)
 	if err != nil {
 		t.Error("Error while creating file", err)
 	}

@@ -1,31 +1,32 @@
 dist: trusty
-group: deprecated-2017Q4
 language: go
 jobs:
   include:
     - stage: test
+      env:
+        NAME="gometalinter"
       before_install:
         - go get -u github.com/alecthomas/gometalinter
         - gometalinter --install --update
         - go get github.com/golang/dep/cmd/dep
       install:
         - dep ensure -vendor-only
-      script: make lint
+      script: gometalinter --config=gometalinter.json
     - stage: test
+      env:
+        NAME="go test"
       sudo: required
       services:
-        - docker
+        - mysql
+        - rabbitmq
       before_install:
-        # install latest version of docker
-        - docker version
-        - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-        - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-        - sudo apt-get update
-        - sudo apt-get -y install docker-ce
-        - docker version
-        # install docker-compose
-        - sudo rm /usr/local/bin/docker-compose
-        - curl -L https://github.com/docker/compose/releases/download/1.17.1/docker-compose-`uname -s`-`uname -m` > docker-compose
-        - chmod +x docker-compose
-        - sudo mv docker-compose /usr/local/bin
-      script: make test
+        - go get github.com/golang/dep/cmd/dep
+      install:
+        - dep ensure -vendor-only
+      before_script:
+        - echo "CREATE DATABASE efes" | mysql
+        - echo "GRANT ALL ON efes.* TO travis@'%'" | mysql
+        - echo 'FLUSH PRIVILEGES' | mysql
+        - mysql efes < schema.sql
+        - sudo cp config-travis.toml /etc/efes.toml
+      script: go test -v -race ./...

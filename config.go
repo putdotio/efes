@@ -82,9 +82,14 @@ var defaultConfig = Config{
 	},
 }
 
+func NewConfig() *Config {
+	c := new(Config)
+	*c = defaultConfig
+	return c
+}
+
 // ReadConfig parses a TOML file and returns new Config.
-func ReadConfig(configFile string) (*Config, error) {
-	c := defaultConfig
-	_, err := toml.DecodeFile(configFile, &c)
-	return &c, err
+func (c *Config) ReadFile(name string) error {
+	_, err := toml.DecodeFile(name, c)
+	return err
 }

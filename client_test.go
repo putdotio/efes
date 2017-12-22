@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -47,20 +48,28 @@ func TestClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	devPath := "/srv/efes/dev2"
-	err = os.MkdirAll(devPath, 0700)
+	tempDir, err := ioutil.TempDir("", "efes-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
-	testConfig.Server.DataDir = devPath
-	srv, err := NewServer(testConfig)
+	defer os.RemoveAll(tempDir)
+	devPath := filepath.Join(tempDir, "dev2")
+	err = os.Mkdir(devPath, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+	serverConfig := *testConfig
+	serverConfig.Server.DataDir = devPath
+	srv, err := NewServer(&serverConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
 	go srv.Run()
 	defer srv.Shutdown()
-	testConfig.Client.ChunkSize = chunkSize
-	clt, err := NewClient(testConfig)
+
+	clientConfig := NewConfig()
+	clientConfig.Client.ChunkSize = chunkSize
+	clt, err := NewClient(clientConfig)
 	if err != nil {
 		t.Fatal(err)
 	}

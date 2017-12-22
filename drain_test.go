@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -28,13 +29,20 @@ func TestDrain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	devPath := "/srv/efes/dev2"
-	err = os.MkdirAll(devPath, 0700)
+	tempDir, err := ioutil.TempDir("", "efes-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
-	testConfig.Server.DataDir = devPath
-	srv, err := NewServer(testConfig)
+	defer os.RemoveAll(tempDir)
+
+	devPath := filepath.Join(tempDir, "dev2")
+	err = os.Mkdir(devPath, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+	serverConfig := *testConfig
+	serverConfig.Server.DataDir = devPath
+	srv, err := NewServer(&serverConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,12 +50,15 @@ func TestDrain(t *testing.T) {
 	defer srv.Shutdown()
 
 	// Put a file on first server
-	testConfig.Client.ChunkSize = chunkSize
-	clt, err := NewClient(testConfig)
+	clientConfig := NewConfig()
+	clientConfig.Client.ChunkSize = chunkSize
+	clt, err := NewClient(clientConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println("waiting for tracker to become ready")
 	<-tr.Ready
+	fmt.Println("waiting for server to become ready")
 	<-srv.Ready
 
 	fmt.Println("writing file to first server")
@@ -62,8 +73,8 @@ func TestDrain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	devPath = "/srv/efes/dev3"
-	err = os.MkdirAll(devPath, 0700)
+	devPath = filepath.Join(tempDir, "dev3")
+	err = os.Mkdir(devPath, 0700)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +90,7 @@ func TestDrain(t *testing.T) {
 	defer srv2.Shutdown()
 
 	// Run drain
-	dr, err := NewDrainer(testConfig)
+	dr, err := NewDrainer(&serverConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
