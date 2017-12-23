@@ -27,7 +27,6 @@ deploy:
   file: efes
   on:
     repo: putdotio/efes
-    branch: travis  # TODO change to master
     tags: true
   api_key:
     secure: zX3ubUw6kE5s0ljkJEwO4l4GDkJ2Dd653Yh16KJf/z5jnesrA6XfynKnpornxVn/MR5p8YjsnOK9N6cMdqusxLPokXz9/jBgn6okXHL5MHbJzwRZfwGb+gcmeujU0qO6THzHfvGg+oHFLk2gqk1S2Uchpqkx4fj5Rjzut6ZWbXsAq2Tb8nAsdns2Utua8evC+8KCjWyqZNRPfXX+XJv2pTxxJS3FkNokfo8sSCs8TvQyDU0gb69n3PKr55Ed4YALt/X13HZtPLebH4uIsH3Bts+bt/o5ECcD2B5iQ+IvMXgjAhzz+Vbgu0r/OxY0jX5/2h0X5NDHUYXHJBXkl6abDxB2/Kxz2hzm+9wecRgl8teSRVFo8f69K+RwG0dS8dWJ9GElV0k7Hkc8SXLZ0F1OfKSYY2Lrs2viI+JoHU7qyn1I2HjGSz6ItqOvNPXcM+QYHCRBwX7G6vrBn3yCh6d2D1CrJ5IO21VFRXHGmuArlpeCRu4wekYflpCIFdbPF9RaWF91ChCpzEDn8HFbNi1/Xo1x9Qy4hWxm3ysFqfRHjrMnoWoi65F3MxoJZ5TMUx8m4u0AhPv3ws5ceZ0AmSB4I4LBOqrEN67N4d+6Qv7/SW3gnia6Ds0cl6Au1lUtE6LBWGIySwcYqOGPFxQaGjh8ErUvRmrc6gZQo55LUnewPYc=
