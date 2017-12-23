@@ -64,6 +64,7 @@ func main() {
 		if err != nil {
 			log.Warningln("Cannot set Sentry DSN:", err)
 		}
+		raven.SetRelease(Version)
 		return nil
 	}
 	app.Commands = []cli.Command{
