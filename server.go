@@ -78,7 +78,7 @@ func NewServer(c *Config) (*Server, error) {
 	}
 	devicePrefix := "/" + filepath.Base(s.config.Server.DataDir)
 	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.config.Server.DataDir, s.log))
-	s.writeServer.Handler = http.HandlerFunc(raven.RecoveryHandler(s.writeServer.Handler.ServeHTTP))
+	s.writeServer.Handler = http.HandlerFunc(raven.RecoveryHandler(addVersion(s.writeServer.Handler)))
 	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(s.config.Server.DataDir)))
 	if s.config.Debug {
 		s.log.SetLevel(log.DEBUG)

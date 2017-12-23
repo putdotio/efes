@@ -15,8 +15,13 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+var Version string
+
 func init() {
 	log.DefaultHandler.SetLevel(log.DEBUG)
+	if Version == "" {
+		Version = "v0.0.0"
+	}
 }
 
 func main() {
@@ -26,6 +31,7 @@ func main() {
 	var chunkSize = ChunkSize(1 * M)
 
 	app := cli.NewApp()
+	app.Version = Version
 	app.Usage = "Simple yet powerful distributed file system"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{

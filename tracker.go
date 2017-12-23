@@ -53,7 +53,7 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m.HandleFunc("/create-close", t.createClose)
 	m.HandleFunc("/delete", t.deleteFile)
 	m.HandleFunc("/iter-files", t.iterFiles)
-	t.server.Handler = http.HandlerFunc(raven.RecoveryHandler(m.ServeHTTP))
+	t.server.Handler = http.HandlerFunc(raven.RecoveryHandler(addVersion(m)))
 	if t.config.Debug {
 		t.log.SetLevel(log.DEBUG)
 	}
@@ -67,6 +67,13 @@ func NewTracker(c *Config) (*Tracker, error) {
 		return nil, err
 	}
 	return t, nil
+}
+
+func addVersion(h http.Handler) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("efes-version", Version)
+		h.ServeHTTP(w, r)
+	})
 }
 
 // Run this tracker in a blocking manner. Running tracker can be stopped with Shutdown().
