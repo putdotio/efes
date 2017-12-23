@@ -17,8 +17,9 @@ type efesStatus struct {
 
 type deviceStatus struct {
 	Device
-	Hostname  string
-	UpdatedAt time.Time
+	Hostname   string
+	HostStatus string
+	UpdatedAt  time.Time
 }
 
 func (d deviceStatus) Size() string {
@@ -88,6 +89,7 @@ func (s *efesStatus) Print() {
 	table.SetFooterAlignment(tablewriter.ALIGN_RIGHT)
 	table.SetHeader([]string{
 		"Host",
+		"Status",
 		"Device",
 		"Status",
 		"Size (G)",
@@ -98,7 +100,7 @@ func (s *efesStatus) Print() {
 		"Last update",
 	})
 	table.SetFooter([]string{
-		"", "",
+		"", "", "",
 		"Total:",
 		humanize.Comma(totalSize),
 		humanize.Comma(totalUsed),
@@ -113,6 +115,7 @@ func (s *efesStatus) Print() {
 	for i, d := range s.devices {
 		data[i] = []string{
 			d.Hostname,
+			d.HostStatus,
 			strconv.FormatInt(d.Devid, 10),
 			d.Status,
 			d.Size(),
@@ -151,13 +154,16 @@ func (c *Client) Status(sortBy string) (*efesStatus, error) {
 			continue
 		}
 		var hostname string
+		var hostStatus string
 		if h, ok := hostsByID[d.Hostid]; ok {
 			hostname = h.Hostname
+			hostStatus = h.Status
 		}
 		ds := deviceStatus{
-			Device:    d,
-			Hostname:  hostname,
-			UpdatedAt: time.Unix(d.UpdatedAt, 0),
+			Device:     d,
+			Hostname:   hostname,
+			HostStatus: hostStatus,
+			UpdatedAt:  time.Unix(d.UpdatedAt, 0),
 		}
 		ret.devices = append(ret.devices, ds)
 	}
