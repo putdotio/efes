@@ -205,18 +205,11 @@ func main() {
 		{
 			Name:  "drain",
 			Usage: "drain device by moving files to another device",
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "checksum, c",
-					Usage: "compare checksum after copy",
-				},
-			},
 			Action: func(c *cli.Context) error {
 				d, err := NewDrainer(cfg)
 				if err != nil {
 					return err
 				}
-				d.checksum = c.Bool("checksum")
 				runUntilInterrupt(d)
 				return nil
 			},

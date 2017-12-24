@@ -3,8 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,7 +13,6 @@ import (
 
 type Drainer struct {
 	config   *Config
-	checksum bool
 	devid    int64
 	db       *sql.DB
 	client   *Client
@@ -123,55 +120,11 @@ func (d *Drainer) moveFile(fid int64) error {
 	if err != nil {
 		return err
 	}
-	if d.checksum {
-		var remoteChecksum string
-		var errRemote error
-		remoteChecksumCalculated := make(chan struct{})
-		go func() {
-			remoteChecksum, errRemote = calculateRemoteChecksum(newPath)
-			close(remoteChecksumCalculated)
-		}()
-
-		d.log.Infoln("Calculating CRC32...")
-		localChecksum, err2 := crc32file(fidpath, d.log)
-		if err2 != nil {
-			return err2
-		}
-		d.log.Infoln("CRC32:", localChecksum)
-
-		<-remoteChecksumCalculated
-		if errRemote != nil {
-			return fmt.Errorf("failed to calculate remote checksum, err: %s", errRemote.Error())
-		}
-		if remoteChecksum != localChecksum {
-			return fmt.Errorf("crc32 mismatch: local=%s, remote=%s", localChecksum, remoteChecksum)
-		}
-	}
 	_, err = d.db.Exec("update file_on set devid=? where devid=? and fid=?", ad.devid, d.devid, fid)
 	if err != nil {
 		return err
 	}
 	return os.Remove(fidpath)
-}
-
-func calculateRemoteChecksum(path string) (string, error) {
-	req, err := http.NewRequest("CRC32", path, nil)
-	if err != nil {
-		return "", err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	err = checkResponseError(resp)
-	if err != nil {
-		return "", err
-	}
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
 }
 
 func (d *Drainer) Shutdown() error {
