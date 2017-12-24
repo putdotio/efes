@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -48,12 +51,14 @@ func (c *Client) writeReadSeeker(key string, rs io.ReadSeeker, size int64) error
 }
 
 func (c *Client) sendFile(path string, rs io.ReadSeeker, size int64) error {
-	var r io.Reader = rs
+	sf := NewSha1File(rs)
+	var r io.Reader = sf
 	if c.config.Client.ShowProgress {
 		p := newReadProgress(r, size)
 		defer p.Close()
 		r = p
 	}
+	var remoteSha1 []byte
 	bo := backoff.NewExponentialBackOff()
 	first := true
 	op := func() error {
@@ -73,10 +78,22 @@ func (c *Client) sendFile(path string, rs io.ReadSeeker, size int64) error {
 				return err
 			}
 		}
-		_, err = c.send(path, r, offset, size, bo)
+		hashes, err := c.send(path, r, offset, size, bo)
+		if err != nil {
+			return err
+		}
+		remoteSha1, err = hex.DecodeString(hashes["sha1"])
 		return err
 	}
-	return backoff.Retry(op, bo)
+	err := backoff.Retry(op, bo)
+	if err != nil {
+		return err
+	}
+	localSha1 := sf.Sum(nil)
+	if !bytes.Equal(remoteSha1, localSha1) {
+		return fmt.Errorf("local sha1 (%s) does not match remote sha1 (%s)", hex.EncodeToString(localSha1), hex.EncodeToString(remoteSha1))
+	}
+	return nil
 }
 
 // send a patch request until and error occurs or stream is finished
