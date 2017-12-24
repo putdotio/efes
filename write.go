@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"text/template"
 
 	"github.com/cenkalti/backoff"
 )
@@ -39,18 +40,32 @@ func (c *Client) WriteReader(key string, r io.Reader) error {
 }
 
 func (c *Client) writeReadSeeker(key string, rs io.ReadSeeker, size int64) error {
+	t, err := template.New("key").Parse(key)
+	if err != nil {
+		return err
+	}
 	path, fid, err := c.createOpen(size)
 	if err != nil {
 		return err
 	}
-	err = c.sendFile(path, rs, size)
+	checksums, err := c.sendFile(path, rs, size)
 	if err != nil {
 		return err
 	}
-	return c.createClose(key, fid)
+	var b bytes.Buffer
+	err = t.Execute(&b, checksums)
+	if err != nil {
+		return err
+	}
+	return c.createClose(b.String(), fid)
 }
 
-func (c *Client) sendFile(path string, rs io.ReadSeeker, size int64) error {
+type Checksums struct {
+	Sha1  string
+	CRC32 string
+}
+
+func (c *Client) sendFile(path string, rs io.ReadSeeker, size int64) (*Checksums, error) {
 	sf := NewSha1File(rs)
 	var r io.Reader = sf
 	if c.config.Client.ShowProgress {
@@ -58,6 +73,7 @@ func (c *Client) sendFile(path string, rs io.ReadSeeker, size int64) error {
 		defer p.Close()
 		r = p
 	}
+	var checksums *Checksums
 	var remoteSha1 []byte
 	bo := backoff.NewExponentialBackOff()
 	first := true
@@ -78,26 +94,26 @@ func (c *Client) sendFile(path string, rs io.ReadSeeker, size int64) error {
 				return err
 			}
 		}
-		hashes, err := c.send(path, r, offset, size, bo)
+		checksums, err = c.send(path, r, offset, size, bo)
 		if err != nil {
 			return err
 		}
-		remoteSha1, err = hex.DecodeString(hashes["sha1"])
+		remoteSha1, err = hex.DecodeString(checksums.Sha1)
 		return err
 	}
 	err := backoff.Retry(op, bo)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	localSha1 := sf.Sum(nil)
 	if !bytes.Equal(remoteSha1, localSha1) {
-		return fmt.Errorf("local sha1 (%s) does not match remote sha1 (%s)", hex.EncodeToString(localSha1), hex.EncodeToString(remoteSha1))
+		return nil, fmt.Errorf("local sha1 (%s) does not match remote sha1 (%s)", hex.EncodeToString(localSha1), hex.EncodeToString(remoteSha1))
 	}
-	return nil
+	return checksums, nil
 }
 
 // send a patch request until and error occurs or stream is finished
-func (c *Client) send(path string, r io.Reader, offset, size int64, bo backoff.BackOff) (map[string]string, error) {
+func (c *Client) send(path string, r io.Reader, offset, size int64, bo backoff.BackOff) (*Checksums, error) {
 	c.log.Debugln("client chunk size:", c.config.Client.ChunkSize)
 	rc := newReadCounter(r)
 	currentOffset := offset
@@ -115,7 +131,7 @@ func (c *Client) send(path string, r io.Reader, offset, size int64, bo backoff.B
 		switch currentOffset {
 		case size:
 			// EOF is reached. Server has deleted the offset file.
-			return c.hashes(resp), nil
+			return ChecksumsFromResponse(resp), nil
 		case requestOffset:
 			// No bytes sent in last request. The file is read to the end.
 			return c.deleteOffset(path)
@@ -123,10 +139,10 @@ func (c *Client) send(path string, r io.Reader, offset, size int64, bo backoff.B
 	}
 }
 
-func (c *Client) hashes(resp *http.Response) map[string]string {
-	return map[string]string{
-		"sha1":  resp.Header.Get("efes-file-sha1"),
-		"crc32": resp.Header.Get("efes-file-crc32"),
+func ChecksumsFromResponse(resp *http.Response) *Checksums {
+	return &Checksums{
+		Sha1:  resp.Header.Get("efes-file-sha1"),
+		CRC32: resp.Header.Get("efes-file-crc32"),
 	}
 }
 
@@ -159,7 +175,7 @@ func (c *Client) getOffset(path string) (int64, error) {
 	return strconv.ParseInt(resp.Header.Get("efes-file-offset"), 10, 64)
 }
 
-func (c *Client) deleteOffset(path string) (map[string]string, error) {
+func (c *Client) deleteOffset(path string) (*Checksums, error) {
 	req, err := http.NewRequest(http.MethodDelete, path, nil)
 	if err != nil {
 		return nil, err
@@ -168,7 +184,7 @@ func (c *Client) deleteOffset(path string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c.hashes(resp), checkResponseError(resp)
+	return ChecksumsFromResponse(resp), checkResponseError(resp)
 }
 
 func (c *Client) createOpen(size int64) (path string, fid int64, err error) {

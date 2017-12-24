@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -145,5 +146,20 @@ func TestClient(t *testing.T) {
 	}
 	if exist {
 		t.Fatal("key must not exist")
+	}
+
+	// test injecting checksums in keys
+	contentFox := "the quick brown fox jumps over the lazy dog\n"
+	expectedSha1 := "5d2781d78fa5a97b7bafa849fe933dfc9dc93eba"
+	err = clt.WriteReader("foo-{{.Sha1}}-bar", strings.NewReader(contentFox))
+	if err != nil {
+		t.Fatal(err)
+	}
+	exist, err = clt.Exists("foo-" + expectedSha1 + "-bar")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !exist {
+		t.Fatal("key must exist")
 	}
 }
