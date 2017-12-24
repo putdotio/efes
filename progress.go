@@ -16,8 +16,6 @@ import (
 // 782448  63%  110.64kB/s    0:00:04
 
 type Progress struct {
-	r           io.Reader
-	w           io.Writer
 	size        int64
 	begin       time.Time
 	lastPrinted time.Time
@@ -27,21 +25,35 @@ type Progress struct {
 	onceStop    sync.Once
 }
 
-func newReadProgress(r io.Reader, size int64) *Progress {
-	return &Progress{
-		r:     r,
-		size:  size,
-		begin: time.Now(),
-		stop:  make(chan struct{}),
+type ReadProgress struct {
+	Progress
+	r io.Reader
+}
+
+type WriteProgress struct {
+	Progress
+	w io.Writer
+}
+
+func newReadProgress(rs io.Reader, size int64) *ReadProgress {
+	return &ReadProgress{
+		r: rs,
+		Progress: Progress{
+			size:  size,
+			begin: time.Now(),
+			stop:  make(chan struct{}),
+		},
 	}
 }
 
-func newWriteProgress(w io.Writer, size int64) *Progress {
-	return &Progress{
-		w:     w,
-		size:  size,
-		begin: time.Now(),
-		stop:  make(chan struct{}),
+func newWriteProgress(w io.Writer, size int64) *WriteProgress {
+	return &WriteProgress{
+		w: w,
+		Progress: Progress{
+			size:  size,
+			begin: time.Now(),
+			stop:  make(chan struct{}),
+		},
 	}
 }
 
@@ -49,11 +61,11 @@ func (p *Progress) Close() {
 	p.onceStop.Do(func() { close(p.stop) })
 }
 
-func (p *Progress) Read(buf []byte) (int, error) {
+func (p *ReadProgress) Read(buf []byte) (int, error) {
 	return p.rwFunc(p.r.Read, buf)
 }
 
-func (p *Progress) Write(buf []byte) (int, error) {
+func (p *WriteProgress) Write(buf []byte) (int, error) {
 	return p.rwFunc(p.w.Write, buf)
 }
 

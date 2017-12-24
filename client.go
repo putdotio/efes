@@ -75,18 +75,6 @@ func (c *Client) request(method, urlPath string, params url.Values, response int
 	return nil
 }
 
-func (c *Client) deleteOffset(path string) error {
-	req, err := http.NewRequest(http.MethodDelete, path, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	return checkResponseError(resp)
-}
-
 // Delete the key on Efes.
 func (c *Client) Delete(key string) error {
 	form := url.Values{}

@@ -119,7 +119,7 @@ func (d *Drainer) moveFile(fid int64) error {
 		return err
 	}
 	newPath := ad.PatchURL(fid)
-	_, err = d.client.sendFile(newPath, f, fi.Size())
+	err = d.client.sendFile(newPath, f, fi.Size())
 	if err != nil {
 		return err
 	}

@@ -116,7 +116,11 @@ func main() {
 				if err != nil {
 					return err
 				}
-				return client.Write(key, path)
+				if path == "-" {
+					return client.WriteReader(key, os.Stdin)
+				} else {
+					return client.Write(key, path)
+				}
 			},
 		},
 		{
