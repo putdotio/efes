@@ -9,9 +9,8 @@ type GetPath struct {
 }
 
 type CreateOpen struct {
-	Path  string `json:"path"`
-	Fid   int64  `json:"fid"`
-	Devid int64  `json:"devid"`
+	Path string `json:"path"`
+	Fid  int64  `json:"fid"`
 }
 
 type GetDevices struct {

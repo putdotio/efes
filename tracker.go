@@ -239,9 +239,8 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response := CreateOpen{
-		Path:  d.PatchURL(fid),
-		Fid:   fid,
-		Devid: d.devid,
+		Path: d.PatchURL(fid),
+		Fid:  fid,
 	}
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
