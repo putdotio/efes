@@ -33,7 +33,7 @@ func NewDrainer(c *Config) (*Drainer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", c.Server.DataDir)
 	}
-	db, err := sql.Open("mysql", c.Database.DSN)
+	db, err := openDatabase(c.Database)
 	if err != nil {
 		return nil, err
 	}

@@ -58,7 +58,7 @@ func NewTracker(c *Config) (*Tracker, error) {
 		t.log.SetLevel(log.DEBUG)
 	}
 	var err error
-	t.db, err = sql.Open("mysql", t.config.Database.DSN)
+	t.db, err = openDatabase(c.Database)
 	if err != nil {
 		return nil, err
 	}

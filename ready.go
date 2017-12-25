@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func readyMysql(cfg DatabaseConfig, timeout time.Duration, exec string) error {
-	db, err := sql.Open("mysql", cfg.DSN)
+	db, err := openDatabase(cfg)
 	if err != nil {
 		return err
 	}

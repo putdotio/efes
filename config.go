@@ -15,7 +15,10 @@ type TrackerConfig struct {
 
 // DatabaseConfig holds configuration values for database.
 type DatabaseConfig struct {
-	DSN string `toml:"dsn"`
+	DSN             string   `toml:"dsn"`
+	ConnMaxLifetime Duration `toml:"conn_max_lifetime"`
+	MaxIdleConns    int      `toml:"max_idle_conns"`
+	MaxOpenConns    int      `toml:"max_open_conns"`
 }
 
 // AMQPConfig holds configuration values for message broker.
@@ -75,7 +78,10 @@ var defaultConfig = Config{
 		ShowProgress: true,
 	},
 	Database: DatabaseConfig{
-		DSN: "test:test@(127.0.0.1:3306)/efes",
+		DSN:             "test:test@(127.0.0.1:3306)/efes",
+		ConnMaxLifetime: Duration(30 * time.Second),
+		MaxIdleConns:    5,
+		MaxOpenConns:    15,
 	},
 	AMQP: AMQPConfig{
 		URL: "amqp://guest:guest@127.0.0.1:5672/",
