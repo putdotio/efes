@@ -28,6 +28,7 @@ CREATE TABLE `device` (
 CREATE TABLE `file` (
   `fid` bigint(10) unsigned NOT NULL,
   `dkey` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`fid`),
   UNIQUE KEY `dkey` (`dkey`)
 );
