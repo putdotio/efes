@@ -327,34 +327,28 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot delete tempfile", err, r, w)
 		return
 	}
+	// Remove existing fids with same dkey if there is any.
 	var oldfid int64
 	var olddevids []int64
-	row = tx.QueryRow("select fid from file where dkey=?", key)
+	row = tx.QueryRow("select fid from file where dkey=? for update", key)
 	err = row.Scan(&oldfid)
 	switch err {
 	case sql.ErrNoRows:
 	case nil:
-		// Delete old fid
-		olddevids, err = getDevicesOfFid(tx, oldfid)
+		olddevids, err = t.deleteFidOnDB(tx, oldfid)
 		if err != nil {
-			t.internalServerError("cannot get devices of fid", err, r, w)
-			return
-		}
-		_, err = tx.Exec("delete from file_on where fid=?", oldfid)
-		if err != nil {
-			t.internalServerError("cannot delete file_on records", err, r, w)
-			return
-		}
-		_, err = tx.Exec("delete from file where fid=?", oldfid)
-		if err != nil {
-			t.internalServerError("cannot delete file", err, r, w)
+			t.internalServerError("cannot delete fid", err, r, w)
 			return
 		}
 	default:
 		t.internalServerError("cannot select old fid record", err, r, w)
 		return
 	}
-	_, err = tx.Exec("insert into file(fid, dkey) values(?,?)", fid, key)
+	// After removing old fids above, a new fid may come with the same dkey.
+	// Use REPLACE INTO feature of MySQL to prevent "duplicate entry" errors.
+	// This is not thread-safe and may result stale "file_on" records with no fid present in "file" table.
+	// It is a very rare case and cleanDevice() job will eventually remove stale records on "file_on" table.
+	_, err = tx.Exec("replace into file(fid, dkey) values(?,?)", fid, key)
 	if err != nil {
 		t.internalServerError("cannot insert or replace file", err, r, w)
 		return
@@ -400,19 +394,9 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
 	}
-	devids, err := getDevicesOfFid(tx, fid)
+	devids, err := t.deleteFidOnDB(tx, fid)
 	if err != nil {
-		t.internalServerError("cannot get devices of fid", err, r, w)
-		return
-	}
-	_, err = tx.Exec("delete from file_on where fid=?", fid)
-	if err != nil {
-		t.internalServerError("cannot delete file_on records", err, r, w)
-		return
-	}
-	_, err = tx.Exec("delete from file where fid=?", fid)
-	if err != nil {
-		t.internalServerError("cannot delete file", err, r, w)
+		t.internalServerError("cannot delete fid", err, r, w)
 		return
 	}
 	err = tx.Commit()
@@ -421,6 +405,22 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go t.publishDeleteTask(devids, fid)
+}
+
+func (t *Tracker) deleteFidOnDB(tx *sql.Tx, fid int64) (devids []int64, err error) {
+	devids, err = getDevicesOfFid(tx, fid)
+	if err != nil {
+		return
+	}
+	_, err = tx.Exec("delete from file_on where fid=?", fid)
+	if err != nil {
+		return
+	}
+	_, err = tx.Exec("delete from file where fid=?", fid)
+	if err != nil {
+		return
+	}
+	return
 }
 
 func (t *Tracker) publishDeleteTask(devids []int64, fid int64) {
