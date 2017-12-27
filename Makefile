@@ -1,4 +1,4 @@
-.PHONY: build up test upload lint
+.PHONY: build up test lint
 
 NAME := efes
 
@@ -13,12 +13,6 @@ up:
 test:
 	docker-compose rm -fsv
 	docker-compose -f docker-compose-test.yml up --build --exit-code-from test --abort-on-container-exit
-
-upload: build
-	@md5 $(NAME) > $(NAME).md5
-	aws s3 cp $(NAME) s3://putio-bin
-	aws s3 cp $(NAME).md5 s3://putio-bin
-	@rm $(NAME) $(NAME).md5
 
 lint:
 	gometalinter --config=gometalinter.json
