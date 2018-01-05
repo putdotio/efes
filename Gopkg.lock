@@ -3,6 +3,12 @@
 
 [[projects]]
   branch = "master"
+  name = "bazil.org/fuse"
+  packages = [".","fs","fuseutil"]
+  revision = "371fbbdaa8987b715bdd21d6adc4c9b20155f748"
+
+[[projects]]
+  branch = "master"
   name = "github.com/BurntSushi/toml"
   packages = ["."]
   revision = "a368813c5e648fee92e5f6c30e3944ff9d5e8895"
@@ -136,6 +142,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ba04606b7708a895e9208a8c2ff322bc0cdc20dacadc888b02b85911b28b7037"
+  inputs-digest = "b7247593c0a5e44198e298c8ab3bbd6a659c5b4212231cb487ad5c5ba2708308"
   solver-name = "gps-cdcl"
   solver-version = 1
