@@ -17,6 +17,7 @@ services:
     depends_on:
       - mysql
     tty: true
+    privileged: true
   server1:
     build:
       dockerfile: Dockerfile-server
