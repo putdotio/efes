@@ -1,11 +1,13 @@
 package main
 
+// TODO remove
 type GetPaths struct {
 	Paths []string `json:"paths"`
 }
 
 type GetPath struct {
-	Path string `json:"path"`
+	Path      string `json:"path"`
+	CreatedAt string `json:"created_at"`
 }
 
 type CreateOpen struct {

@@ -15,6 +15,7 @@ import (
 	"github.com/cenkalti/log"
 	"github.com/cenkalti/redialer/amqpredialer"
 	"github.com/getsentry/raven-go"
+	"github.com/go-sql-driver/mysql"
 	"github.com/streadway/amqp"
 )
 
@@ -137,7 +138,7 @@ func (t *Tracker) internalServerError(message string, err error, r *http.Request
 func (t *Tracker) getPath(w http.ResponseWriter, r *http.Request) {
 	var response GetPath
 	key := r.FormValue("key")
-	row := t.db.QueryRow("select h.hostip, d.read_port, d.devid, f.fid "+
+	row := t.db.QueryRow("select h.hostip, d.read_port, d.devid, f.fid, f.created_at "+
 		"from file f "+
 		"join file_on fo on f.fid=fo.fid "+
 		"join device d on d.devid=fo.devid "+
@@ -149,7 +150,8 @@ func (t *Tracker) getPath(w http.ResponseWriter, r *http.Request) {
 	var httpPort int64
 	var devid int64
 	var fid int64
-	err := row.Scan(&hostip, &httpPort, &devid, &fid)
+	var createdAt mysql.NullTime
+	err := row.Scan(&hostip, &httpPort, &devid, &fid, &createdAt)
 	if err == sql.ErrNoRows {
 		http.Error(w, "file not found", http.StatusNotFound)
 		return
@@ -159,6 +161,7 @@ func (t *Tracker) getPath(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s", hostip, httpPort, devid, vivify(fid))
+	response.CreatedAt = createdAt.Time.Format(time.RFC3339)
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
 }
