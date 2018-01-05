@@ -13,7 +13,7 @@ func (c *Client) Read(key, path string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.httpClient.Get(remotePath)
+	resp, err := c.httpClient.Get(remotePath.Path)
 	if err != nil {
 		return err
 	}
@@ -54,12 +54,12 @@ func (c *Client) Read(key, path string) error {
 	return cl.Close()
 }
 
-func (c *Client) getPath(key string) (string, error) {
+func (c *Client) getPath(key string) (*GetPath, error) {
 	form := url.Values{}
 	form.Add("key", key)
 	var response GetPath
 	err := c.request(http.MethodGet, "get-path", form, &response)
-	return response.Path, err
+	return &response, err
 }
 
 func (c *Client) getContentLength(resp *http.Response) int64 {

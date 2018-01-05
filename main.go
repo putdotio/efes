@@ -243,6 +243,13 @@ func main() {
 				},
 			},
 		},
+		{
+			Name: "mount",
+			Action: func(c *cli.Context) error {
+				mountPoint := c.Args().Get(0)
+				return mount(cfg, mountPoint)
+			},
+		},
 	}
 	err := app.Run(os.Args)
 	if err != nil {
