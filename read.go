@@ -13,7 +13,7 @@ func (c *Client) Read(key, path string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.Get(remotePath)
+	resp, err := c.httpClient.Get(remotePath)
 	if err != nil {
 		return err
 	}
