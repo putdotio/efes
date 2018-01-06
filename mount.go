@@ -22,7 +22,7 @@ func mount(cfg *Config, mountpoint string) error {
 	if err != nil {
 		return err
 	}
-	defer c.Close()
+	defer c.Close() // nolint: errcheck
 
 	filesys := &FS{
 		client: clt,
@@ -32,10 +32,7 @@ func mount(cfg *Config, mountpoint string) error {
 	}
 	// check if the mount process has an error to report
 	<-c.Ready
-	if err := c.MountError; err != nil {
-		return err
-	}
-	return nil
+	return c.MountError
 }
 
 type FS struct {
@@ -77,7 +74,7 @@ func (d *Root) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.L
 	if err != nil {
 		return nil, err
 	}
-	defer r.Body.Close()
+	defer r.Body.Close() // nolint: errcheck
 	if r.StatusCode == http.StatusNotFound {
 		return nil, fuse.ENOENT
 	}
@@ -149,7 +146,9 @@ var _ fs.Handle = (*FileHandle)(nil)
 
 func (h *FileHandle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	if req.Offset != h.offset {
-		h.open(ctx, req.Offset)
+		if err := h.open(ctx, req.Offset); err != nil {
+			return err
+		}
 	}
 	buf := make([]byte, req.Size)
 	n, err := io.ReadFull(h.r, buf)
@@ -175,7 +174,7 @@ func (h *FileHandle) open(ctx context.Context, offset int64) error {
 		return err
 	}
 	if h.r != nil {
-		h.r.Close()
+		h.r.Close() // nolint: errcheck
 	}
 	h.r = r.Body
 	return nil
