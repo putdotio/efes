@@ -24,13 +24,10 @@ func mount(cfg *Config, mountpoint string) error {
 	}
 	defer c.Close() // nolint: errcheck
 
-	filesys := &FS{
-		client: clt,
-	}
+	filesys := &FS{client: clt}
 	if err := fs.Serve(c, filesys); err != nil {
 		return err
 	}
-	// check if the mount process has an error to report
 	<-c.Ready
 	return c.MountError
 }
@@ -42,10 +39,7 @@ type FS struct {
 var _ fs.FS = (*FS)(nil)
 
 func (f *FS) Root() (fs.Node, error) {
-	n := &Root{
-		client: f.client,
-	}
-	return n, nil
+	return &Root{client: f.client}, nil
 }
 
 type Root struct {
@@ -54,12 +48,12 @@ type Root struct {
 
 var _ fs.Node = (*Root)(nil)
 
-func (d *Root) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Mode = os.ModeDir | 0310
+func (r *Root) Attr(ctx context.Context, a *fuse.Attr) error {
+	a.Mode = os.ModeDir | 0110
 	return nil
 }
 
-var _ = fs.NodeRequestLookuper(&Root{})
+var _ fs.NodeRequestLookuper = (*Root)(nil)
 
 func (d *Root) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error) {
 	key := req.Name
@@ -85,23 +79,16 @@ func (d *Root) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.L
 	t, _ := time.Parse(time.RFC3339, remotePath.CreatedAt)
 	f := &File{
 		client:    d.client,
-		key:       key,
+		path:      remotePath.Path,
 		createdAt: t,
 		size:      uint64(d.client.getContentLength(r)),
 	}
 	return f, nil
 }
 
-var _ = fs.HandleReadDirAller(&Root{})
-
-func (d *Root) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	var res []fuse.Dirent
-	return res, nil
-}
-
 type File struct {
 	client    *Client
-	key       string
+	path      string
 	createdAt time.Time
 	size      uint64
 }
@@ -117,19 +104,15 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	return nil
 }
 
-var _ = fs.NodeOpener(&File{})
+var _ fs.NodeOpener = (*File)(nil)
 
 func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
 	if !req.Flags.IsReadOnly() {
 		return nil, fuse.Errno(syscall.EROFS)
 	}
-	remotePath, err := f.client.getPath(f.key)
-	if err != nil {
-		return nil, err
-	}
 	return &FileHandle{
 		client: f.client,
-		path:   remotePath.Path,
+		path:   f.path,
 		size:   f.size,
 	}, nil
 }
@@ -146,7 +129,10 @@ var _ fs.Handle = (*FileHandle)(nil)
 
 func (h *FileHandle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	if req.Offset != h.offset {
-		h.close() // nolint: errcheck
+		err := h.close(ctx)
+		if err != nil {
+			return err
+		}
 	}
 	if h.r == nil {
 		if err := h.open(ctx, req.Offset); err != nil {
@@ -184,10 +170,10 @@ func (h *FileHandle) open(ctx context.Context, offset int64) error {
 var _ fs.HandleReleaser = (*FileHandle)(nil)
 
 func (h *FileHandle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
-	return h.close()
+	return h.close(ctx)
 }
 
-func (h *FileHandle) close() error {
+func (h *FileHandle) close(ctx context.Context) error {
 	if h.r == nil {
 		return nil
 	}
