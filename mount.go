@@ -146,6 +146,9 @@ var _ fs.Handle = (*FileHandle)(nil)
 
 func (h *FileHandle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	if req.Offset != h.offset {
+		h.close() // nolint: errcheck
+	}
+	if h.r == nil {
 		if err := h.open(ctx, req.Offset); err != nil {
 			return err
 		}
@@ -156,6 +159,7 @@ func (h *FileHandle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse
 		err = nil
 	}
 	resp.Data = buf[:n]
+	h.offset += int64(n)
 	return err
 }
 
@@ -173,15 +177,21 @@ func (h *FileHandle) open(ctx context.Context, offset int64) error {
 	if err != nil {
 		return err
 	}
-	if h.r != nil {
-		h.r.Close() // nolint: errcheck
-	}
 	h.r = r.Body
 	return nil
 }
 
 var _ fs.HandleReleaser = (*FileHandle)(nil)
 
-func (fh *FileHandle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
-	return fh.r.Close()
+func (h *FileHandle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
+	return h.close()
+}
+
+func (h *FileHandle) close() error {
+	if h.r == nil {
+		return nil
+	}
+	err := h.r.Close()
+	h.r = nil
+	return err
 }
