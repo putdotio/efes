@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+	"syscall"
 	"time"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	"golang.org/x/net/context"
 )
 
 func mount(cfg *Config, mountpoint string) error {
@@ -121,51 +123,66 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 var _ = fs.NodeOpener(&File{})
 
 func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
+	if !req.Flags.IsReadOnly() {
+		return nil, fuse.Errno(syscall.EROFS)
+	}
 	remotePath, err := f.client.getPath(f.key)
 	if err != nil {
 		return nil, err
 	}
-	r, err := f.client.httpClient.Get(remotePath.Path)
-	if err != nil {
-		return nil, err
-	}
-	err = checkResponseError(r)
-	if err != nil {
-		return nil, err
-	}
-	// individual entries inside a zip file are not seekable
-	resp.Flags |= fuse.OpenNonSeekable
-	return &FileHandle{r: r.Body}, nil
+	return &FileHandle{
+		client: f.client,
+		path:   remotePath.Path,
+		size:   f.size,
+	}, nil
 }
 
 type FileHandle struct {
-	r io.ReadCloser
+	client *Client
+	path   string
+	size   uint64
+	r      io.ReadCloser
+	offset int64
 }
 
 var _ fs.Handle = (*FileHandle)(nil)
 
-var _ fs.HandleReleaser = (*FileHandle)(nil)
-
-func (fh *FileHandle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
-	return fh.r.Close()
-}
-
-var _ = fs.HandleReader(&FileHandle{})
-
-func (fh *FileHandle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
-	// We don't actually enforce Offset to match where previous read
-	// ended. Maybe we should, but that would mean'd we need to track
-	// it. The kernel *should* do it for us, based on the
-	// fuse.OpenNonSeekable flag.
-	//
-	// One exception to the above is if we fail to fully populate a
-	// page cache page; a read into page cache is always page aligned.
-	// Make sure we never serve a partial read, to avoid that.
+func (h *FileHandle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+	if req.Offset != h.offset {
+		h.open(ctx, req.Offset)
+	}
 	buf := make([]byte, req.Size)
-	n, err := io.ReadFull(fh.r, buf)
+	n, err := io.ReadFull(h.r, buf)
 	if err == io.ErrUnexpectedEOF || err == io.EOF {
 		err = nil
 	}
 	resp.Data = buf[:n]
 	return err
+}
+
+func (h *FileHandle) open(ctx context.Context, offset int64) error {
+	req, err := http.NewRequest(http.MethodGet, h.path, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("bytes", strconv.FormatInt(h.offset, 10)+"-")
+	r, err := h.client.httpClient.Do(req.WithContext(ctx))
+	if err != nil {
+		return err
+	}
+	err = checkResponseError(r)
+	if err != nil {
+		return err
+	}
+	if h.r != nil {
+		h.r.Close()
+	}
+	h.r = r.Body
+	return nil
+}
+
+var _ fs.HandleReleaser = (*FileHandle)(nil)
+
+func (fh *FileHandle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
+	return fh.r.Close()
 }
