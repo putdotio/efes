@@ -18,7 +18,13 @@ func mount(cfg *Config, mountpoint string) error {
 	if err != nil {
 		return err
 	}
-	c, err := fuse.Mount(mountpoint)
+	mountOptions := []fuse.MountOption{
+		fuse.AllowOther(),
+		fuse.NoAppleDouble(),
+		fuse.NoAppleXattr(),
+		fuse.ReadOnly(),
+	}
+	c, err := fuse.Mount(mountpoint, mountOptions...)
 	if err != nil {
 		return err
 	}
@@ -49,7 +55,7 @@ type Root struct {
 var _ fs.Node = (*Root)(nil)
 
 func (r *Root) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Mode = os.ModeDir | 0110
+	a.Mode = os.ModeDir | 0111
 	return nil
 }
 
