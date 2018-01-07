@@ -103,7 +103,7 @@ var _ fs.Node = (*File)(nil)
 
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Size = f.size
-	a.Mode = 0640
+	a.Mode = 0444
 	a.Mtime = f.createdAt
 	a.Ctime = f.createdAt
 	a.Crtime = f.createdAt
