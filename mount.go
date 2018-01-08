@@ -170,6 +170,7 @@ func (h *FileHandle) open(ctx context.Context, offset int64) error {
 		return err
 	}
 	h.r = r.Body
+	h.offset = offset
 	return nil
 }
 
