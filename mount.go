@@ -161,7 +161,7 @@ func (h *FileHandle) open(ctx context.Context, offset int64) error {
 		return err
 	}
 	req.Header.Set("bytes", strconv.FormatInt(h.offset, 10)+"-")
-	r, err := h.client.httpClient.Do(req.WithContext(ctx))
+	r, err := h.client.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
