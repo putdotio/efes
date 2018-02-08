@@ -10,6 +10,10 @@ type CreateOpen struct {
 	Fid  int64  `json:"fid"`
 }
 
+type CreateClose struct {
+	Path string `json:"path"`
+}
+
 type GetDevices struct {
 	Devices []Device `json:"devices"`
 }

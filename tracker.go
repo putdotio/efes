@@ -321,6 +321,16 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot insert file_on record", err, r, w)
 		return
 	}
+	row = tx.QueryRow("select h.hostip, d.read_port "+
+		"from device d join host h on h.hostid=d.hostid "+
+		"where d.devid=?", devid)
+	var hostip string
+	var httpPort int64
+	err = row.Scan(&hostip, &httpPort)
+	if err != nil {
+		t.internalServerError("cannot select host ip", err, r, w)
+		return
+	}
 	err = tx.Commit()
 	if err != nil {
 		t.internalServerError("cannot commit transaction", err, r, w)
@@ -329,6 +339,10 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 	if olddevids != nil {
 		go t.publishDeleteTask(olddevids, oldfid)
 	}
+	var response CreateClose
+	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s", hostip, httpPort, devid, vivify(fid))
+	encoder := json.NewEncoder(w)
+	encoder.Encode(response) // nolint: errcheck
 }
 
 func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {

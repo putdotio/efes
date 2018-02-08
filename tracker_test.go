@@ -121,7 +121,7 @@ func TestCreateClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into device(devid, status, hostid) values(2, 'alive', 1)")
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, read_port) values(2, 'alive', 1, 5678)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,10 +140,15 @@ func TestCreateClose(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := ""
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
+	var resp CreateClose
+	err = json.Unmarshal(rr.Body.Bytes(), &resp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := "http://1.2.3.4:5678/dev2/0/000/000/0000000009.fid"
+	if resp.Path != expected {
+		t.Errorf("handler returned unexpected path: got %v want %v",
+			resp.Path, expected)
 	}
 }
 
@@ -170,7 +175,7 @@ func TestCreateCloseOverwrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = tr.db.Exec("insert into device(devid, status, hostid) values(3, 'alive', 1)")
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, read_port) values(3, 'alive', 1, 5678)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,10 +194,15 @@ func TestCreateCloseOverwrite(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := ""
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
+	var resp CreateClose
+	err = json.Unmarshal(rr.Body.Bytes(), &resp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := "http://1.2.3.4:5678/dev3/0/000/000/0000000009.fid"
+	if resp.Path != expected {
+		t.Errorf("handler returned unexpected path: got %v want %v",
+			resp.Path, expected)
 	}
 }
 
