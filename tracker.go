@@ -47,7 +47,6 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m := http.NewServeMux()
 	m.HandleFunc("/ping", t.ping)
 	m.HandleFunc("/get-path", t.getPath)
-	m.HandleFunc("/get-paths", t.getPaths)
 	m.HandleFunc("/get-devices", t.getDevices)
 	m.HandleFunc("/get-hosts", t.getHosts)
 	m.HandleFunc("/create-open", t.createOpen)
@@ -162,45 +161,6 @@ func (t *Tracker) getPath(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s", hostip, httpPort, devid, vivify(fid))
 	response.CreatedAt = createdAt.Time.Format(time.RFC3339)
-	encoder := json.NewEncoder(w)
-	encoder.Encode(response) // nolint: errcheck
-}
-
-func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
-	var response GetPaths
-	response.Paths = make([]string, 0)
-	key := r.FormValue("key")
-	rows, err := t.db.Query("select h.hostip, d.read_port, d.devid, f.fid "+
-		"from file f "+
-		"join file_on fo on f.fid=fo.fid "+
-		"join device d on d.devid=fo.devid "+
-		"join host h on h.hostid=d.hostid "+
-		"where h.status='alive' "+
-		"and d.status in ('alive', 'drain') "+
-		"and f.dkey=?", key)
-	if err != nil {
-		t.internalServerError("cannot select rows", err, r, w)
-		return
-	}
-	defer rows.Close() // nolint: errcheck
-	for rows.Next() {
-		var hostip string
-		var httpPort int64
-		var devid int64
-		var fid int64
-		err = rows.Scan(&hostip, &httpPort, &devid, &fid)
-		if err != nil {
-			t.internalServerError("cannot scan rows", err, r, w)
-			return
-		}
-		path := fmt.Sprintf("http://%s:%d/dev%d/%s", hostip, httpPort, devid, vivify(fid))
-		response.Paths = append(response.Paths, path)
-	}
-	err = rows.Err()
-	if err != nil {
-		t.internalServerError("error while fetching rows", err, r, w)
-		return
-	}
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
 }

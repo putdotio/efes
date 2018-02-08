@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,7 +30,7 @@ func TestPing(t *testing.T) {
 	}
 }
 
-func TestGetPaths(t *testing.T) {
+func TestGetPath(t *testing.T) {
 	tr, err := NewTracker(testConfig)
 	if err != nil {
 		t.Fatal(err)
@@ -51,7 +52,7 @@ func TestGetPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req, err := http.NewRequest("GET", "/get-paths?key=foo", nil)
+	req, err := http.NewRequest("GET", "/get-path?key=foo", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,10 +63,15 @@ func TestGetPaths(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := "{\"paths\":[\"http://1.2.3.4:1234/dev2/0/000/000/0000000042.fid\"]}\n"
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
+	var resp GetPath
+	err = json.Unmarshal(rr.Body.Bytes(), &resp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := "http://1.2.3.4:1234/dev2/0/000/000/0000000042.fid"
+	if resp.Path != expected {
+		t.Errorf("handler returned unexpected path: got %v want %v",
+			resp.Path, expected)
 	}
 }
 
