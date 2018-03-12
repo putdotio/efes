@@ -27,9 +27,12 @@ func (f *Sha1File) Read(p []byte) (int, error) {
 	prev := f.position
 	n, err := f.rs.Read(p)
 	f.position += int64(n)
-	c := p[f.calculated-prev : n]
-	f.digest.Write(c) // nolint: errcheck
-	f.calculated += int64(len(c))
+	if f.position > f.calculated {
+		crop := f.calculated - prev
+		c := p[crop:n]
+		f.digest.Write(c) // nolint: errcheck
+		f.calculated += int64(len(c))
+	}
 	return n, err
 }
 

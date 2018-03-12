@@ -28,38 +28,38 @@ func TestSha1File(t *testing.T) {
 	}
 
 	sf := NewSha1File(f)
-	b := make([]byte, len(content))
 
-	n, err := sf.Read(b[:9])
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != 9 {
-		t.Fatalf("invalid number of bytes read: %v", n)
-	}
-	if sf.position != 9 {
-		t.Fatalf("invalid file position: %v", sf.position)
-	}
-	m, err := sf.Seek(3, io.SeekStart)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if m != 3 {
-		t.Fatalf("invalid seek position: %v", m)
-	}
-	n, err = sf.Read(b[3:])
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != len(content)-3 {
-		t.Fatalf("invalid number of bytes read: %v", n)
-	}
+	testSeekAndRead(t, sf, 0, 9, content[:9])
+	testSeekAndRead(t, sf, 2, 3, content[2:5])                // do not pass sf.calculated
+	testSeekAndRead(t, sf, 2, 7, content[2:9])                // read exactly up to sf.calculated
+	testSeekAndRead(t, sf, 2, 9, content[2:11])               // read beyond sf.calculated
+	testSeekAndRead(t, sf, 11, len(content)-11, content[11:]) // read the rest (to the end)
 
-	if string(b) != content {
-		t.Fatalf("invalid read: %v", string(b))
-	}
 	calculatedSha1 := hex.EncodeToString(sf.Sum(nil))
 	if calculatedSha1 != expectedSha1 {
 		t.Fatalf("invalid sha1: %v", calculatedSha1)
+	}
+}
+
+func testSeekAndRead(t *testing.T, sf *Sha1File, seek int64, read int, expected string) {
+	t.Helper()
+	m, err := sf.Seek(seek, io.SeekStart)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m != seek {
+		t.Fatalf("invalid seek position: %v", m)
+	}
+
+	b := make([]byte, read)
+	n, err := sf.Read(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != read {
+		t.Fatalf("invalid number of bytes read: %v", n)
+	}
+	if string(b) != expected {
+		t.Fatalf("invalid content: %s", string(b))
 	}
 }
