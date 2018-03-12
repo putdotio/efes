@@ -60,7 +60,7 @@ func (d deviceStatus) IO() string {
 
 func (s *efesStatus) Print() {
 	// Sum totals
-	var totalUsed, totalSize int64 // in MB
+	var totalUsed, totalSize, totalFree int64 // in MB
 	for _, d := range s.devices {
 		if d.BytesUsed != nil {
 			totalUsed += *d.BytesUsed
@@ -68,13 +68,15 @@ func (s *efesStatus) Print() {
 		if d.BytesTotal != nil {
 			totalSize += *d.BytesTotal
 		}
+		if d.BytesFree != nil && d.Status == "alive" {
+			totalFree += *d.BytesFree
+		}
 	}
-	totalFree := totalSize - totalUsed
 	var totalUse int64
 	if totalSize == 0 {
 		totalUse = 0
 	} else {
-		totalUse = (100 * totalUsed) / totalSize
+		totalUse = 100 - (100*totalFree)/totalSize
 	}
 
 	// Convert to GB
