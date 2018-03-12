@@ -88,7 +88,7 @@ func (c *Client) sendFile(path string, rs io.ReadSeeker, size int64) (*Checksums
 				c.log.Errorf("cannot get offset for path [%s]: %s", path, err.Error())
 				return err
 			}
-			_, err = rs.Seek(offset, io.SeekStart)
+			_, err = sf.Seek(offset, io.SeekStart)
 			if err != nil {
 				c.log.Errorf("cannot seek file: %s", err.Error())
 				return err
