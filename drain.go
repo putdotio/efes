@@ -12,6 +12,7 @@ import (
 )
 
 type Drainer struct {
+	Dest     []int64
 	config   *Config
 	devid    int64
 	db       *sql.DB
@@ -111,7 +112,7 @@ func (d *Drainer) moveFile(fid int64) error {
 	if err != nil {
 		return err
 	}
-	ad, err := findAliveDevice(d.db, fi.Size())
+	ad, err := findAliveDevice(d.db, fi.Size(), d.Dest)
 	if err != nil {
 		return err
 	}
