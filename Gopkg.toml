@@ -45,3 +45,7 @@
 [[constraint]]
   branch = "master"
   name = "bazil.org/fuse"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/fatih/color"

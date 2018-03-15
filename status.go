@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -48,14 +49,43 @@ func (d deviceStatus) Use() string {
 		return ""
 	}
 	use := (*d.BytesUsed * 100) / *d.BytesTotal
-	return strconv.FormatInt(use, 10)
+	return colorPercent(use, strconv.FormatInt(use, 10))
 }
 
 func (d deviceStatus) IO() string {
 	if d.IoUtilization == nil {
 		return ""
 	}
-	return strconv.FormatInt(*d.IoUtilization, 10)
+	return colorPercent(*d.IoUtilization, strconv.FormatInt(*d.IoUtilization, 10))
+}
+
+func colorPercent(value int64, s string) string {
+	if value >= 90 {
+		return color.RedString(s)
+	} else if value >= 80 {
+		return color.YellowString(s)
+	} else if value < 10 {
+		return color.BlueString(s)
+	}
+	return s
+}
+
+func colorDuration(value time.Duration, s string) string {
+	if value > 2*time.Second {
+		return color.RedString(s)
+	} else if value > 1*time.Second {
+		return color.YellowString(s)
+	}
+	return s
+}
+
+func colorStatus(status string) string {
+	if status == "alive" {
+		return status
+	} else if status == "down" {
+		return color.RedString(status)
+	}
+	return color.YellowString(status)
 }
 
 func (s *efesStatus) Print() {
@@ -106,17 +136,18 @@ func (s *efesStatus) Print() {
 	now := time.Now().UTC()
 	data := make([][]string, len(s.devices))
 	for i, d := range s.devices {
+		updatedAt := now.Sub(d.UpdatedAt).Truncate(time.Second)
 		data[i] = []string{
 			d.Hostname,
-			d.HostStatus,
+			colorStatus(d.HostStatus),
 			strconv.FormatInt(d.Devid, 10),
-			d.Status,
+			colorStatus(d.Status),
 			d.Size(),
 			d.Used(),
 			d.Free(),
 			d.Use(),
 			d.IO(),
-			now.Sub(d.UpdatedAt).Truncate(time.Second).String(),
+			colorDuration(updatedAt, updatedAt.String()),
 		}
 
 	}

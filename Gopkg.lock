@@ -4,7 +4,11 @@
 [[projects]]
   branch = "master"
   name = "bazil.org/fuse"
-  packages = [".","fs","fuseutil"]
+  packages = [
+    ".",
+    "fs",
+    "fuseutil"
+  ]
   revision = "371fbbdaa8987b715bdd21d6adc4c9b20155f748"
 
 [[projects]]
@@ -34,7 +38,10 @@
 [[projects]]
   branch = "master"
   name = "github.com/cenkalti/redialer"
-  packages = [".","amqpredialer"]
+  packages = [
+    ".",
+    "amqpredialer"
+  ]
   revision = "a6cc66445f9211e313b633cff591883030fac97a"
 
 [[projects]]
@@ -50,6 +57,12 @@
   revision = "bb3d318650d48840a39aa21a027c6630e198e626"
 
 [[projects]]
+  name = "github.com/fatih/color"
+  packages = ["."]
+  revision = "507f6050b8568533fb3f5504de8e5205fa62a114"
+  version = "v1.6.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/getsentry/raven-go"
   packages = ["."]
@@ -57,7 +70,10 @@
 
 [[projects]]
   name = "github.com/go-ole/go-ole"
-  packages = [".","oleutil"]
+  packages = [
+    ".",
+    "oleutil"
+  ]
   revision = "0e87ea779d9deb219633b828a023b32e1244dd57"
   version = "v1.2.0"
 
@@ -78,6 +94,12 @@
   name = "github.com/hashicorp/go-multierror"
   packages = ["."]
   revision = "b7773ae218740a7be65057fc60b366a49b538a44"
+
+[[projects]]
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
 
 [[projects]]
   name = "github.com/mattn/go-isatty"
@@ -106,7 +128,10 @@
 [[projects]]
   branch = "master"
   name = "github.com/shirou/gopsutil"
-  packages = ["disk","internal/common"]
+  packages = [
+    "disk",
+    "internal/common"
+  ]
   revision = "5c46042e0db59cd67a946f07245ad3afa6a3c755"
 
 [[projects]]
@@ -130,7 +155,10 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix","windows"]
+  packages = [
+    "unix",
+    "windows"
+  ]
   revision = "8b4580aae2a0dd0c231a45d3ccb8434ff533b840"
 
 [[projects]]
@@ -142,6 +170,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b7247593c0a5e44198e298c8ab3bbd6a659c5b4212231cb487ad5c5ba2708308"
+  inputs-digest = "529374aad091099b07e2e221e93cc36f88d5818455ee3080c08ee8b04f2a4a3b"
   solver-name = "gps-cdcl"
   solver-version = 1
