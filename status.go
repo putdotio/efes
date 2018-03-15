@@ -101,15 +101,6 @@ func (s *efesStatus) Print() {
 		"IO %",
 		"Last update",
 	})
-	table.SetFooter([]string{
-		"", "", "",
-		"Total:",
-		humanize.Comma(totalSize),
-		humanize.Comma(totalUsed),
-		humanize.Comma(totalFree),
-		strconv.FormatInt(totalUse, 10),
-		"", "",
-	})
 
 	// Add data to the table
 	now := time.Now().UTC()
@@ -130,6 +121,16 @@ func (s *efesStatus) Print() {
 
 	}
 	table.AppendBulk(data) // Add Bulk Data
+
+	table.SetFooter([]string{
+		"", "", "",
+		"Total:",
+		humanize.Comma(totalSize),
+		humanize.Comma(totalUsed),
+		humanize.Comma(totalFree),
+		strconv.FormatInt(totalUse, 10),
+		"", "",
+	})
 	table.Render()
 }
 
