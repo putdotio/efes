@@ -229,13 +229,14 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64) (*aliveDevice, erro
 		for _, devid := range devids {
 			devidsString = append(devidsString, strconv.FormatInt(devid, 10))
 		}
-		devidsSQL = "and d.devid in (" + strings.Join(devidsString, ",") + ") "
+		devidsSQL = "and d.status in ('alive', 'drain') and d.devid in (" + strings.Join(devidsString, ",") + ") "
+	} else {
+		devidsSQL = "and d.status='alive' "
 	}
 	rows, err := db.Query("select h.hostip, d.write_port, d.devid "+
 		"from device d "+
 		"join host h on d.hostid=h.hostid "+
 		"where h.status='alive' "+
-		"and d.status='alive' "+
 		"and bytes_free>= ? "+
 		devidsSQL+
 		"and timestampdiff(second, updated_at, current_timestamp) < 60 "+
