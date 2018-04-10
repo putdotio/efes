@@ -218,12 +218,15 @@ func main() {
 				if err != nil {
 					return err
 				}
-				for _, devidString := range strings.Split(c.String("dest"), ",") {
-					devid, err := strconv.ParseInt(strings.TrimSpace(devidString), 10, 64)
-					if err != nil {
-						return err
+				destFlag := c.String("dest")
+				if destFlag != "" {
+					for _, devidString := range strings.Split(destFlag, ",") {
+						devid, err := strconv.ParseInt(strings.TrimSpace(devidString), 10, 64)
+						if err != nil {
+							return err
+						}
+						d.Dest = append(d.Dest, devid)
 					}
-					d.Dest = append(d.Dest, devid)
 				}
 				runUntilInterrupt(d)
 				return nil
