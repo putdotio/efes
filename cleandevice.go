@@ -126,7 +126,7 @@ func (s *Server) checkFid(fid int64) error {
 	for _, devid := range otherDevids {
 		otherDevidsString = append(otherDevidsString, strconv.FormatInt(devid, 10))
 	}
-	_, err = tx.Exec("delete from file_on where fid=? and devid in (" + strings.Join(otherDevidsString, ",") + ")")
+	_, err = tx.Exec("delete from file_on where fid=? and devid in ("+strings.Join(otherDevidsString, ",")+")", fid)
 	if err != nil {
 		return err
 	}
