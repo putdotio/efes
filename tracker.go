@@ -296,6 +296,10 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no tempfile found", http.StatusNotFound)
 		return
 	}
+	if err != nil {
+		http.Error(w, "duplicate create-close call", http.StatusConflict)
+		return
+	}
 	_, err = tx.Exec("delete from tempfile where fid=?", fid)
 	if err != nil {
 		t.internalServerError("cannot delete tempfile", err, r, w)
