@@ -5,6 +5,10 @@ type GetPath struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type GetPaths struct {
+	Paths []GetPath `json:"paths"`
+}
+
 type CreateOpen struct {
 	Path string `json:"path"`
 	Fid  int64  `json:"fid"`
