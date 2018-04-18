@@ -191,7 +191,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		var devid int64
 		var fid int64
 		var createdAt mysql.NullTime
-		err := rows.Scan(&hostip, &httpPort, &devid, &fid, &createdAt)
+		err = rows.Scan(&hostip, &httpPort, &devid, &fid, &createdAt)
 		if err == sql.ErrNoRows {
 			http.Error(w, "file not found", http.StatusNotFound)
 			return
