@@ -34,6 +34,7 @@ func ReadFileInfo(path string) (fi *FileInfo, err error) {
 	if err != nil {
 		return
 	}
+	defer f.Close()
 	err = json.NewDecoder(f).Decode(&fi)
 	return
 }
@@ -43,6 +44,7 @@ func SaveFileInfo(path string, fi *FileInfo) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	return json.NewEncoder(f).Encode(fi)
 }
 
