@@ -1,5 +1,6 @@
 {
   "Vendor": true,
+  "Deadline": "60s",
   "Disable": [
     "golint",
     "gocyclo",
