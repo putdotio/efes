@@ -4,6 +4,7 @@
     "golint",
     "gocyclo",
     "aligncheck",
+    "gosec",
     "maligned"
   ]
 }

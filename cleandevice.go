@@ -176,29 +176,29 @@ func (s *Server) getAllDevidsForFid(tx *sql.Tx, fid int64) (devids []int64, err 
 
 }
 
-func (t *Server) publishDeleteTask(devids []int64, fid int64) {
+func (s *Server) publishDeleteTask(devids []int64, fid int64) {
 	select {
-	case conn, ok := <-t.amqp.Conn():
+	case conn, ok := <-s.amqp.Conn():
 		if !ok {
-			t.log.Error("Cannot publish delete task. AMQP connection is closed.")
+			s.log.Error("Cannot publish delete task. AMQP connection is closed.")
 			return
 		}
 		ch, err := conn.Channel()
 		if err != nil {
-			t.log.Errorln("cannot open amqp channel:", err.Error())
+			s.log.Errorln("cannot open amqp channel:", err.Error())
 			return
 		}
 		for _, devid := range devids {
 			err = publishDeleteTask(ch, devid, fid)
 			if err != nil {
-				t.log.Errorln("cannot publish delete task:", err.Error())
+				s.log.Errorln("cannot publish delete task:", err.Error())
 			}
 		}
 		err = ch.Close()
 		if err != nil {
-			t.log.Errorln("cannot close amqp channel:", err.Error())
+			s.log.Errorln("cannot close amqp channel:", err.Error())
 		}
-	case <-t.shutdown:
-		t.log.Warningf("Not sending delete task for fid=%d because shutdown is requested while waiting for amqp connection", fid)
+	case <-s.shutdown:
+		s.log.Warningf("Not sending delete task for fid=%d because shutdown is requested while waiting for amqp connection", fid)
 	}
 }

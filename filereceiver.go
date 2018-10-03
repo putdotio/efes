@@ -71,7 +71,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			w.Header().Set("efes-file-offset", strconv.FormatInt(oerr.Required, 10))
 			w.WriteHeader(http.StatusConflict)
-			fmt.Fprint(w, oerr.Error()) // nolint: gas
+			_, _ = fmt.Fprint(w, oerr.Error()) // nolint: gas
 			return
 		}
 		if err != nil {
@@ -164,10 +164,8 @@ func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logg
 		// file without the need of a seperate DELETE from the client.
 		err = DeleteFileInfo(path)
 		return &fi.Digest, err
-	} else {
-		err = SaveFileInfo(path, fi)
-		return nil, err
 	}
+	return nil, SaveFileInfo(path, fi)
 }
 
 // OffsetMismatchError is returned when the offset specified in request does not match the actual offset on the disk.

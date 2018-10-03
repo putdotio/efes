@@ -120,9 +120,8 @@ func main() {
 				}
 				if path == "-" {
 					return client.WriteReader(key, os.Stdin)
-				} else {
-					return client.Write(key, path)
 				}
+				return client.Write(key, path)
 			},
 		},
 		{

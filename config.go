@@ -94,7 +94,7 @@ func NewConfig() *Config {
 	return c
 }
 
-// ReadConfig parses a TOML file and returns new Config.
+// ReadFile parses a TOML file and returns new Config.
 func (c *Config) ReadFile(name string) error {
 	_, err := toml.DecodeFile(name, c)
 	return err

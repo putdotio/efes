@@ -8,9 +8,11 @@
 // applications.
 package main
 
+// nolint
 // The size of a SHA-1 checksum in bytes.
 const Sha1Size = 20
 
+// nolint
 // The blocksize of SHA-1 in bytes.
 const BlockSize = 64
 
@@ -41,6 +43,7 @@ func (d *sha1digest) Reset() {
 	d.len = 0
 }
 
+// nolint
 // New returns a new hash.Hash computing the SHA1 checksum.
 func NewSha1() *sha1digest {
 	d := new(sha1digest)
@@ -75,6 +78,7 @@ func (d *sha1digest) Write(p []byte) (nn int, err error) {
 	return
 }
 
+// nolint
 func (d0 *sha1digest) Sum(in []byte) []byte {
 	// Make a copy of d0 so that caller can keep writing and summing.
 	d := *d0

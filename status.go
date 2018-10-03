@@ -165,6 +165,7 @@ func (s *efesStatus) Print() {
 	table.Render()
 }
 
+// nolint
 func (c *Client) Status(sortBy string) (*efesStatus, error) {
 	ret := &efesStatus{
 		devices: make([]deviceStatus, 0),

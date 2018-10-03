@@ -61,33 +61,33 @@ func (r *Root) Attr(ctx context.Context, a *fuse.Attr) error {
 
 var _ fs.NodeRequestLookuper = (*Root)(nil)
 
-func (d *Root) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error) {
+func (r *Root) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error) {
 	key := req.Name
-	remotePath, err := d.client.getPath(key)
+	remotePath, err := r.client.getPath(key)
 	if cerr, ok := err.(*ClientError); ok && cerr.Code == http.StatusNotFound {
 		return nil, fuse.ENOENT
 	}
 	if err != nil {
 		return nil, err
 	}
-	r, err := d.client.httpClient.Head(remotePath.Path)
+	headResp, err := r.client.httpClient.Head(remotePath.Path)
 	if err != nil {
 		return nil, err
 	}
-	defer r.Body.Close() // nolint: errcheck
-	if r.StatusCode == http.StatusNotFound {
+	defer headResp.Body.Close() // nolint: errcheck
+	if headResp.StatusCode == http.StatusNotFound {
 		return nil, fuse.ENOENT
 	}
-	err = checkResponseError(r)
+	err = checkResponseError(headResp)
 	if err != nil {
 		return nil, err
 	}
 	t, _ := time.Parse(time.RFC3339, remotePath.CreatedAt)
 	f := &File{
-		client:    d.client,
+		client:    r.client,
 		path:      remotePath.Path,
 		createdAt: t,
-		size:      uint64(d.client.getContentLength(r)),
+		size:      uint64(r.client.getContentLength(headResp)),
 	}
 	return f, nil
 }

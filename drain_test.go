@@ -78,7 +78,7 @@ func TestDrain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var config2 Config = *testConfig
+	config2 := *testConfig
 	config2.Server.DataDir = devPath
 	config2.Server.ListenAddressForRead = "0.0.0.0:8502"
 	config2.Server.ListenAddress = "0.0.0.0:8503"
