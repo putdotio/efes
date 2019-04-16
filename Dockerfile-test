@@ -1,10 +1,11 @@
-FROM golang:1.9.2 AS builder
-WORKDIR /go/src/github.com/putdotio/efes/
-RUN go get github.com/golang/dep/cmd/dep
-ADD Gopkg.toml Gopkg.lock /go/src/github.com/putdotio/efes/
-RUN dep ensure -vendor-only
+FROM golang:1.12.2 AS builder
 RUN apt-get update && apt-get install -y mysql-client
+WORKDIR /go/src/github.com/putdotio/efes/
+ENV GO111MODULE=on
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
 ADD docker-run-tests.sh /root/run-tests.sh
-ADD *.go /go/src/github.com/putdotio/efes/
+COPY . .
 ADD config-docker.toml /etc/efes.toml
 ENTRYPOINT ["/bin/bash", "/root/run-tests.sh"]
