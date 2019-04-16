@@ -47,7 +47,7 @@ func (d *IOStat) measure() error {
 	}
 	c, ok := r[d.device]
 	if !ok {
-		return fmt.Errorf("Cannot find stats for device: %s", d.device)
+		return fmt.Errorf("cannot find stats for device: %s", d.device)
 	}
 	m := IOMeasurement{
 		t: time.Now(),
@@ -105,7 +105,7 @@ func findDevice(path string) (string, error) {
 	}
 	i := findLongestPrefix(realPath, mountPoints)
 	if i == -1 {
-		return "", fmt.Errorf("Cannot find mountpoint for path: %s", path)
+		return "", fmt.Errorf("cannot find mountpoint for path: %s", path)
 	}
 	return partitions[i].Device, nil
 }

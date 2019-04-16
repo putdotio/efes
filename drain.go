@@ -28,11 +28,11 @@ func NewDrainer(c *Config) (*Drainer, error) {
 		return nil, err
 	}
 	if !fi.IsDir() {
-		return nil, fmt.Errorf("Path must be a directory: %s", c.Server.DataDir)
+		return nil, fmt.Errorf("path must be a directory: %s", c.Server.DataDir)
 	}
 	devid, err := strconv.ParseInt(strings.TrimPrefix(filepath.Base(c.Server.DataDir), "dev"), 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot determine device ID from dir: %s", c.Server.DataDir)
+		return nil, fmt.Errorf("cannot determine device ID from dir: %s", c.Server.DataDir)
 	}
 	db, err := openDatabase(c.Database)
 	if err != nil {
