@@ -375,7 +375,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 	// Use REPLACE INTO feature of MySQL to prevent "duplicate entry" errors.
 	// This is not thread-safe and may result stale "file_on" records with no fid present in "file" table.
 	// It is a very rare case and cleanDevice() job will eventually remove stale records on "file_on" table.
-	_, err = tx.Exec("replace into file(fid, dkey, timestamp) values(?,?,now())", fid, key)
+	_, err = tx.Exec("replace into file(fid, dkey, created_at) values(?,?,now())", fid, key)
 	if err != nil {
 		t.internalServerError("cannot insert or replace file", err, r, w)
 		return
