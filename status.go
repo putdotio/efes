@@ -60,11 +60,12 @@ func (d deviceStatus) IO() string {
 }
 
 func colorPercent(value int64, s string) string {
-	if value >= 90 {
+	switch {
+	case value >= 90:
 		return color.RedString(s)
-	} else if value >= 80 {
+	case value >= 80:
 		return color.YellowString(s)
-	} else if value < 10 {
+	case value < 10:
 		return color.BlueString(s)
 	}
 	return s

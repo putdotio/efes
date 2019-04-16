@@ -41,7 +41,7 @@ func TestSha1File(t *testing.T) {
 	}
 }
 
-func testSeekAndRead(t *testing.T, sf *Sha1File, seek int64, read int, expected string) {
+func testSeekAndRead(t *testing.T, sf io.ReadSeeker, seek int64, read int, expected string) {
 	t.Helper()
 	m, err := sf.Seek(seek, io.SeekStart)
 	if err != nil {

@@ -122,9 +122,9 @@ func (s *Server) checkFid(fid int64) error {
 	}
 	// remove fid from other disks
 	s.log.Warningf("Deleting fid [%d] from other devices: %v", fid, otherDevids)
-	var otherDevidsString []string
-	for _, devid := range otherDevids {
-		otherDevidsString = append(otherDevidsString, strconv.FormatInt(devid, 10))
+	otherDevidsString := make([]string, len(otherDevids))
+	for i, devid := range otherDevids {
+		otherDevidsString[i] = strconv.FormatInt(devid, 10)
 	}
 	_, err = tx.Exec("delete from file_on where fid=? and devid in ("+strings.Join(otherDevidsString, ",")+")", fid)
 	if err != nil {

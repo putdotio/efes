@@ -63,8 +63,8 @@ func TestFidExistsOnDatabase(t *testing.T) {
 func TestShouldDeleteFileExistsOnDbNewOnDisk(t *testing.T) {
 	s, rm := setupServer(t, 300*time.Second)
 	defer rm()
-	insertToDB(t, s.db, 1, s.devid, "foo")
-	fidPath := writeToDisk(t, s, 1, "fid", time.Now().Add(-200*time.Second))
+	insertToDB(t, s.db, 2, s.devid, "foo")
+	fidPath := writeToDisk(t, s, 2, "fid", time.Now().Add(-200*time.Second))
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
@@ -91,7 +91,7 @@ func insertToDB(t *testing.T, db *sql.DB, fid, devid int64, key string) {
 
 func writeToDisk(t *testing.T, s *Server, fid int64, ext string, modTime time.Time) string {
 	t.Helper()
-	fidPath := filepath.Join(s.config.Server.DataDir, vivify(fid))
+	fidPath := filepath.Join(s.config.Server.DataDir, vivifyExt(fid, ext))
 	dirPath, _ := filepath.Split(fidPath)
 	err := os.MkdirAll(dirPath, 0700)
 	if err != nil {

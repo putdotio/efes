@@ -135,7 +135,7 @@ var _ fs.Handle = (*FileHandle)(nil)
 
 func (h *FileHandle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	if req.Offset != h.offset {
-		err := h.close(ctx)
+		err := h.close()
 		if err != nil {
 			return err
 		}
@@ -160,6 +160,7 @@ func (h *FileHandle) open(ctx context.Context, offset int64) error {
 	if err != nil {
 		return err
 	}
+	req = req.WithContext(ctx)
 	req.Header.Set("bytes", strconv.FormatInt(h.offset, 10)+"-")
 	r, err := h.client.httpClient.Do(req)
 	if err != nil {
@@ -176,11 +177,11 @@ func (h *FileHandle) open(ctx context.Context, offset int64) error {
 
 var _ fs.HandleReleaser = (*FileHandle)(nil)
 
-func (h *FileHandle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
-	return h.close(ctx)
+func (h *FileHandle) Release(ctx context.Context, req *fuse.ReleaseRequest) error { // nolint: unparam
+	return h.close()
 }
 
-func (h *FileHandle) close(ctx context.Context) error {
+func (h *FileHandle) close() error {
 	if h.r == nil {
 		return nil
 	}

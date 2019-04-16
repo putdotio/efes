@@ -343,6 +343,10 @@ func (s *Server) deleteFidOnDisk(fileID int64) error {
 }
 
 func vivify(fid int64) string {
+	return vivifyExt(fid, "fid")
+}
+
+func vivifyExt(fid int64, ext string) string {
 	s := fmt.Sprintf("%010d", fid)
-	return fmt.Sprintf("%s/%s/%s/%s.fid", s[0:1], s[1:4], s[4:7], s)
+	return fmt.Sprintf("%s/%s/%s/%s.%s", s[0:1], s[1:4], s[4:7], s, ext)
 }

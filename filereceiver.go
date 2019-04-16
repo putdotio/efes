@@ -161,7 +161,7 @@ func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logg
 	fi.Offset = offset + n
 	if fi.Offset == length {
 		// If we know the length of the file, we can delete the ".offset"
-		// file without the need of a seperate DELETE from the client.
+		// file without the need of a separate DELETE from the client.
 		err = DeleteFileInfo(path)
 		return &fi.Digest, err
 	}

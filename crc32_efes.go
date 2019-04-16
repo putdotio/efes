@@ -15,7 +15,7 @@ const (
 	crc32DigestSize = 4
 )
 
-func (d *crc32digest) MarshalText() ([]byte, error) {
+func (d *crc32digest) MarshalText() ([]byte, error) { // nolint: unparam
 	b := bytes.NewBuffer(make([]byte, 0, crc32DigestSize))
 	binary.Write(b, binary.BigEndian, d.crc) // nolint: errcheck
 	ret := make([]byte, hex.EncodedLen(crc32DigestSize))

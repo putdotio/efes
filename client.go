@@ -82,7 +82,7 @@ func (c *Client) Delete(key string) error {
 	return c.request(http.MethodPost, "delete", form, nil)
 }
 
-// Exists checks the existance of a key on Efes.
+// Exists checks the existence of a key on Efes.
 func (c *Client) Exists(key string) (bool, error) {
 	_, err := c.getPath(key)
 	if err != nil {

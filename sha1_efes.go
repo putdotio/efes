@@ -22,7 +22,7 @@ const (
 
 var errInvalidDigest = errors.New("invalid digest")
 
-func (d *sha1digest) MarshalText() ([]byte, error) {
+func (d *sha1digest) MarshalText() ([]byte, error) { // nolint: unparam
 	b := bytes.NewBuffer(make([]byte, 0, sha1digestSize))
 	binary.Write(b, binary.BigEndian, d.h[0]) // nolint: errcheck
 	binary.Write(b, binary.BigEndian, d.h[1]) // nolint: errcheck

@@ -13,6 +13,7 @@ import (
 	"github.com/cenkalti/log"
 	"github.com/getsentry/raven-go"
 	"github.com/urfave/cli"
+
 	// Register MySQL database driver.
 	_ "github.com/go-sql-driver/mysql"
 )

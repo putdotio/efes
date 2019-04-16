@@ -10,7 +10,7 @@ const (
 
 type ChunkSize int64
 
-func (c *ChunkSize) MarshalText() (text []byte, err error) {
+func (c *ChunkSize) MarshalText() (text []byte, err error) { // nolint: unparam
 	return []byte(c.String()), nil
 }
 
@@ -63,13 +63,14 @@ func (c *ChunkSize) String() string {
 		return "0"
 	}
 	var postfix string
-	if i%G == 0 {
+	switch {
+	case i%G == 0:
 		i /= G
 		postfix = "G"
-	} else if i%M == 0 {
+	case i%M == 0:
 		i /= M
 		postfix = "M"
-	} else if i%K == 0 {
+	case i%K == 0:
 		i /= K
 		postfix = "K"
 	}

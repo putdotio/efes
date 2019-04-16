@@ -54,7 +54,7 @@ func (t *Tracker) removeOldTempfiles() error {
 
 func (t *Tracker) removeOldTempfilesFromDB(tx *sql.Tx) (tempfiles []Tempfile, err error) {
 	tempfileTooOld := time.Duration(t.config.Tracker.TempfileTooOld) / time.Microsecond
-	rows, err := t.db.Query("select fid, devid from tempfile where created_at < CURRENT_TIMESTAMP - INTERVAL ? MICROSECOND for update", tempfileTooOld)
+	rows, err := tx.Query("select fid, devid from tempfile where created_at < CURRENT_TIMESTAMP - INTERVAL ? MICROSECOND for update", tempfileTooOld)
 	if err != nil {
 		return
 	}
@@ -75,10 +75,10 @@ func (t *Tracker) removeOldTempfilesFromDB(tx *sql.Tx) (tempfiles []Tempfile, er
 		t.log.Debug("no stale tempfile found")
 		return
 	}
-	var fids []string
-	for _, tf := range tempfiles {
-		fids = append(fids, strconv.FormatInt(tf.fid, 10))
+	fids := make([]string, len(tempfiles))
+	for i, tf := range tempfiles {
+		fids[i] = strconv.FormatInt(tf.fid, 10)
 	}
-	_, err = t.db.Exec("delete from tempfile where fid in (" + strings.Join(fids, ",") + ")")
+	_, err = tx.Exec("delete from tempfile where fid in (" + strings.Join(fids, ",") + ")")
 	return
 }
