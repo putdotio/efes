@@ -415,8 +415,9 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key := r.FormValue("key")
-	if key == "" {
-		http.Error(w, "required parameter: key", http.StatusBadRequest)
+	fid, _ := strconv.ParseInt(r.FormValue("fid"), 10, 64)
+	if key == "" && fid == 0 {
+		http.Error(w, "required parameter: key or fid", http.StatusBadRequest)
 		return
 	}
 	tx, err := t.db.Begin()
@@ -425,15 +426,16 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer tx.Rollback() // nolint: errcheck
-	row := tx.QueryRow("select fid from file where dkey=? for update", key)
-	var fid int64
-	err = row.Scan(&fid)
-	if err == sql.ErrNoRows {
-		return
-	}
-	if err != nil {
-		t.internalServerError("cannot select rows", err, r, w)
-		return
+	if fid == 0 {
+		row := tx.QueryRow("select fid from file where dkey=? for update", key)
+		err = row.Scan(&fid)
+		if err == sql.ErrNoRows {
+			return
+		}
+		if err != nil {
+			t.internalServerError("cannot select rows", err, r, w)
+			return
+		}
 	}
 	devids, err := t.deleteFidOnDB(tx, fid)
 	if err != nil {
