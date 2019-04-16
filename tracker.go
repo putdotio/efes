@@ -38,10 +38,10 @@ type Tracker struct {
 // NewTracker returns a new Tracker instance.
 func NewTracker(c *Config) (*Tracker, error) {
 	t := &Tracker{
-		config:   c,
-		log:      log.NewLogger("tracker"),
-		shutdown: make(chan struct{}),
-		Ready:    make(chan struct{}),
+		config:                 c,
+		log:                    log.NewLogger("tracker"),
+		shutdown:               make(chan struct{}),
+		Ready:                  make(chan struct{}),
 		tempfileCleanerStopped: make(chan struct{}),
 		amqpRedialerStopped:    make(chan struct{}),
 	}
@@ -494,10 +494,10 @@ func (t *Tracker) publishDeleteTask(devids []int64, fid int64) {
 func publishDeleteTask(ch *amqp.Channel, devid int64, fileID int64) error {
 	body := strconv.FormatInt(fileID, 10)
 	return ch.Publish(
-		"", // exchange
+		"",                     // exchange
 		deleteQueueName(devid), // routing key
-		false, // mandatory
-		false, // immediate
+		false,                  // mandatory
+		false,                  // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        []byte(body),
