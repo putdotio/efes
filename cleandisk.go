@@ -72,8 +72,9 @@ func (s *Server) visitFile(path string, f os.FileInfo, err error) error {
 		s.log.Debugln("File is newer than", ttl)
 		return nil
 	}
-	if filepath.Ext(path) != ".fid" {
-		s.log.Infoln("extension is not fid:", path, "; removing...")
+	ext := filepath.Ext(path)
+	if ext != ".fid" && ext != ".info" {
+		s.log.Infoln("extension is not \".fid\" or \".info\":", path, "; removing...")
 		err = os.Remove(path)
 		if err != nil {
 			s.log.Errorln("Cannot remove file:", err.Error())
