@@ -15,4 +15,4 @@ test:
 	docker-compose -f docker-compose-test.yml up --build --exit-code-from test --abort-on-container-exit
 
 lint:
-	gometalinter --config=gometalinter.json
+	golangci-lint run
