@@ -14,7 +14,7 @@ require (
 	github.com/fatih/color v1.6.0
 	github.com/getsentry/raven-go v0.0.0-20171206001108-32a13797442c
 	github.com/go-ole/go-ole v1.2.0 // indirect
-	github.com/go-sql-driver/mysql v0.0.0-20171204004326-9181e3a86a19
+	github.com/go-sql-driver/mysql v1.4.1
 	github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce // indirect
 	github.com/hashicorp/go-multierror v0.0.0-20171204182908-b7773ae21874 // indirect
 	github.com/mattn/go-colorable v0.0.9 // indirect

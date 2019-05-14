@@ -20,8 +20,8 @@ github.com/getsentry/raven-go v0.0.0-20171206001108-32a13797442c h1:a4sdVBGTB8ko
 github.com/getsentry/raven-go v0.0.0-20171206001108-32a13797442c/go.mod h1:KungGk8q33+aIAZUIVWZDr2OfAEBsO49PX4NzFV5kcQ=
 github.com/go-ole/go-ole v1.2.0 h1:wiiTJjbwlWm5KF3UgZHuU2a2ZKA8MXJaW4vnW0SOwg4=
 github.com/go-ole/go-ole v1.2.0/go.mod h1:7FAglXiTm7HKlQRDeOQ6ZNUHidzCWXuZWq/1dTyBNF8=
-github.com/go-sql-driver/mysql v0.0.0-20171204004326-9181e3a86a19 h1:0c+t6z4rBFEzGHSw3C+X3dovsmUWH0R+YloQsWyv8q0=
-github.com/go-sql-driver/mysql v0.0.0-20171204004326-9181e3a86a19/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
+github.com/go-sql-driver/mysql v1.4.1 h1:g24URVg0OFbNUTx9qqY1IRZ9D9z3iPyi5zKhQZpNwpA=
+github.com/go-sql-driver/mysql v1.4.1/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
 github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce h1:prjrVgOk2Yg6w+PflHoszQNLTUh4kaByUcEWM/9uin4=
 github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/go-multierror v0.0.0-20171204182908-b7773ae21874 h1:em+tTnzgU7N22woTBMcSJAOW7tRHAkK597W+MD/CpK8=
