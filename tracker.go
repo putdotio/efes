@@ -139,7 +139,7 @@ func (t *Tracker) internalServerError(message string, err error, r *http.Request
 func (t *Tracker) getPath(w http.ResponseWriter, r *http.Request) {
 	var response GetPath
 	key := r.FormValue("key")
-	row := t.db.QueryRow("select h.hostip, d.read_port, d.devid, f.fid, f.created_at "+
+	row := t.db.QueryRow("select h.hostname, d.read_port, d.devid, f.fid, f.created_at "+
 		"from file f "+
 		"join file_on fo on f.fid=fo.fid "+
 		"join device d on d.devid=fo.devid "+
@@ -147,12 +147,12 @@ func (t *Tracker) getPath(w http.ResponseWriter, r *http.Request) {
 		"where h.status='alive' "+
 		"and d.status in ('alive', 'drain') "+
 		"and f.dkey=?", key)
-	var hostip string
+	var hostname string
 	var httpPort int64
 	var devid int64
 	var fid int64
 	var createdAt mysql.NullTime
-	err := row.Scan(&hostip, &httpPort, &devid, &fid, &createdAt)
+	err := row.Scan(&hostname, &httpPort, &devid, &fid, &createdAt)
 	if err == sql.ErrNoRows {
 		http.Error(w, "file not found", http.StatusNotFound)
 		return
@@ -161,7 +161,7 @@ func (t *Tracker) getPath(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot scan rows", err, r, w)
 		return
 	}
-	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s", hostip, httpPort, devid, vivify(fid))
+	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s", hostname, httpPort, devid, vivify(fid))
 	response.CreatedAt = createdAt.Time.Format(time.RFC3339)
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
@@ -172,7 +172,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		Paths: make([]GetPath, 0),
 	}
 	key := r.FormValue("key")
-	rows, err := t.db.Query("select h.hostip, d.read_port, d.devid, f.fid, f.created_at "+
+	rows, err := t.db.Query("select h.hostname, d.read_port, d.devid, f.fid, f.created_at "+
 		"from file f "+
 		"join file_on fo on f.fid=fo.fid "+
 		"join device d on d.devid=fo.devid "+
@@ -186,12 +186,12 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
-		var hostip string
+		var hostname string
 		var httpPort int64
 		var devid int64
 		var fid int64
 		var createdAt mysql.NullTime
-		err = rows.Scan(&hostip, &httpPort, &devid, &fid, &createdAt)
+		err = rows.Scan(&hostname, &httpPort, &devid, &fid, &createdAt)
 		if err == sql.ErrNoRows {
 			http.Error(w, "file not found", http.StatusNotFound)
 			return
@@ -201,7 +201,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		path := GetPath{
-			Path:      fmt.Sprintf("http://%s:%d/dev%d/%s", hostip, httpPort, devid, vivify(fid)),
+			Path:      fmt.Sprintf("http://%s:%d/dev%d/%s", hostname, httpPort, devid, vivify(fid)),
 			CreatedAt: createdAt.Time.Format(time.RFC3339),
 		}
 		response.Paths = append(response.Paths, path)
@@ -262,13 +262,13 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 var errNoDeviceAvailable = errors.New("no device available")
 
 type aliveDevice struct {
-	hostip   string
+	hostname string
 	httpPort int64
 	devid    int64
 }
 
 func (d *aliveDevice) PatchURL(fid int64) string {
-	return fmt.Sprintf("http://%s:%d/dev%d/%s", d.hostip, d.httpPort, d.devid, vivify(fid))
+	return fmt.Sprintf("http://%s:%d/dev%d/%s", d.hostname, d.httpPort, d.devid, vivify(fid))
 }
 
 func findAliveDevice(db *sql.DB, size int64, devids []int64) (*aliveDevice, error) {
@@ -282,7 +282,7 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64) (*aliveDevice, erro
 	} else {
 		devidsSQL = "and d.status='alive' "
 	}
-	rows, err := db.Query("select h.hostip, d.write_port, d.devid "+
+	rows, err := db.Query("select h.hostname, d.write_port, d.devid "+
 		"from device d "+
 		"join host h on d.hostid=h.hostid "+
 		"where h.status='alive' "+
@@ -297,7 +297,7 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64) (*aliveDevice, erro
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var d aliveDevice
-		err = rows.Scan(&d.hostip, &d.httpPort, &d.devid)
+		err = rows.Scan(&d.hostname, &d.httpPort, &d.devid)
 		if err != nil {
 			return nil, err
 		}
@@ -385,12 +385,12 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot insert file_on record", err, r, w)
 		return
 	}
-	row = tx.QueryRow("select h.hostip, d.read_port "+
+	row = tx.QueryRow("select h.hostname, d.read_port "+
 		"from device d join host h on h.hostid=d.hostid "+
 		"where d.devid=?", devid)
-	var hostip string
+	var hostname string
 	var httpPort int64
-	err = row.Scan(&hostip, &httpPort)
+	err = row.Scan(&hostname, &httpPort)
 	if err != nil {
 		t.internalServerError("cannot select host ip", err, r, w)
 		return
@@ -404,7 +404,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		go t.publishDeleteTask(olddevids, oldfid)
 	}
 	var response CreateClose
-	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s", hostip, httpPort, devid, vivify(fid))
+	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s", hostname, httpPort, devid, vivify(fid))
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
 }

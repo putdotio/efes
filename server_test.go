@@ -34,7 +34,15 @@ func setupServer(t *testing.T, ttl time.Duration) (s *Server, closeFunc func()) 
 
 	cleanDB(t, s.db)
 
-	_, err = s.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '127.0.0.1')")
+	_, err = s.db.Exec("insert into zone(zoneid, name) values(1, 'zone1')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.db.Exec("insert into rack(rackid, zoneid, subnet) values(1, 1, '0.0.0.0/0')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.db.Exec("insert into host(hostid, hostname, status, hostip, rackid) values(1, 'foo', 'alive', '127.0.0.1', 1)")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,11 +1,27 @@
 SET default_storage_engine=INNODB;
 
+CREATE TABLE `zone` (
+  `zoneid` mediumint(8) unsigned NOT NULL,
+  `name` varchar(40) NOT NULL,
+  PRIMARY KEY (`zoneid`)
+);
+
+CREATE TABLE `rack` (
+  `rackid` mediumint(8) unsigned NOT NULL,
+  `zoneid` mediumint(8) unsigned NOT NULL,
+  `subnet` varchar(18) NOT NULL,
+  PRIMARY KEY (`rackid`),
+  FOREIGN KEY (`zoneid`) REFERENCES `zone` (`zoneid`)
+);
+
 CREATE TABLE `host` (
   `hostid` mediumint(8) unsigned NOT NULL,
   `status` enum('alive','dead','down') NOT NULL DEFAULT 'alive',
   `hostname` varchar(40) NOT NULL,
   `hostip` varchar(40) NOT NULL,
-  PRIMARY KEY (`hostid`)
+  `rackid` mediumint(8) unsigned NOT NULL,
+  PRIMARY KEY (`hostid`),
+  FOREIGN KEY (`rackid`) REFERENCES `rack` (`rackid`)
 );
 
 CREATE TABLE `device` (

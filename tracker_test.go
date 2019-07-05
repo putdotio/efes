@@ -30,16 +30,30 @@ func TestPing(t *testing.T) {
 	}
 }
 
+func insertHost(t *testing.T, tr *Tracker) {
+	t.Helper()
+
+	_, err := tr.db.Exec("insert into zone(zoneid, name) values(1, 'zone1')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid, subnet) values(1, 1, '0.0.0.0/0')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip, rackid) values(1, 'foo', 'alive', '1.2.3.4', 1)")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestGetPath(t *testing.T) {
 	tr, err := NewTracker(testConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '1.2.3.4')")
-	if err != nil {
-		t.Fatal(err)
-	}
+	insertHost(t, tr)
 	_, err = tr.db.Exec("insert into device(devid, status, hostid, read_port) values(2, 'alive', 1, 1234)")
 	if err != nil {
 		t.Fatal(err)
@@ -68,7 +82,7 @@ func TestGetPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := "http://1.2.3.4:1234/dev2/0/000/000/0000000042.fid"
+	expected := "http://foo:1234/dev2/0/000/000/0000000042.fid"
 	if resp.Path != expected {
 		t.Errorf("handler returned unexpected path: got %v want %v",
 			resp.Path, expected)
@@ -81,10 +95,7 @@ func TestCreateOpen(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '1.2.3.4')")
-	if err != nil {
-		t.Fatal(err)
-	}
+	insertHost(t, tr)
 	_, err = tr.db.Exec("insert into device(devid, status, hostid, bytes_total, bytes_used, bytes_free, write_port) values(2, 'alive', 1, 1000, 500, 500, 1234)")
 	if err != nil {
 		t.Fatal(err)
@@ -104,7 +115,7 @@ func TestCreateOpen(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := "{\"path\":\"http://1.2.3.4:1234/dev2/0/000/000/0000000005.fid\",\"fid\":5}\n"
+	expected := "{\"path\":\"http://foo:1234/dev2/0/000/000/0000000005.fid\",\"fid\":5}\n"
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)
@@ -117,10 +128,7 @@ func TestCreateClose(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '1.2.3.4')")
-	if err != nil {
-		t.Fatal(err)
-	}
+	insertHost(t, tr)
 	_, err = tr.db.Exec("insert into device(devid, status, hostid, read_port) values(2, 'alive', 1, 5678)")
 	if err != nil {
 		t.Fatal(err)
@@ -145,7 +153,7 @@ func TestCreateClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := "http://1.2.3.4:5678/dev2/0/000/000/0000000009.fid"
+	expected := "http://foo:5678/dev2/0/000/000/0000000009.fid"
 	if resp.Path != expected {
 		t.Errorf("handler returned unexpected path: got %v want %v",
 			resp.Path, expected)
@@ -158,10 +166,7 @@ func TestCreateCloseOverwrite(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '1.2.3.4')")
-	if err != nil {
-		t.Fatal(err)
-	}
+	insertHost(t, tr)
 	_, err = tr.db.Exec("insert into device(devid, status, hostid) values(2, 'alive', 1)")
 	if err != nil {
 		t.Fatal(err)
@@ -199,7 +204,7 @@ func TestCreateCloseOverwrite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := "http://1.2.3.4:5678/dev3/0/000/000/0000000009.fid"
+	expected := "http://foo:5678/dev3/0/000/000/0000000009.fid"
 	if resp.Path != expected {
 		t.Errorf("handler returned unexpected path: got %v want %v",
 			resp.Path, expected)
@@ -212,10 +217,7 @@ func TestDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip) values(1, 'foo', 'alive', '1.2.3.4')")
-	if err != nil {
-		t.Fatal(err)
-	}
+	insertHost(t, tr)
 	_, err = tr.db.Exec("insert into device(devid, hostid) values(2, 1)")
 	if err != nil {
 		t.Fatal(err)
@@ -257,10 +259,7 @@ func TestGetDevices(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, hostname, hostip, status) values(1, 'foo', '127.0.0.1', 'alive')")
-	if err != nil {
-		t.Fatal(err)
-	}
+	insertHost(t, tr)
 	_, err = tr.db.Exec("insert into device(devid, status, hostid, bytes_total, bytes_used, bytes_free, updated_at) values(2, 'alive', 1, 1000, 500, 500, from_unixtime(1510216046))")
 	if err != nil {
 		t.Fatal(err)
@@ -289,10 +288,7 @@ func TestGetHosts(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanDB(t, tr.db)
-	_, err = tr.db.Exec("insert into host(hostid, hostname, hostip, status) values(1, 'foo', '127.0.0.1', 'alive')")
-	if err != nil {
-		t.Fatal(err)
-	}
+	insertHost(t, tr)
 	req, err := http.NewRequest("GET", "/get-hosts", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -304,7 +300,7 @@ func TestGetHosts(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := "{\"hosts\":[{\"hostid\":1,\"status\":\"alive\",\"hostname\":\"foo\",\"hostip\":\"127.0.0.1\"}]}\n"
+	expected := "{\"hosts\":[{\"hostid\":1,\"status\":\"alive\",\"hostname\":\"foo\",\"hostip\":\"1.2.3.4\"}]}\n"
 
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
