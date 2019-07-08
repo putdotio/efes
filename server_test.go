@@ -38,7 +38,7 @@ func setupServer(t *testing.T, ttl time.Duration) (s *Server, closeFunc func()) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = s.db.Exec("insert into rack(rackid, zoneid, subnet) values(1, 1, '0.0.0.0/0')")
+	_, err = s.db.Exec("insert into rack(rackid, zoneid) values(1, 1)")
 	if err != nil {
 		t.Fatal(err)
 	}

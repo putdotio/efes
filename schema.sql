@@ -9,9 +9,17 @@ CREATE TABLE `zone` (
 CREATE TABLE `rack` (
   `rackid` mediumint(8) unsigned NOT NULL,
   `zoneid` mediumint(8) unsigned NOT NULL,
-  `subnet` varchar(18) NOT NULL,
+  `name` varchar(40),
   PRIMARY KEY (`rackid`),
   FOREIGN KEY (`zoneid`) REFERENCES `zone` (`zoneid`)
+);
+
+CREATE TABLE `subnet` (
+  `subnetid` mediumint(8) unsigned NOT NULL,
+  `rackid` mediumint(8) unsigned NOT NULL,
+  `subnet` varchar(18) NOT NULL,
+  PRIMARY KEY (`subnetid`),
+  FOREIGN KEY (`rackid`) REFERENCES `rack` (`rackid`)
 );
 
 CREATE TABLE `host` (

@@ -37,7 +37,7 @@ func insertHost(t *testing.T, tr *Tracker) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into rack(rackid, zoneid, subnet) values(1, 1, '0.0.0.0/0')")
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(1, 1)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,6 +116,79 @@ func TestCreateOpen(t *testing.T) {
 			status, http.StatusOK)
 	}
 	expected := "{\"path\":\"http://foo:1234/dev2/0/000/000/0000000005.fid\",\"fid\":5}\n"
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			rr.Body.String(), expected)
+	}
+}
+
+func TestCreateOpenSameZone(t *testing.T) {
+	tr, err := NewTracker(testConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cleanDB(t, tr.db)
+	_, err = tr.db.Exec("insert into zone(zoneid, name) values(1, 'zone1')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into zone(zoneid, name) values(2, 'zone2')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(1, 1)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(2, 1)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(3, 2)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(4, 2)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into subnet(subnetid, rackid, subnet) values(1, 3, '1.0.0.0/8')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip, rackid) values(1, 'foo', 'alive', '1.1.1.1', 3)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into host(hostid, hostname, status, hostip, rackid) values(2, 'bar', 'alive', '2.2.2.2', 4)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, bytes_total, bytes_used, bytes_free, write_port) values(1, 'alive', 1, 1000, 1000, 0, 1234)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("insert into device(devid, status, hostid, bytes_total, bytes_used, bytes_free, write_port) values(2, 'alive', 2, 1000, 500, 500, 1234)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tr.db.Exec("alter table tempfile auto_increment = 5")
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := http.NewRequest("POST", "/create-open?size=100", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("x-forwarded-for", "1.1.1.1")
+	rr := httptest.NewRecorder()
+
+	tr.server.Handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+	expected := "{\"path\":\"http://bar:1234/dev2/0/000/000/0000000005.fid\",\"fid\":5}\n"
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)

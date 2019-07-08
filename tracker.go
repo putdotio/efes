@@ -232,7 +232,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	d, err := findAliveDevice(t.db, int64(size), nil)
+	d, err := findAliveDevice(t.db, int64(size), nil, getClientIP(r))
 	if err == errNoDeviceAvailable {
 		http.Error(w, "no device available", http.StatusServiceUnavailable)
 		return
@@ -262,6 +262,10 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 var errNoDeviceAvailable = errors.New("no device available")
 
 type aliveDevice struct {
+	zoneid   int64
+	rackid   int64
+	hostid   int64
+	hostip   string
 	hostname string
 	httpPort int64
 	devid    int64
@@ -271,7 +275,7 @@ func (d *aliveDevice) PatchURL(fid int64) string {
 	return fmt.Sprintf("http://%s:%d/dev%d/%s", d.hostname, d.httpPort, d.devid, vivify(fid))
 }
 
-func findAliveDevice(db *sql.DB, size int64, devids []int64) (*aliveDevice, error) {
+func findAliveDevice(db *sql.DB, size int64, devids []int64, clientIP string) (*aliveDevice, error) {
 	var devidsSQL string
 	if len(devids) > 0 {
 		var devidsString []string
@@ -282,9 +286,11 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64) (*aliveDevice, erro
 	} else {
 		devidsSQL = "and d.status='alive' "
 	}
-	rows, err := db.Query("select h.hostname, d.write_port, d.devid "+
+	rows, err := db.Query("select z.zoneid, r.rackid, h.hostid, h.hostip, h.hostname, d.devid, d.write_port "+
 		"from device d "+
 		"join host h on d.hostid=h.hostid "+
+		"join rack r on h.rackid=r.rackid "+
+		"join zone z on r.zoneid=z.zoneid "+
 		"where h.status='alive' "+
 		"and bytes_free>= ? "+
 		devidsSQL+
@@ -297,7 +303,7 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64) (*aliveDevice, erro
 	defer rows.Close() // nolint: errcheck
 	for rows.Next() {
 		var d aliveDevice
-		err = rows.Scan(&d.hostname, &d.httpPort, &d.devid)
+		err = rows.Scan(&d.zoneid, &d.rackid, &d.hostid, &d.hostip, &d.hostname, &d.devid, &d.httpPort)
 		if err != nil {
 			return nil, err
 		}
@@ -307,6 +313,27 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64) (*aliveDevice, erro
 	if err != nil {
 		return nil, err
 	}
+	sameHostDevices := filterSameHost(devices, clientIP)
+	if len(sameHostDevices) > 0 {
+		devices = sameHostDevices
+	} else {
+		subnets, err := getSubnets(db)
+		if err != nil {
+			return nil, err
+		}
+		rackID, zoneID, ok := getRackID(subnets, clientIP)
+		if ok {
+			sameRackDevices := filterSameRack(devices, rackID)
+			if len(sameRackDevices) > 0 {
+				devices = sameRackDevices
+			} else {
+				sameZoneDevices := filterSameZone(devices, zoneID)
+				if len(sameZoneDevices) > 0 {
+					devices = sameZoneDevices
+				}
+			}
+		}
+	}
 	if len(devices) == 0 {
 		return nil, errNoDeviceAvailable
 	}
@@ -315,6 +342,82 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64) (*aliveDevice, erro
 	}
 	devices = devices[:len(devices)/2]
 	return &devices[rand.Intn(len(devices))], nil
+}
+
+func getRackID(subnets []subnet, clientIP string) (rackid, zoneid int64, ok bool) {
+	ip := net.ParseIP(clientIP)
+	for _, s := range subnets {
+		_, ipnet, err := net.ParseCIDR(s.subnet)
+		if err != nil {
+			continue
+		}
+		if ipnet.Contains(ip) {
+			return s.rackid, s.zoneid, true
+		}
+	}
+	return 0, 0, false
+}
+
+func filterSameRack(devices []aliveDevice, rackID int64) []aliveDevice {
+	var ret []aliveDevice
+	for _, d := range devices {
+		if d.rackid == rackID {
+			ret = append(ret, d)
+		}
+	}
+	return ret
+}
+
+func filterSameZone(devices []aliveDevice, zoneID int64) []aliveDevice {
+	var ret []aliveDevice
+	for _, d := range devices {
+		if d.zoneid == zoneID {
+			ret = append(ret, d)
+		}
+	}
+	return ret
+}
+
+func getClientIP(req *http.Request) string {
+	xff := req.Header.Get("x-forwarded-for")
+	if xff != "" {
+		return strings.TrimSpace(strings.Split(xff, ",")[0])
+	}
+	return req.RemoteAddr
+}
+
+func filterSameHost(devices []aliveDevice, clientIP string) []aliveDevice {
+	var ret []aliveDevice
+	for _, d := range devices {
+		if d.hostip == clientIP {
+			ret = append(ret, d)
+		}
+	}
+	return ret
+}
+
+type subnet struct {
+	subnetid int64
+	rackid   int64
+	zoneid   int64
+	subnet   string
+}
+
+func getSubnets(db *sql.DB) ([]subnet, error) {
+	var ret []subnet
+	rows, err := db.Query("select subnetid, r.rackid, z.zoneid, subnet from subnet s join rack r on s.rackid=r.rackid join zone z on z.zoneid=r.zoneid")
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var s subnet
+		err = rows.Scan(&s.subnetid, &s.rackid, &s.zoneid, &s.subnet)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, s)
+	}
+	return ret, rows.Err()
 }
 
 func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {

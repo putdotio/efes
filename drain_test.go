@@ -25,7 +25,7 @@ func TestDrain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into rack(rackid, zoneid, subnet) values(1, 1, '0.0.0.0/0')")
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(1, 1)")
 	if err != nil {
 		t.Fatal(err)
 	}
