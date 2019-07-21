@@ -67,6 +67,9 @@ func (s *Server) visitFile(path string, f os.FileInfo, err error) error {
 	if f.IsDir() {
 		return nil
 	}
+	if f.Mode()&os.ModeSymlink == os.ModeSymlink {
+		return nil
+	}
 	ttl := time.Duration(s.config.Server.CleanDiskFileTTL)
 	if time.Since(f.ModTime()) < ttl {
 		s.log.Debugln("File is newer than", ttl)
