@@ -35,7 +35,7 @@ func (s *Server) cleanDevice() {
 			if ra == 0 {
 				continue
 			}
-			s.log.Debug("Cleanup has started on database table.")
+			s.log.Info("Cleanup has started on database table.")
 			err = s.walkOnDeviceFiles()
 			if err != nil {
 				s.log.Errorln("Error in database table cleanup:", err)
