@@ -13,7 +13,8 @@ import (
 )
 
 type efesStatus struct {
-	devices []deviceStatus
+	devices    []deviceStatus
+	serverTime time.Time
 }
 
 type deviceStatus struct {
@@ -134,10 +135,9 @@ func (s *efesStatus) Print() {
 	})
 
 	// Add data to the table
-	now := time.Now().UTC()
 	data := make([][]string, len(s.devices))
 	for i, d := range s.devices {
-		updatedAt := now.Sub(d.UpdatedAt).Truncate(time.Second)
+		updatedAt := s.serverTime.Sub(d.UpdatedAt).Truncate(time.Second)
 		data[i] = []string{
 			d.Hostname,
 			colorStatus(d.HostStatus),
@@ -172,10 +172,15 @@ func (c *Client) Status(sortBy string) (*efesStatus, error) {
 		devices: make([]deviceStatus, 0),
 	}
 	var devices GetDevices
-	_, err := c.request(http.MethodGet, "get-devices", nil, &devices)
+	resp, err := c.request(http.MethodGet, "get-devices", nil, &devices)
 	if err != nil {
 		return nil, err
 	}
+	ret.serverTime, err = http.ParseTime(resp.Header.Get("date"))
+	if err != nil {
+		ret.serverTime = time.Now()
+	}
+	ret.serverTime = ret.serverTime.UTC()
 	var hosts GetHosts
 	_, err = c.request(http.MethodGet, "get-hosts", nil, &hosts)
 	if err != nil {
