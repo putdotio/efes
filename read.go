@@ -58,7 +58,7 @@ func (c *Client) getPath(key string) (*GetPath, error) {
 	form := url.Values{}
 	form.Add("key", key)
 	var response GetPath
-	err := c.request(http.MethodGet, "get-path", form, &response)
+	_, err := c.request(http.MethodGet, "get-path", form, &response)
 	return &response, err
 }
 

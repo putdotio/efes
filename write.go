@@ -193,7 +193,7 @@ func (c *Client) createOpen(size int64) (path string, fid int64, err error) {
 		form.Add("size", strconv.FormatInt(size, 10))
 	}
 	var response CreateOpen
-	err = c.request(http.MethodPost, "create-open", form, &response)
+	_, err = c.request(http.MethodPost, "create-open", form, &response)
 	return response.Path, response.Fid, err
 }
 
@@ -201,5 +201,6 @@ func (c *Client) createClose(key string, fid int64) error {
 	form := url.Values{}
 	form.Add("key", key)
 	form.Add("fid", strconv.FormatInt(fid, 10))
-	return c.request(http.MethodPost, "create-close", form, nil)
+	_, err := c.request(http.MethodPost, "create-close", form, nil)
+	return err
 }

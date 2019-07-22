@@ -172,12 +172,12 @@ func (c *Client) Status(sortBy string) (*efesStatus, error) {
 		devices: make([]deviceStatus, 0),
 	}
 	var devices GetDevices
-	err := c.request(http.MethodGet, "get-devices", nil, &devices)
+	_, err := c.request(http.MethodGet, "get-devices", nil, &devices)
 	if err != nil {
 		return nil, err
 	}
 	var hosts GetHosts
-	err = c.request(http.MethodGet, "get-hosts", nil, &hosts)
+	_, err = c.request(http.MethodGet, "get-hosts", nil, &hosts)
 	if err != nil {
 		return nil, err
 	}
