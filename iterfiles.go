@@ -64,6 +64,7 @@ func (t *Tracker) iterFiles(w http.ResponseWriter, r *http.Request) {
 	}{
 		Files: files,
 	}
+	w.Header().Set("content-type", "application/json")
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
 }

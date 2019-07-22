@@ -161,6 +161,7 @@ func (t *Tracker) getPath(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot scan rows", err, r, w)
 		return
 	}
+	w.Header().Set("content-type", "application/json")
 	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s", hostname, httpPort, devid, vivify(fid))
 	response.CreatedAt = createdAt.Time.Format(time.RFC3339)
 	encoder := json.NewEncoder(w)
@@ -211,6 +212,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot scan rows", err, r, w)
 		return
 	}
+	w.Header().Set("content-type", "application/json")
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
 }
@@ -255,6 +257,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		Path: d.PatchURL(fid),
 		Fid:  fid,
 	}
+	w.Header().Set("content-type", "application/json")
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
 }
@@ -506,6 +509,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 	if olddevids != nil {
 		go t.publishDeleteTask(olddevids, oldfid)
 	}
+	w.Header().Set("content-type", "application/json")
 	var response CreateClose
 	response.Path = fmt.Sprintf("http://%s:%d/dev%d/%s", hostname, httpPort, devid, vivify(fid))
 	encoder := json.NewEncoder(w)
@@ -676,6 +680,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	var response GetDevices
 	response.Devices = devices
 
+	w.Header().Set("content-type", "application/json")
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
 }
@@ -715,6 +720,7 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 	var response GetHosts
 	response.Hosts = hosts
 
+	w.Header().Set("content-type", "application/json")
 	encoder := json.NewEncoder(w)
 	encoder.Encode(response) // nolint: errcheck
 }
