@@ -122,6 +122,8 @@ func (s *efesStatus) Print() {
 	table.SetAlignment(tablewriter.ALIGN_RIGHT)
 	table.SetFooterAlignment(tablewriter.ALIGN_RIGHT)
 	table.SetHeader([]string{
+		"Zone",
+		"Rack",
 		"Host",
 		"Status",
 		"Device",
@@ -139,6 +141,8 @@ func (s *efesStatus) Print() {
 	for i, d := range s.devices {
 		updatedAt := s.serverTime.Sub(d.UpdatedAt).Truncate(time.Second)
 		data[i] = []string{
+			d.ZoneName,
+			d.RackName,
 			d.Hostname,
 			colorStatus(d.HostStatus),
 			strconv.FormatInt(d.Devid, 10),
@@ -155,7 +159,7 @@ func (s *efesStatus) Print() {
 	table.AppendBulk(data) // Add Bulk Data
 
 	table.SetFooter([]string{
-		"", "", "",
+		"", "", "", "", "",
 		"Total:",
 		humanize.Comma(totalSize),
 		humanize.Comma(totalUsed),
@@ -181,34 +185,23 @@ func (c *Client) Status(sortBy string) (*efesStatus, error) {
 		ret.serverTime = time.Now()
 	}
 	ret.serverTime = ret.serverTime.UTC()
-	var hosts GetHosts
-	_, err = c.request(http.MethodGet, "get-hosts", nil, &hosts)
-	if err != nil {
-		return nil, err
-	}
-	hostsByID := make(map[int64]Host)
-	for _, h := range hosts.Hosts {
-		hostsByID[h.Hostid] = h
-	}
 	for _, d := range devices.Devices {
 		if d.Status == "dead" {
 			continue
 		}
-		var hostname string
-		var hostStatus string
-		if h, ok := hostsByID[d.Hostid]; ok {
-			hostname = h.Hostname
-			hostStatus = h.Status
-		}
 		ds := deviceStatus{
 			Device:     d,
-			Hostname:   hostname,
-			HostStatus: hostStatus,
+			Hostname:   d.HostName,
+			HostStatus: d.HostStatus,
 			UpdatedAt:  time.Unix(d.UpdatedAt, 0),
 		}
 		ret.devices = append(ret.devices, ds)
 	}
 	switch sortBy {
+	case "zone":
+		sort.Sort(byZoneName{ret.devices})
+	case "rack":
+		sort.Sort(byRackName{ret.devices})
 	case "host":
 		sort.Sort(byHostname{ret.devices})
 	case "device":

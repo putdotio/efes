@@ -188,7 +188,7 @@ func main() {
 				cli.StringFlag{
 					Name:  "sort, s",
 					Usage: "sort devices by column",
-					Value: "host",
+					Value: "zone",
 				},
 			},
 			Action: func(c *cli.Context) error {

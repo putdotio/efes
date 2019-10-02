@@ -5,9 +5,30 @@ type deviceStatuses []deviceStatus
 func (a deviceStatuses) Len() int      { return len(a) }
 func (a deviceStatuses) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
+type byZoneName struct{ deviceStatuses }
+
+func (a byZoneName) Less(i, j int) bool {
+	if a.deviceStatuses[i].ZoneName == a.deviceStatuses[j].ZoneName {
+		return byRackName(a).Less(i, j)
+	}
+	return a.deviceStatuses[i].ZoneName < a.deviceStatuses[j].ZoneName
+}
+
+type byRackName struct{ deviceStatuses }
+
+func (a byRackName) Less(i, j int) bool {
+	if a.deviceStatuses[i].RackName == a.deviceStatuses[j].RackName {
+		return byHostname(a).Less(i, j)
+	}
+	return a.deviceStatuses[i].RackName < a.deviceStatuses[j].RackName
+}
+
 type byHostname struct{ deviceStatuses }
 
 func (a byHostname) Less(i, j int) bool {
+	if a.deviceStatuses[i].Hostname == a.deviceStatuses[j].Hostname {
+		return byDevID(a).Less(i, j)
+	}
 	return a.deviceStatuses[i].Hostname < a.deviceStatuses[j].Hostname
 }
 
