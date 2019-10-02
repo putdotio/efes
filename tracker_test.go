@@ -38,7 +38,7 @@ func insertHost(t *testing.T, tr *Tracker) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(1, 1)")
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid, name) values(1, 1, 'rack1')")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,19 +137,19 @@ func TestCreateOpenSameZone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(1, 1)")
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid, name) values(1, 1, 'rack1')")
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(2, 1)")
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid, name) values(2, 1, 'rack2')")
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(3, 2)")
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid, name) values(3, 2, 'rack3')")
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tr.db.Exec("insert into rack(rackid, zoneid) values(4, 2)")
+	_, err = tr.db.Exec("insert into rack(rackid, zoneid, name) values(4, 2, 'rack4')")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -349,7 +349,7 @@ func TestGetDevices(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := `{"devices":[{"devid":2,"hostid":1,"rackid":1,"zoneid":1,"status":"alive","bytes_total":1000,"bytes_used":500,"bytes_free":500,"updated_at":1510216046,"io_utilization":null}]}`
+	expected := `{"devices":[{"devid":2,"hostid":1,"host_name":"foo","host_status":"alive","rackid":1,"rack_name":"rack1","zoneid":1,"zone_name":"zone1","status":"alive","bytes_total":1000,"bytes_used":500,"bytes_free":500,"updated_at":1510216046,"io_utilization":null}]}`
 	if strings.TrimSpace(rr.Body.String()) != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)

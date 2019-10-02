@@ -9,7 +9,7 @@ CREATE TABLE `zone` (
 CREATE TABLE `rack` (
   `rackid` mediumint(8) unsigned NOT NULL,
   `zoneid` mediumint(8) unsigned NOT NULL,
-  `name` varchar(40),
+  `name` varchar(40) NOT NULL,
   PRIMARY KEY (`rackid`),
   FOREIGN KEY (`zoneid`) REFERENCES `zone` (`zoneid`)
 );
