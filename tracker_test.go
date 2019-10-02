@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -348,8 +349,8 @@ func TestGetDevices(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := "{\"devices\":[{\"devid\":2,\"hostid\":1,\"status\":\"alive\",\"bytes_total\":1000,\"bytes_used\":500,\"bytes_free\":500,\"updated_at\":1510216046,\"io_utilization\":null}]}\n"
-	if rr.Body.String() != expected {
+	expected := `{"devices":[{"devid":2,"hostid":1,"rackid":1,"zoneid":1,"status":"alive","bytes_total":1000,"bytes_used":500,"bytes_free":500,"updated_at":1510216046,"io_utilization":null}]}`
+	if strings.TrimSpace(rr.Body.String()) != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)
 	}

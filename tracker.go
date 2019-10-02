@@ -51,6 +51,8 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m.HandleFunc("/get-paths", t.getPaths)
 	m.HandleFunc("/get-devices", t.getDevices)
 	m.HandleFunc("/get-hosts", t.getHosts)
+	m.HandleFunc("/get-racks", t.getRacks)
+	m.HandleFunc("/get-zones", t.getZones)
 	m.HandleFunc("/create-open", t.createOpen)
 	m.HandleFunc("/create-close", t.createClose)
 	m.HandleFunc("/delete", t.deleteFile)
@@ -641,7 +643,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	var err error
 	devices := make([]Device, 0)
 
-	rows, err := t.db.Query("select devid, hostid, status, bytes_total, bytes_used, bytes_free, unix_timestamp(updated_at), io_utilization from device")
+	rows, err := t.db.Query("select d.devid, d.hostid, h.hostname, h.status, h.rackid, r.name, r.zoneid, z.name, d.status, d.bytes_total, d.bytes_used, d.bytes_free, unix_timestamp(d.updated_at), d.io_utilization from device d join host h on h.hostid=d.hostid join rack r on r.rackid=h.rackid join zone z on z.zoneid=r.zoneid")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -652,7 +654,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 		var d Device
 		var bytesTotal, bytesUsed, bytesFree sql.NullInt64
 		var ioUtilization sql.NullInt64
-		err = rows.Scan(&d.Devid, &d.Hostid, &d.Status, &bytesTotal, &bytesUsed, &bytesFree, &d.UpdatedAt, &ioUtilization)
+		err = rows.Scan(&d.Devid, &d.Hostid, &d.HostName, &d.HostStatus, &d.Rackid, &d.RackName, &d.Zoneid, &d.ZoneName, &d.Status, &bytesTotal, &bytesUsed, &bytesFree, &d.UpdatedAt, &ioUtilization)
 		if err != nil {
 			t.internalServerError("cannot scan rows", err, r, w)
 			return
@@ -719,6 +721,86 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 
 	var response GetHosts
 	response.Hosts = hosts
+
+	w.Header().Set("content-type", "application/json")
+	encoder := json.NewEncoder(w)
+	encoder.Encode(response) // nolint: errcheck
+}
+
+func (t *Tracker) getRacks(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	var err error
+	racks := make([]Rack, 0)
+
+	var rows *sql.Rows
+	rows, err = t.db.Query("select rackid, zoneid, name from rack")
+	if err != nil {
+		t.internalServerError("cannot select rows", err, r, w)
+		return
+	}
+
+	defer rows.Close() // nolint: errcheck
+	for rows.Next() {
+		var ra Rack
+		err = rows.Scan(&ra.Rackid, &ra.Zoneid, &ra.Name)
+		if err != nil {
+			t.internalServerError("cannot scan rows", err, r, w)
+			return
+		}
+		racks = append(racks, ra)
+	}
+	err = rows.Err()
+	if err != nil {
+		t.internalServerError("error while fetching rows", err, r, w)
+		return
+	}
+
+	var response GetRacks
+	response.Racks = racks
+
+	w.Header().Set("content-type", "application/json")
+	encoder := json.NewEncoder(w)
+	encoder.Encode(response) // nolint: errcheck
+}
+
+func (t *Tracker) getZones(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	var err error
+	zones := make([]Zone, 0)
+
+	var rows *sql.Rows
+	rows, err = t.db.Query("select zoneid, name from zone")
+	if err != nil {
+		t.internalServerError("cannot select rows", err, r, w)
+		return
+	}
+
+	defer rows.Close() // nolint: errcheck
+	for rows.Next() {
+		var z Zone
+		err = rows.Scan(&z.Zoneid, &z.Name)
+		if err != nil {
+			t.internalServerError("cannot scan rows", err, r, w)
+			return
+		}
+		zones = append(zones, z)
+	}
+	err = rows.Err()
+	if err != nil {
+		t.internalServerError("error while fetching rows", err, r, w)
+		return
+	}
+
+	var response GetZones
+	response.Zones = zones
 
 	w.Header().Set("content-type", "application/json")
 	encoder := json.NewEncoder(w)
