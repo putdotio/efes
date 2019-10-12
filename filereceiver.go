@@ -64,7 +64,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		digest, err := saveFile(path, offset, length, r.Body, f.log)
+		newOffset, digest, err := saveFile(path, offset, length, r.Body, f.log)
 		if oerr, ok := err.(*OffsetMismatchError); ok {
 			// Cannot use http.Error() because we want to set "efes-file-offset" header.
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -82,6 +82,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("efes-file-sha1", hex.EncodeToString(digest.Sha1.Sum(nil)))
 			w.Header().Set("efes-file-crc32", hex.EncodeToString(digest.CRC32.Sum(nil)))
 		}
+		w.Header().Set("efes-file-offset", strconv.FormatInt(newOffset, 10))
 	case http.MethodDelete:
 		fi, err := ReadFileInfo(path)
 		if os.IsNotExist(err) {
@@ -124,52 +125,52 @@ func createFile(path string) error {
 	return SaveFileInfo(path, newFileInfo())
 }
 
-func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logger) (*Digest, error) {
+func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logger) (int64, *Digest, error) {
 	var fi *FileInfo
 	var err error
 	if offset == 0 {
 		// File can be saved without a prior POST for creating offset file.
 		err = createFile(path)
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
 		fi = newFileInfo()
 	} else {
 		fi, err = ReadFileInfo(path)
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
 		if offset != fi.Offset {
-			return nil, &OffsetMismatchError{offset, fi.Offset}
+			return 0, nil, &OffsetMismatchError{offset, fi.Offset}
 		}
 	}
 	f, err := os.OpenFile(path, os.O_WRONLY, 0600)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	_, err = f.Seek(offset, io.SeekStart)
 	if err != nil {
 		logCloseFile(log, f)
-		return nil, err
+		return 0, nil, err
 	}
 	w := io.MultiWriter(f, fi.Digest.CRC32, fi.Digest.Sha1)
 	n, _ := io.Copy(w, r)
 	err = f.Sync()
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	err = f.Close()
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	fi.Offset = offset + n
 	if fi.Offset == length {
 		// If we know the length of the file, we can delete the ".offset"
 		// file without the need of a separate DELETE from the client.
 		err = DeleteFileInfo(path)
-		return &fi.Digest, err
+		return fi.Offset, &fi.Digest, err
 	}
-	return nil, SaveFileInfo(path, fi)
+	return fi.Offset, nil, SaveFileInfo(path, fi)
 }
 
 // OffsetMismatchError is returned when the offset specified in request does not match the actual offset on the disk.
