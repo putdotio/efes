@@ -148,9 +148,9 @@ func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logg
 	if err != nil {
 		return 0, nil, err
 	}
+	defer logCloseFile(log, f)
 	_, err = f.Seek(offset, io.SeekStart)
 	if err != nil {
-		logCloseFile(log, f)
 		return 0, nil, err
 	}
 	w := io.MultiWriter(f, fi.Digest.CRC32, fi.Digest.Sha1)
