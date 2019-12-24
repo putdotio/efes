@@ -152,7 +152,12 @@ func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logg
 	if err != nil {
 		return 0, nil, err
 	}
-	defer logCloseFile(log, f)
+	closed := false
+	defer func() {
+		if !closed {
+			logCloseFile(log, f)
+		}
+	}()
 	_, err = f.Seek(offset, io.SeekStart)
 	if err != nil {
 		return 0, nil, err
@@ -164,6 +169,7 @@ func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logg
 		return 0, nil, err
 	}
 	err = f.Close()
+	closed = true
 	if err != nil {
 		return 0, nil, err
 	}
