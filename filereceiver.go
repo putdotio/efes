@@ -145,6 +145,10 @@ func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logg
 		}
 	}
 	f, err := os.OpenFile(path, os.O_WRONLY, 0600)
+	if os.IsNotExist(err) {
+		_ = DeleteFileInfo(path)
+		return 0, nil, &OffsetMismatchError{offset, 0}
+	}
 	if err != nil {
 		return 0, nil, err
 	}
