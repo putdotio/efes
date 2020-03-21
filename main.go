@@ -55,7 +55,7 @@ func main() {
 	app.Before = func(c *cli.Context) error {
 		err := cfg.ReadFile(c.GlobalString("config"))
 		if err != nil {
-			log.Warningln("Cannot read config:", err)
+			log.Fatalln("Cannot read config:", err)
 		}
 		if c.IsSet("debug") {
 			cfg.Debug = true
