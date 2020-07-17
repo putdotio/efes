@@ -251,5 +251,4 @@ func TestDeleteFidOnDisk(t *testing.T) {
 	if !os.IsNotExist(err) {
 		t.Error("File should be deleted but exists on disk!")
 	}
-
 }

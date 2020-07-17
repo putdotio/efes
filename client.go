@@ -38,7 +38,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) request(method, urlPath string, params url.Values, response interface{}) (*http.Response, error) {
+func (c *Client) request(method, urlPath string, params url.Values, response interface{}) (h http.Header, err error) {
 	var reqBody io.Reader
 	if method == http.MethodPost {
 		reqBody = strings.NewReader(params.Encode())
@@ -50,7 +50,7 @@ func (c *Client) request(method, urlPath string, params url.Values, response int
 	}
 	req, err := http.NewRequest(method, newURL.String(), reqBody)
 	if err != nil {
-		return nil, err
+		return
 	}
 	if method == http.MethodPost {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -58,21 +58,23 @@ func (c *Client) request(method, urlPath string, params url.Values, response int
 	c.log.Debugln("request method:", req.Method, "path:", req.URL.Path, "params:", params)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return
 	}
+	defer resp.Body.Close()
+	h = resp.Header
 	err = checkResponseError(resp)
 	if err != nil {
-		return resp, err
+		return
 	}
 	if response == nil {
-		return resp, nil
+		return
 	}
 	err = json.NewDecoder(resp.Body).Decode(response)
 	if err != nil {
-		return resp, err
+		return
 	}
 	c.log.Debugf("%s got response: %#v", req.URL.Path, response)
-	return resp, nil
+	return
 }
 
 // Delete the key on Efes.

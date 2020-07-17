@@ -15,7 +15,7 @@ import (
 )
 
 func (c *Client) Write(key, path string) error {
-	f, err := os.Open(path) // nolint: gosec
+	f, err := os.Open(path)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (c *Client) sendFile(path string, rs io.ReadSeeker, size int64) (*Checksums
 	return checksums, nil
 }
 
-// send a patch request until and error occurs or stream is finished
+// send a patch request until and error occurs or stream is finished.
 func (c *Client) send(path string, r io.Reader, offset, size int64, bo backoff.BackOff) (*Checksums, error) {
 	c.log.Debugln("client chunk size:", c.config.Client.ChunkSize)
 	rc := newReadCounter(r)
@@ -146,7 +146,7 @@ func ChecksumsFromResponse(resp *http.Response) *Checksums {
 	}
 }
 
-// send a single patch request to file receiver
+// send a single patch request to file receiver.
 func (c *Client) patch(path string, body io.Reader, offset, size int64) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPatch, path, body)
 	if err != nil {
@@ -172,6 +172,7 @@ func (c *Client) getOffset(path string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer resp.Body.Close()
 	return strconv.ParseInt(resp.Header.Get("efes-file-offset"), 10, 64)
 }
 
@@ -184,6 +185,7 @@ func (c *Client) deleteOffset(path string) (*Checksums, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	return ChecksumsFromResponse(resp), checkResponseError(resp)
 }
 

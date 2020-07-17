@@ -187,7 +187,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot select paths", err, r, w)
 		return
 	}
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close()
 	for rows.Next() {
 		var hostname string
 		var httpPort int64
@@ -305,7 +305,7 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64, clientIP string) (*
 		return nil, err
 	}
 	devices := make([]aliveDevice, 0)
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close()
 	for rows.Next() {
 		var d aliveDevice
 		err = rows.Scan(&d.zoneid, &d.rackid, &d.hostid, &d.hostip, &d.hostname, &d.devid, &d.httpPort)
@@ -319,7 +319,7 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64, clientIP string) (*
 		return nil, err
 	}
 	sameHostDevices := filterSameHost(devices, clientIP)
-	if len(sameHostDevices) > 0 {
+	if len(sameHostDevices) > 0 { // nolint: nestif
 		devices = sameHostDevices
 	} else {
 		subnets, err := getSubnets(db)
@@ -621,7 +621,7 @@ func getDevicesOfFid(tx *sql.Tx, fid int64) (devids []int64, err error) {
 		return nil, err
 	}
 	devids = make([]int64, 0)
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close()
 	for rows.Next() {
 		var devid int64
 		err = rows.Scan(&devid)
@@ -649,7 +649,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close()
 	for rows.Next() {
 		var d Device
 		var bytesTotal, bytesUsed, bytesFree sql.NullInt64
@@ -703,7 +703,7 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close()
 	for rows.Next() {
 		var h Host
 		err = rows.Scan(&h.Hostid, &h.Status, &h.Hostname, &h.HostIP)
@@ -743,7 +743,7 @@ func (t *Tracker) getRacks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close()
 	for rows.Next() {
 		var ra Rack
 		err = rows.Scan(&ra.Rackid, &ra.Zoneid, &ra.Name)
@@ -783,7 +783,7 @@ func (t *Tracker) getZones(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close()
 	for rows.Next() {
 		var z Zone
 		err = rows.Scan(&z.Zoneid, &z.Name)

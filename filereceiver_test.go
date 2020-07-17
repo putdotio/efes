@@ -29,7 +29,7 @@ func setup(t *testing.T) {
 }
 
 func tearDown() {
-	os.RemoveAll(tempdir) // nolint: errcheck
+	os.RemoveAll(tempdir)
 }
 
 func TestFileReceiver(t *testing.T) {

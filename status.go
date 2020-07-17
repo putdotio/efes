@@ -154,7 +154,6 @@ func (s *efesStatus) Print() {
 			d.IO(),
 			colorDuration(updatedAt, updatedAt.String()),
 		}
-
 	}
 	table.AppendBulk(data) // Add Bulk Data
 
@@ -176,11 +175,11 @@ func (c *Client) Status(sortBy string) (*efesStatus, error) {
 		devices: make([]deviceStatus, 0),
 	}
 	var devices GetDevices
-	resp, err := c.request(http.MethodGet, "get-devices", nil, &devices)
+	headers, err := c.request(http.MethodGet, "get-devices", nil, &devices)
 	if err != nil {
 		return nil, err
 	}
-	ret.serverTime, err = http.ParseTime(resp.Header.Get("date"))
+	ret.serverTime, err = http.ParseTime(headers.Get("date"))
 	if err != nil {
 		ret.serverTime = time.Now()
 	}

@@ -173,7 +173,6 @@ func (s *Server) getAllDevidsForFid(tx *sql.Tx, fid int64) (devids []int64, err 
 	}
 	err = rows.Err()
 	return
-
 }
 
 func (s *Server) publishDeleteTask(devids []int64, fid int64) {

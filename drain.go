@@ -69,7 +69,7 @@ func (d *Drainer) Run() error {
 	if err != nil {
 		return err
 	}
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close()
 	for rows.Next() {
 		var fid int64
 		err = rows.Scan(&fid)
@@ -98,7 +98,7 @@ func (d *Drainer) Run() error {
 
 func (d *Drainer) moveFile(fid int64) error {
 	fidpath := filepath.Join(d.config.Server.DataDir, vivify(fid))
-	f, err := os.Open(fidpath) // nolint: gosec
+	f, err := os.Open(fidpath)
 	if os.IsNotExist(err) {
 		d.log.Warningf("file (%s) does not exist on disk; removing fid (%d) from device (%d)", fidpath, fid, d.devid)
 		_, err = d.db.Exec("delete from file_on where fid=? and devid=?", fid, d.devid)

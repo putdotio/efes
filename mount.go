@@ -28,7 +28,7 @@ func mount(cfg *Config, mountpoint string) error {
 	if err != nil {
 		return err
 	}
-	defer c.Close() // nolint: errcheck
+	defer c.Close()
 
 	filesys := &FS{client: clt}
 	if err := fs.Serve(c, filesys); err != nil {
@@ -74,7 +74,7 @@ func (r *Root) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.L
 	if err != nil {
 		return nil, err
 	}
-	defer headResp.Body.Close() // nolint: errcheck
+	defer headResp.Body.Close()
 	if headResp.StatusCode == http.StatusNotFound {
 		return nil, fuse.ENOENT
 	}
@@ -177,7 +177,7 @@ func (h *FileHandle) open(ctx context.Context, offset int64) error {
 
 var _ fs.HandleReleaser = (*FileHandle)(nil)
 
-func (h *FileHandle) Release(ctx context.Context, req *fuse.ReleaseRequest) error { // nolint: unparam
+func (h *FileHandle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	return h.close()
 }
 

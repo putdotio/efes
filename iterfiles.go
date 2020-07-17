@@ -42,7 +42,7 @@ func (t *Tracker) iterFiles(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot get keys from database", err, r, w)
 		return
 	}
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close()
 	for rows.Next() {
 		var f file
 		var createdAt mysql.NullTime

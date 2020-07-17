@@ -58,7 +58,7 @@ func (t *Tracker) removeOldTempfilesFromDB(tx *sql.Tx) (tempfiles []Tempfile, er
 	if err != nil {
 		return
 	}
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close()
 	for rows.Next() {
 		var tf Tempfile
 		err = rows.Scan(&tf.fid, &tf.devid)
