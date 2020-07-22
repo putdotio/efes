@@ -4,6 +4,8 @@ services:
     build:
       dockerfile: Dockerfile-mysql
       context: .
+    logging:
+      driver: none
   rabbitmq:
     build:
       dockerfile: Dockerfile-rabbitmq
