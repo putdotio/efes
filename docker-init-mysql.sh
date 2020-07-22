@@ -4,10 +4,8 @@ set -e
 # This file will be executed after intializing the database.
 MYSQL_SQL_FILE=/tmp/schema.sql
 
-mkdir /var/run/mysqld
-chown mysql /var/run/mysqld
-
-mysqld &
+mkdir -p /var/run/mysqld
+mysqld --user=root &
 pid="$!"
 
 for i in {30..0}; do
@@ -22,11 +20,11 @@ if [ "$i" = 0 ]; then
         exit 1
 fi
 
-echo "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` ;" | mysql
+mysql -e "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` ;"
 
-echo "CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD' ;" | mysql
-echo "GRANT ALL ON \`$MYSQL_DATABASE\`.* TO '$MYSQL_USER'@'%' ;" | mysql
-echo 'FLUSH PRIVILEGES ;' | mysql
+mysql -e "CREATE USER '$MYSQL_USER'@'%' IDENTIFIED WITH mysql_native_password BY '$MYSQL_PASSWORD' ;"
+mysql -e "GRANT ALL ON \`$MYSQL_DATABASE\`.* TO '$MYSQL_USER'@'%' ;"
+mysql -e 'FLUSH PRIVILEGES ;'
 
 echo Running $MYSQL_SQL_FILE
 mysql $MYSQL_DATABASE < "$MYSQL_SQL_FILE"
