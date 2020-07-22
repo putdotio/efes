@@ -84,7 +84,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("efes-file-offset", strconv.FormatInt(newOffset, 10))
 	case http.MethodDelete:
-		fi, err := ReadFileInfo(path)
+		fi, err := ReadExistingFileInfo(path)
 		if os.IsNotExist(err) {
 			http.Error(w, "offset file does not exist", http.StatusNotFound)
 			return

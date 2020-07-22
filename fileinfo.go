@@ -27,10 +27,15 @@ func newFileInfo() *FileInfo {
 }
 
 func ReadFileInfo(path string) (fi *FileInfo, err error) {
-	f, err := os.Open(path + fileInfoExt)
+	fi, err = ReadExistingFileInfo(path)
 	if os.IsNotExist(err) {
 		return newFileInfo(), nil
 	}
+	return fi, err
+}
+
+func ReadExistingFileInfo(path string) (fi *FileInfo, err error) {
+	f, err := os.Open(path + fileInfoExt)
 	if err != nil {
 		return
 	}
