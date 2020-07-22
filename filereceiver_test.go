@@ -39,9 +39,9 @@ func TestFileReceiver(t *testing.T) {
 	testOffset(t, 0)
 	testCreate(t)
 	testOffset(t, 0)
-	testSend(t, 0, false, "foo")
+	testSend(t, 0, -1, "foo")
 	testOffset(t, 3)
-	testSend(t, 3, false, "bar")
+	testSend(t, 3, -1, "bar")
 	testOffset(t, 6)
 	testDelete(t)
 	testOffset(t, 0)
@@ -51,7 +51,7 @@ func TestFileReceiverNoCreate(t *testing.T) {
 	setup(t)
 	defer tearDown()
 
-	testSend(t, 0, false, "baz")
+	testSend(t, 0, -1, "baz")
 	testOffset(t, 3)
 	testDelete(t)
 	testOffset(t, 0)
@@ -62,7 +62,7 @@ func TestFileReceiverNoDelete(t *testing.T) {
 	defer tearDown()
 
 	testCreate(t)
-	testSend(t, 0, true, "baz")
+	testSend(t, 0, 3, "baz")
 	testOffset(t, 0)
 }
 
@@ -71,7 +71,7 @@ func TestFileReceiverZeroByte(t *testing.T) {
 	defer tearDown()
 
 	testCreate(t)
-	testSend(t, 0, false, "")
+	testSend(t, 0, -1, "")
 	testOffset(t, 0)
 	testDelete(t)
 }
@@ -80,7 +80,7 @@ func TestFileReceiverSingleRequest(t *testing.T) {
 	setup(t)
 	defer tearDown()
 
-	testSend(t, 0, true, "foo")
+	testSend(t, 0, 3, "foo")
 	testOffset(t, 0)
 }
 
@@ -120,7 +120,6 @@ func testDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Header.Set("efes-file-offset", "6")
 	rr := httptest.NewRecorder()
 	fr.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
@@ -148,7 +147,7 @@ func testOffset(t *testing.T, value int64) {
 	}
 }
 
-func testSend(t *testing.T, offset int, sendLength bool, data string) {
+func testSend(t *testing.T, offset int, length int, data string) {
 	t.Helper()
 	b := bytes.NewBufferString(data)
 	req, err := http.NewRequest("PATCH", testPath, b)
@@ -156,8 +155,8 @@ func testSend(t *testing.T, offset int, sendLength bool, data string) {
 		t.Fatal(err)
 	}
 	req.Header.Set("efes-file-offset", strconv.Itoa(offset))
-	if sendLength {
-		req.Header.Set("efes-file-length", strconv.Itoa(len(data)))
+	if length >= 0 {
+		req.Header.Set("efes-file-length", strconv.Itoa(length))
 	}
 	rr := httptest.NewRecorder()
 	fr.ServeHTTP(rr, req)
