@@ -134,7 +134,7 @@ func (c *Client) send(path string, r io.Reader, offset, size int64, bo backoff.B
 			return ChecksumsFromResponse(resp), nil
 		case requestOffset:
 			// No bytes sent in last request. The file is read to the end.
-			return c.deleteOffset(path)
+			return c.finishFile(path, requestOffset)
 		}
 	}
 }
@@ -176,12 +176,9 @@ func (c *Client) getOffset(path string) (int64, error) {
 	return strconv.ParseInt(resp.Header.Get("efes-file-offset"), 10, 64)
 }
 
-func (c *Client) deleteOffset(path string) (*Checksums, error) {
-	req, err := http.NewRequest(http.MethodDelete, path, nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.httpClient.Do(req)
+// finishFile deletes the info file and returns hashes.
+func (c *Client) finishFile(path string, size int64) (*Checksums, error) {
+	resp, err := c.patch(path, nil, size, size)
 	if err != nil {
 		return nil, err
 	}

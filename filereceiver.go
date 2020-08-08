@@ -84,7 +84,7 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("efes-file-offset", strconv.FormatInt(newOffset, 10))
 	case http.MethodDelete:
-		fi, err := ReadExistingFileInfo(path)
+		_, err := ReadExistingFileInfo(path)
 		if os.IsNotExist(err) {
 			http.Error(w, "offset file does not exist", http.StatusNotFound)
 			return
@@ -93,11 +93,14 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			f.internalServerError("cannot read offset file", err, r, w)
 			return
 		}
-		w.Header().Set("efes-file-sha1", hex.EncodeToString(fi.Digest.Sha1.Sum(nil)))
-		w.Header().Set("efes-file-crc32", hex.EncodeToString(fi.Digest.CRC32.Sum(nil)))
 		err = DeleteFileInfo(path)
 		if err != nil {
 			f.internalServerError("cannot delete offset file", err, r, w)
+			return
+		}
+		err = deleteFile(path)
+		if err != nil {
+			f.internalServerError("cannot delete file", err, r, w)
 			return
 		}
 	default:
@@ -123,6 +126,10 @@ func createFile(path string) error {
 		return err
 	}
 	return SaveFileInfo(path, newFileInfo())
+}
+
+func deleteFile(path string) error {
+	return os.Remove(path)
 }
 
 func saveFile(path string, offset int64, length int64, r io.Reader, log log.Logger) (int64, *Digest, error) {
