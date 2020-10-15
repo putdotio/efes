@@ -26,10 +26,10 @@ func (a byRackName) Less(i, j int) bool {
 type byHostname struct{ deviceStatuses }
 
 func (a byHostname) Less(i, j int) bool {
-	if a.deviceStatuses[i].Hostname == a.deviceStatuses[j].Hostname {
+	if a.deviceStatuses[i].HostName == a.deviceStatuses[j].HostName {
 		return byDevID(a).Less(i, j)
 	}
-	return a.deviceStatuses[i].Hostname < a.deviceStatuses[j].Hostname
+	return a.deviceStatuses[i].HostName < a.deviceStatuses[j].HostName
 }
 
 type byDevID struct{ deviceStatuses }
