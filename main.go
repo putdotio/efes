@@ -12,10 +12,10 @@ import (
 
 	"github.com/cenkalti/log"
 	"github.com/getsentry/raven-go"
-	"github.com/urfave/cli"
 
 	// Register MySQL database driver.
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/urfave/cli"
 )
 
 var Version string
@@ -30,8 +30,8 @@ func init() {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	var cfg = NewConfig()
-	var chunkSize = ChunkSize(1 * M)
+	cfg := NewConfig()
+	chunkSize := ChunkSize(1 * M)
 
 	app := cli.NewApp()
 	app.Version = Version

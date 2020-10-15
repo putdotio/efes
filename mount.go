@@ -70,7 +70,11 @@ func (r *Root) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.L
 	if err != nil {
 		return nil, err
 	}
-	headResp, err := r.client.httpClient.Head(remotePath.Path)
+	hreq, err := http.NewRequestWithContext(ctx, http.MethodHead, remotePath.Path, nil)
+	if err != nil {
+		return nil, err
+	}
+	headResp, err := r.client.httpClient.Do(hreq)
 	if err != nil {
 		return nil, err
 	}

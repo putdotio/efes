@@ -291,7 +291,7 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64, clientIP string) (*
 	} else {
 		devidsSQL = "and d.status='alive' "
 	}
-	rows, err := db.Query("select z.zoneid, r.rackid, h.hostid, h.hostip, h.hostname, d.devid, d.write_port "+
+	rows, err := db.Query("select z.zoneid, r.rackid, h.hostid, h.hostip, h.hostname, d.devid, d.write_port "+ // nolint: gosec
 		"from device d "+
 		"join host h on d.hostid=h.hostid "+
 		"join rack r on h.rackid=r.rackid "+
@@ -346,7 +346,7 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64, clientIP string) (*
 		return &devices[0], nil
 	}
 	devices = devices[:len(devices)/2]
-	return &devices[rand.Intn(len(devices))], nil
+	return &devices[rand.Intn(len(devices))], nil // nolint: gosec
 }
 
 func getRackID(subnets []subnet, clientIP string) (rackid, zoneid int64, ok bool) {
@@ -414,6 +414,7 @@ func getSubnets(db *sql.DB) ([]subnet, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var s subnet
 		err = rows.Scan(&s.subnetid, &s.rackid, &s.zoneid, &s.subnet)

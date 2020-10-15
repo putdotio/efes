@@ -1,4 +1,4 @@
-FROM golang:1.12.2 AS builder
+FROM golang:1.15 AS builder
 WORKDIR /go/src/github.com/putdotio/efes/
 ENV GO111MODULE=on
 COPY go.mod .

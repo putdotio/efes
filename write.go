@@ -148,7 +148,7 @@ func ChecksumsFromResponse(resp *http.Response) *Checksums {
 
 // send a single patch request to file receiver.
 func (c *Client) patch(path string, body io.Reader, offset, size int64) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPatch, path, body)
+	req, err := http.NewRequest(http.MethodPatch, path, body) // nolint: noctx
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (c *Client) patch(path string, body io.Reader, offset, size int64) (*http.R
 }
 
 func (c *Client) getOffset(path string) (int64, error) {
-	req, err := http.NewRequest(http.MethodHead, path, nil)
+	req, err := http.NewRequest(http.MethodHead, path, nil) // nolint: noctx
 	if err != nil {
 		return 0, err
 	}

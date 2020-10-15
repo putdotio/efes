@@ -14,12 +14,14 @@ linters:
     - goerr113
     - gomnd
     - testpackage
+    - nlreturn
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
         - goconst
         - errcheck
+        - noctx
 run:
   skip-files:
     - crc32

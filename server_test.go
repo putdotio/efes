@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -76,7 +75,7 @@ func TestShouldDeleteFileExistsOnDbNewOnDisk(t *testing.T) {
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	_, err = os.Stat(fidPath)
@@ -129,7 +128,7 @@ func TestShouldDeleteFileExistsOnDbOldOnDisk(t *testing.T) {
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	_, err = os.Stat(fidPath)
@@ -146,7 +145,7 @@ func TestShouldDeleteFileNotExistsOnDbNewOnDisk(t *testing.T) {
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	_, err = os.Stat(fidPath)
@@ -163,7 +162,7 @@ func TestShouldDeleteFileNotExistsOnDbOldOnDisk(t *testing.T) {
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	_, err = os.Stat(fidPath)
@@ -184,7 +183,7 @@ func TestShouldDeleteDir(t *testing.T) {
 
 	err = filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	_, err = os.Stat(dirPath)
@@ -201,7 +200,7 @@ func TestShouldDeleteJunkOld(t *testing.T) {
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	_, err = os.Stat(fidPath)
@@ -218,7 +217,7 @@ func TestShouldDeleteJunkNew(t *testing.T) {
 
 	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	_, err = os.Stat(fidPath)

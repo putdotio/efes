@@ -48,7 +48,7 @@ func (c *Client) request(method, urlPath string, params url.Values, response int
 	if method == http.MethodGet {
 		newURL.RawQuery = params.Encode()
 	}
-	req, err := http.NewRequest(method, newURL.String(), reqBody)
+	req, err := http.NewRequest(method, newURL.String(), reqBody) // nolint: noctx
 	if err != nil {
 		return
 	}

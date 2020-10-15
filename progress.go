@@ -113,7 +113,7 @@ func (p *Progress) printSpeed(now time.Time) {
 	elapsedSeconds := elapsedTime.Seconds()
 	if elapsedSeconds > 0 {
 		bytesPerSecond := float64(count) / elapsedTime.Seconds()
-		speed = strings.Replace(humanize.Bytes(uint64(bytesPerSecond)), " ", "", -1)
+		speed = strings.ReplaceAll(humanize.Bytes(uint64(bytesPerSecond)), " ", "")
 	}
 
 	remainingTimeString := "?s"

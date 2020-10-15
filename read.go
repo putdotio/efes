@@ -13,7 +13,7 @@ func (c *Client) Read(key, path string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.httpClient.Get(remotePath.Path)
+	resp, err := c.httpClient.Get(remotePath.Path) // nolint: noctx
 	if err != nil {
 		return err
 	}

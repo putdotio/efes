@@ -76,6 +76,7 @@ func (s *Server) getDeviceFids() (fids []int64, err error) {
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var fid int64
 		err = rows.Scan(&fid)
@@ -163,6 +164,7 @@ func (s *Server) getAllDevidsForFid(tx *sql.Tx, fid int64) (devids []int64, err 
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var devid int64
 		err = rows.Scan(&devid)
