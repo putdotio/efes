@@ -25,7 +25,7 @@ func setup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fr = newFileReceiver(tempdir, log.DefaultLogger)
+	fr = newFileReceiver(tempdir, log.DefaultLogger, nil)
 }
 
 func tearDown() {

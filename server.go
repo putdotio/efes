@@ -77,7 +77,7 @@ func NewServer(c *Config) (*Server, error) {
 		amqpRedialerStopped: make(chan struct{}),
 	}
 	devicePrefix := "/" + filepath.Base(s.config.Server.DataDir)
-	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.config.Server.DataDir, s.log))
+	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.config.Server.DataDir, s.log, s.db))
 	s.writeServer.Handler = http.HandlerFunc(raven.RecoveryHandler(addVersion(s.writeServer.Handler)))
 	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(s.config.Server.DataDir)))
 	if s.config.Debug {

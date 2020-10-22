@@ -1,11 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -17,12 +19,14 @@ import (
 type FileReceiver struct {
 	dir string
 	log log.Logger
+	db  *sql.DB
 }
 
-func newFileReceiver(dir string, logger log.Logger) *FileReceiver {
+func newFileReceiver(dir string, logger log.Logger, db *sql.DB) *FileReceiver {
 	return &FileReceiver{
 		dir: dir,
 		log: logger,
+		db:  db,
 	}
 }
 
@@ -48,6 +52,15 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			f.internalServerError("cannot get offset", err, r, w)
 			return
 		}
+		ok, err := f.tempfileExists(path)
+		if err != nil {
+			f.internalServerError("cannot check tempfile", err, r, w)
+			return
+		}
+		if !ok {
+			http.Error(w, "tempfile does not exist", http.StatusNotFound)
+			return
+		}
 		w.Header().Set("efes-file-offset", strconv.FormatInt(fi.Offset, 10))
 	case http.MethodPatch:
 		offset, err := strconv.ParseInt(r.Header.Get("efes-file-offset"), 10, 64)
@@ -63,6 +76,15 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "invalid header: efes-file-length", http.StatusBadRequest)
 				return
 			}
+		}
+		ok, err := f.tempfileExists(path)
+		if err != nil {
+			f.internalServerError("cannot check tempfile", err, r, w)
+			return
+		}
+		if !ok {
+			http.Error(w, "tempfile does not exist", http.StatusNotFound)
+			return
 		}
 		newOffset, digest, err := saveFile(path, offset, length, r.Body, f.log)
 		if oerr, ok := err.(*OffsetMismatchError); ok {
@@ -107,6 +129,25 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
+}
+
+func (f *FileReceiver) tempfileExists(fpath string) (bool, error) {
+	if f.db == nil {
+		return true, nil
+	}
+	fid, err := strconv.ParseInt(path.Base(fpath), 10, 64)
+	if err != nil {
+		return false, err
+	}
+	row := f.db.QueryRow("select fid from tempfile where fid=?", fid)
+	err = row.Scan(&fid)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func createFile(path string) error {
