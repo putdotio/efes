@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/cenkalti/log"
 	"github.com/getsentry/raven-go"
@@ -135,7 +136,7 @@ func (f *FileReceiver) tempfileExists(fpath string) (bool, error) {
 	if f.db == nil {
 		return true, nil
 	}
-	fid, err := strconv.ParseInt(path.Base(fpath), 10, 64)
+	fid, err := strconv.ParseInt(strings.SplitN(path.Base(fpath), ".", 2)[0], 10, 64)
 	if err != nil {
 		return false, err
 	}
