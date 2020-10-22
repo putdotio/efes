@@ -9,7 +9,10 @@ cache:
     - $HOME/.cache/go-build
 services:
 - mysql
-- rabbitmq
+addons:
+  apt:
+    packages:
+    - rabbitmq-server
 install: true
 before_script:
 - go build -ldflags="-X main.Version=$TRAVIS_TAG"
