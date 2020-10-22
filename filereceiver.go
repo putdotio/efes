@@ -53,15 +53,6 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			f.internalServerError("cannot get offset", err, r, w)
 			return
 		}
-		ok, err := f.tempfileExists(path)
-		if err != nil {
-			f.internalServerError("cannot check tempfile", err, r, w)
-			return
-		}
-		if !ok {
-			http.Error(w, "tempfile does not exist", http.StatusNotFound)
-			return
-		}
 		w.Header().Set("efes-file-offset", strconv.FormatInt(fi.Offset, 10))
 	case http.MethodPatch:
 		offset, err := strconv.ParseInt(r.Header.Get("efes-file-offset"), 10, 64)
