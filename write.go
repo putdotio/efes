@@ -95,7 +95,11 @@ func (c *Client) sendFile(path string, rs io.ReadSeeker, size int64) (*Checksums
 			}
 		}
 		checksums, err = c.send(path, r, offset, size, bo)
+		if cerr, ok := err.(*ClientError); ok && cerr.Code == 404 {
+			return backoff.Permanent(cerr)
+		}
 		if err != nil {
+			c.log.Errorf("cannot send chunk: %s", err.Error())
 			return err
 		}
 		remoteSha1, err = hex.DecodeString(checksums.Sha1)
@@ -156,10 +160,14 @@ func (c *Client) patch(path string, body io.Reader, offset, size int64) (*http.R
 	if size > -1 {
 		req.Header.Add("efes-file-length", strconv.FormatInt(size, 10))
 	}
+	if c.drainer {
+		req.Header.Add("efes-drain", "true")
+	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	resp.Body.Close()
 	return resp, checkResponseError(resp)
 }
 

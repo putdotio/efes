@@ -1,13 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/cenkalti/log"
 	"github.com/getsentry/raven-go"
@@ -17,12 +20,14 @@ import (
 type FileReceiver struct {
 	dir string
 	log log.Logger
+	db  *sql.DB
 }
 
-func newFileReceiver(dir string, logger log.Logger) *FileReceiver {
+func newFileReceiver(dir string, logger log.Logger, db *sql.DB) *FileReceiver {
 	return &FileReceiver{
 		dir: dir,
 		log: logger,
+		db:  db,
 	}
 }
 
@@ -61,6 +66,17 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			length, err = strconv.ParseInt(lengthHeader, 10, 64)
 			if err != nil {
 				http.Error(w, "invalid header: efes-file-length", http.StatusBadRequest)
+				return
+			}
+		}
+		if r.Header.Get("efes-drain") == "" {
+			ok, err := f.tempfileExists(path)
+			if err != nil {
+				f.internalServerError("cannot check tempfile", err, r, w)
+				return
+			}
+			if !ok {
+				http.Error(w, "tempfile does not exist", http.StatusNotFound)
 				return
 			}
 		}
@@ -107,6 +123,25 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
+}
+
+func (f *FileReceiver) tempfileExists(fpath string) (bool, error) {
+	if f.db == nil {
+		return true, nil
+	}
+	fid, err := strconv.ParseInt(strings.SplitN(path.Base(fpath), ".", 2)[0], 10, 64)
+	if err != nil {
+		return false, err
+	}
+	row := f.db.QueryRow("select fid from tempfile where fid=?", fid)
+	err = row.Scan(&fid)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func createFile(path string) error {

@@ -102,6 +102,7 @@ func TestDrain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	dr.stopOnError = true
 	err = dr.Run()
 	if err != nil {
 		t.Fatal(err)

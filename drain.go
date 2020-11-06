@@ -20,6 +20,8 @@ type Drainer struct {
 	log      log.Logger
 	shutdown chan struct{}
 	stopped  chan struct{}
+
+	stopOnError bool
 }
 
 func NewDrainer(c *Config) (*Drainer, error) {
@@ -42,6 +44,7 @@ func NewDrainer(c *Config) (*Drainer, error) {
 	if err != nil {
 		return nil, err
 	}
+	clt.drainer = true
 	logger := log.NewLogger("drain")
 	d := &Drainer{
 		config:   c,
@@ -91,6 +94,9 @@ func (d *Drainer) Run() error {
 		d.log.Infof("moving fid=%v; %v of %v (%v%%)", fid, i+1, len(fids), ((i+1)*100)/len(fids))
 		if err = d.moveFile(fid); err != nil {
 			d.log.Error(err)
+			if d.stopOnError {
+				return err
+			}
 		}
 	}
 	return nil
