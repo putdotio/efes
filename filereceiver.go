@@ -69,14 +69,16 @@ func (f *FileReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		ok, err := f.tempfileExists(path)
-		if err != nil {
-			f.internalServerError("cannot check tempfile", err, r, w)
-			return
-		}
-		if !ok {
-			http.Error(w, "tempfile does not exist", http.StatusNotFound)
-			return
+		if r.Header.Get("efes-drain") == "" {
+			ok, err := f.tempfileExists(path)
+			if err != nil {
+				f.internalServerError("cannot check tempfile", err, r, w)
+				return
+			}
+			if !ok {
+				http.Error(w, "tempfile does not exist", http.StatusNotFound)
+				return
+			}
 		}
 		newOffset, digest, err := saveFile(path, offset, length, r.Body, f.log)
 		if oerr, ok := err.(*OffsetMismatchError); ok {

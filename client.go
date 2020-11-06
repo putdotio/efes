@@ -18,6 +18,7 @@ type Client struct {
 	log        log.Logger
 	trackerURL *url.URL
 	httpClient http.Client
+	drainer    bool
 }
 
 // NewClient creates a new Client.
