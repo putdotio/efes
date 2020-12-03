@@ -35,6 +35,16 @@ type ServerConfig struct {
 	CleanDiskRunPeriod   Duration `toml:"clean_disk_run_period"`
 	CleanDiskFileTTL     Duration `toml:"clean_disk_file_ttl"`
 	CleanDeviceRunPeriod Duration `toml:"clean_device_run_period"`
+	// Auto-drain starts and does not stop at least this duration.
+	AutoDrainRunPeriod Duration `toml:"auto_drain_run_period"`
+	// Limits the number of servers that are going to run auto-drain simultaneously.
+	// If this number is 10, 10% of the servers run auto-drain.
+	// If this number is 20, 5%  of the servers run auto-drain.
+	AutoDrainDeviceRatio int `toml:"auto_drain_device_ratio"`
+	// When auto-drain is run, it moves files from devices with more data to less data.
+	// It always targets devices under average use
+	// but to keep auto-drain from running too frequently, some threshold is added to total use.
+	AutoDrainThreshold int `toml:"auto_drain_threshold"`
 }
 
 // ClientConfig holds configuration values for Client.
@@ -70,6 +80,9 @@ var defaultConfig = Config{
 		CleanDiskFileTTL:     Duration(24 * time.Hour),
 		CleanDiskRunPeriod:   Duration(7 * 24 * time.Hour),
 		CleanDeviceRunPeriod: Duration(7 * 24 * time.Hour),
+		AutoDrainRunPeriod:   Duration(15 * time.Minute),
+		AutoDrainDeviceRatio: 16,
+		AutoDrainThreshold:   10,
 	},
 	Client: ClientConfig{
 		TrackerURL:   "http://127.0.0.1:8001",

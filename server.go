@@ -37,6 +37,7 @@ type Server struct {
 	diskStatsStopped     chan struct{}
 	diskCleanStopped     chan struct{}
 	deviceCleanStopped   chan struct{}
+	autoDrainStopped     chan struct{}
 	amqpRedialerStopped  chan struct{}
 }
 
@@ -74,6 +75,7 @@ func NewServer(c *Config) (*Server, error) {
 		diskStatsStopped:    make(chan struct{}),
 		diskCleanStopped:    make(chan struct{}),
 		deviceCleanStopped:  make(chan struct{}),
+		autoDrainStopped:    make(chan struct{}),
 		amqpRedialerStopped: make(chan struct{}),
 	}
 	devicePrefix := "/" + filepath.Base(s.config.Server.DataDir)
@@ -102,6 +104,7 @@ func (s *Server) Run() error {
 	}
 	go s.cleanDisk()
 	go s.cleanDevice()
+	go s.autoDrain()
 	go s.updateDiskStats()
 	go s.consumeDeleteQueue()
 	s.log.Notice("Server is started.")
