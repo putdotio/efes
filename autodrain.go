@@ -21,8 +21,10 @@ func (s *Server) autoDrain() {
 	}
 	defer d.Shutdown() // nolint:errcheck
 
+	// Check to see if auto-drain needs to be started every minute.
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
@@ -31,13 +33,21 @@ func (s *Server) autoDrain() {
 			}
 			s.log.Info("Auto-drain has started.")
 			var lastFid int64
+
+			// Get usage infa of all devices and total use percent.
 			status, err := d.client.fetchStatus()
 			if err != nil {
 				s.log.Errorln("Error while getting device statuses:", err)
 				raven.CaptureError(err, nil)
 				continue
 			}
+
+			// Set drainer target to devices with usage below total average + threshold.
+			// This is not need to be checked on every file moved because we don't want to create extra
+			// load on tracker. Beside, it is not an information that changes frequently and auto-drainer
+			// will run for a limited period of time.
 			d.Dest = s.filterDevicesForAutoDrain(status)
+
 			for ok := true; ok; ok = s.shouldRunAutoDrain(time.Now()) {
 				fid, err := s.autoDrainGetNextFid(lastFid)
 				if err != nil {
@@ -63,6 +73,9 @@ func (s *Server) filterDevicesForAutoDrain(status *efesStatus) []int64 {
 	ret := make([]int64, 0)
 	below := status.totalUse + int64(s.config.Server.AutoDrainThreshold)
 	for _, d := range status.devices {
+		if d.Status != "alive" { // nolint:goconst
+			continue
+		}
 		if d.BytesUsed == nil || d.BytesTotal == nil {
 			continue
 		}

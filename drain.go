@@ -118,7 +118,7 @@ func (d *Drainer) moveFile(fid int64) error {
 	if err != nil {
 		return err
 	}
-	ad, err := findAliveDevice(d.db, fi.Size(), d.Dest, []int64{d.devid}, "")
+	ad, err := findAliveDevice(d.db, fi.Size(), d.Dest, d.devid, "")
 	if err != nil {
 		return err
 	}
