@@ -13,6 +13,7 @@ import (
 func (s *Server) autoDrain() {
 	defer close(s.autoDrainStopped)
 
+	// Drainer is written for "efes drain" command but can be reused here because we need same functionality here.
 	d, err := NewDrainer(s.config)
 	if err != nil {
 		s.log.Errorln("Error while initializing auto-drain:", err)
@@ -32,7 +33,6 @@ func (s *Server) autoDrain() {
 				continue
 			}
 			s.log.Info("Auto-drain has started.")
-			var lastFid int64
 
 			// Get usage infa of all devices and total use percent.
 			status, err := d.client.fetchStatus()
@@ -49,7 +49,7 @@ func (s *Server) autoDrain() {
 			d.Dest = s.filterDevicesForAutoDrain(status)
 
 			for ok := true; ok; ok = s.shouldRunAutoDrain(time.Now()) {
-				fid, err := s.autoDrainGetNextFid(lastFid)
+				fid, err := s.autoDrainGetNextFid()
 				if err != nil {
 					s.log.Errorln("Error while getting next fid for auto-drain operation:", err)
 					raven.CaptureError(err, nil)
@@ -69,6 +69,52 @@ func (s *Server) autoDrain() {
 	}
 }
 
+func (s *Server) shouldRunAutoDrain(now time.Time) bool {
+	period := now.UTC().UnixNano() / int64(s.config.Server.AutoDrainRunPeriod)
+	devid := hashDevid(s.devid)
+	ratio := int64(s.config.Server.AutoDrainDeviceRatio)
+	if (period+devid)%ratio != 0 {
+		// Not our turn, other servers should be running.
+		// We will check again on next period.
+		return false
+	}
+	client, err := NewClient(s.config)
+	if err != nil {
+		s.log.Errorln("Error while creating client:", err)
+		return false
+	}
+	status, err := client.fetchStatus()
+	if err != nil {
+		s.log.Errorln("Error while getting device statuses:", err)
+		return false
+	}
+
+	// Find usage info of current device from tracker response.
+	var currentDevice deviceStatus
+	for _, dev := range status.devices {
+		if dev.Devid == s.devid {
+			currentDevice = dev
+			break
+		}
+	}
+
+	if currentDevice.Devid == 0 {
+		// Cannot find current device in tracker response.
+		// This cannot happen but let's be cautious.
+		return false
+	}
+
+	return deviceUse(currentDevice) > status.totalUse+int64(s.config.Server.AutoDrainThreshold)
+}
+
+// deviceUse returns usage percentage of a device from tracker response.
+func deviceUse(d deviceStatus) int64 {
+	if d.BytesUsed == nil || d.BytesTotal == nil {
+		return -1
+	}
+	return (*d.BytesUsed * 100) / *d.BytesTotal
+}
+
 func (s *Server) filterDevicesForAutoDrain(status *efesStatus) []int64 {
 	ret := make([]int64, 0)
 	below := status.totalUse + int64(s.config.Server.AutoDrainThreshold)
@@ -79,19 +125,15 @@ func (s *Server) filterDevicesForAutoDrain(status *efesStatus) []int64 {
 		if d.BytesUsed == nil || d.BytesTotal == nil {
 			continue
 		}
-		use := (*d.BytesUsed * 100) / *d.BytesTotal
+		use := deviceUse(d)
+		if use == -1 {
+			continue
+		}
 		if use < below {
 			ret = append(ret, d.Devid)
 		}
 	}
 	return ret
-}
-
-func (s *Server) shouldRunAutoDrain(now time.Time) bool {
-	period := now.UTC().UnixNano() / int64(s.config.Server.AutoDrainRunPeriod)
-	devid := hashDevid(s.devid)
-	ratio := int64(s.config.Server.AutoDrainDeviceRatio)
-	return (period+devid)%ratio == 0
 }
 
 func hashDevid(devid int64) int64 {
@@ -109,8 +151,8 @@ func hashDevid(devid int64) int64 {
 	return devid
 }
 
-func (s *Server) autoDrainGetNextFid(lastFid int64) (int64, error) {
-	row := s.db.QueryRow("select fid from file_on where devid=? and fid>? order by fid asc", s.devid, lastFid)
+func (s *Server) autoDrainGetNextFid() (int64, error) {
+	row := s.db.QueryRow("select min(fid) from file_on where devid=?", s.devid)
 	var fid int64
 	err := row.Scan(&fid)
 	return fid, err
