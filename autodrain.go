@@ -117,7 +117,7 @@ func deviceUse(d deviceStatus) int64 {
 
 func (s *Server) filterDevicesForAutoDrain(status *efesStatus) []int64 {
 	ret := make([]int64, 0)
-	below := status.totalUse + int64(s.config.Server.AutoDrainThreshold)
+	target := status.totalUse + int64(s.config.Server.AutoDrainThreshold)
 	for _, d := range status.devices {
 		if d.Status != "alive" { // nolint:goconst
 			continue
@@ -129,7 +129,7 @@ func (s *Server) filterDevicesForAutoDrain(status *efesStatus) []int64 {
 		if use == -1 {
 			continue
 		}
-		if use < below {
+		if use < target {
 			ret = append(ret, d.Devid)
 		}
 	}
