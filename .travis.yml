@@ -16,7 +16,7 @@ addons:
 install: true
 before_script:
 - go build -ldflags="-X main.Version=$TRAVIS_TAG"
-- curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.31.0
+- curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.33.0
 - go get golang.org/x/tools/cmd/cover
 - go get github.com/mattn/goveralls
 - echo "CREATE DATABASE efes" | mysql

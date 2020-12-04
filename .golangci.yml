@@ -15,6 +15,10 @@ linters:
     - gomnd
     - testpackage
     - nlreturn
+    - errorlint
+    - exhaustivestruct
+    - paralleltest
+    - wrapcheck
 issues:
   exclude-rules:
     - path: _test\.go
