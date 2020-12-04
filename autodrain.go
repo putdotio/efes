@@ -155,6 +155,8 @@ func hashDevid(devid int64) int64 {
 	return devid
 }
 
+// autoDrainGetNextFid always selects the minimum fid number.
+// After the file is moved, fid is assigned to another device so it is going to select the next one in next call.
 func (s *Server) autoDrainGetNextFid() (int64, error) {
 	row := s.db.QueryRow("select min(fid) from file_on where devid=?", s.devid)
 	var fid int64
