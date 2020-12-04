@@ -136,6 +136,10 @@ func (s *Server) filterDevicesForAutoDrain(status *efesStatus) []int64 {
 	return ret
 }
 
+// hashDevid takes an int64 devid and returns another integer that is randomly distributed over int64 space.
+// This is for making period calculation independent of devid.
+// A rare case but suppose all your devids are multiples of 10 and Config.AutoDrainDeviceRatio is also 10.
+// In this case all of your devices start auto-drain in same period. We don't want that.
 func hashDevid(devid int64) int64 {
 	buf := make([]byte, 8)
 	err := binary.Write(bytes.NewBuffer(buf), binary.BigEndian, devid)
