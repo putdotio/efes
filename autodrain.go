@@ -71,6 +71,11 @@ func (s *Server) autoDrain() {
 	}
 }
 
+// isMyAutoDrainPeriod is here for limiting the number of parallel auto-drain operations to some portion of the cluster.
+// All servers call this method at the same time to see if they are allowed to run auto-drain for current period.
+// Period duration can be configured with Config.AutoDrainRunPeriod option.
+// To tweak the number of devices, you can use Config.AutoDrainDeviceRatio option.
+// If AutoDrainDeviceRatio is 8, only 1/8 of the total servers run auto-drain in parallel.
 func (s *Server) isMyAutoDrainPeriod(now time.Time) bool {
 	period := now.UTC().UnixNano() / int64(s.config.Server.AutoDrainRunPeriod)
 	devid := hashDevid(s.devid)
