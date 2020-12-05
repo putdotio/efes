@@ -48,13 +48,18 @@ func (s *Server) autoDrain() {
 			// will run for a limited period of time.
 			d.Dest = s.filterDevicesForAutoDrain(status)
 
+			// Keep last fid to not selecting it again.
+			// Some files may not be movable due to a permission issue, etc.
+			var lastFid int64
+
 			for ok := true; ok; ok = s.shouldRunAutoDrain(time.Now()) {
-				fid, err := s.autoDrainGetNextFid()
+				fid, err := s.autoDrainGetNextFid(lastFid)
 				if err != nil {
 					s.log.Errorln("Error while getting next fid for auto-drain operation:", err)
 					raven.CaptureError(err, nil)
 					continue
 				}
+				lastFid = fid
 				err = d.moveFile(fid)
 				if err != nil {
 					s.log.Errorln("Error while auto-drain is moving a file:", err)
@@ -157,8 +162,8 @@ func hashDevid(devid int64) int64 {
 
 // autoDrainGetNextFid always selects the minimum fid number.
 // After the file is moved, fid is assigned to another device so it is going to select the next one in next call.
-func (s *Server) autoDrainGetNextFid() (int64, error) {
-	row := s.db.QueryRow("select min(fid) from file_on where devid=?", s.devid)
+func (s *Server) autoDrainGetNextFid(lastFid int64) (int64, error) {
+	row := s.db.QueryRow("select min(fid) from file_on where devid=? and fid>?", s.devid, lastFid)
 	var fid int64
 	err := row.Scan(&fid)
 	return fid, err
