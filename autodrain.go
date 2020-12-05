@@ -29,7 +29,7 @@ func (s *Server) autoDrain() {
 	for {
 		select {
 		case <-ticker.C:
-			runAutoDrain, status := s.shouldRunAutoDrain(time.Now())
+			runAutoDrain, status := s.shouldRunAutoDrain()
 			if !runAutoDrain {
 				continue
 			}
@@ -49,7 +49,7 @@ func (s *Server) autoDrain() {
 			// Some files may not be movable due to a permission issue, etc.
 			var lastFid int64
 
-			for ok := true; ok; ok = s.shouldContinueAutoDrain(time.Now(), status.totalUse) {
+			for ok := true; ok; ok = s.shouldContinueAutoDrain(status.totalUse) {
 				fid, err := s.autoDrainGetNextFid(lastFid)
 				if err != nil {
 					s.log.Errorln("Error while getting next fid for auto-drain operation:", err)
@@ -78,8 +78,8 @@ func (s *Server) isMyAutoDrainPeriod(now time.Time) bool {
 	return (period+devid)%ratio == 0
 }
 
-func (s *Server) shouldRunAutoDrain(now time.Time) (bool, *efesStatus) {
-	if !s.isMyAutoDrainPeriod(now) {
+func (s *Server) shouldRunAutoDrain() (bool, *efesStatus) {
+	if !s.isMyAutoDrainPeriod(time.Now()) {
 		// Not our turn, other servers should be running.
 		// We will check again on next period.
 		return false, nil
@@ -116,8 +116,8 @@ func (s *Server) shouldRunAutoDrain(now time.Time) (bool, *efesStatus) {
 
 // shouldContinueAutoDrain is similar to shouldRunAutoDrain but,
 // instead of asking tracker for disk stats, it queries the local disk to reduce load tracker.
-func (s *Server) shouldContinueAutoDrain(now time.Time, totalUse int64) bool {
-	return s.isMyAutoDrainPeriod(now) && s.getDiskUse() > totalUse+int64(s.config.Server.AutoDrainThreshold)
+func (s *Server) shouldContinueAutoDrain(totalUse int64) bool {
+	return s.isMyAutoDrainPeriod(time.Now()) && s.getDiskUse() > totalUse+int64(s.config.Server.AutoDrainThreshold)
 }
 
 // deviceUse returns usage percentage of a device from tracker response.
