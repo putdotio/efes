@@ -35,7 +35,9 @@ type ServerConfig struct {
 	CleanDiskRunPeriod   Duration `toml:"clean_disk_run_period"`
 	CleanDiskFileTTL     Duration `toml:"clean_disk_file_ttl"`
 	CleanDeviceRunPeriod Duration `toml:"clean_device_run_period"`
-	// Auto-drain starts and does not stop at least this duration.
+	// Auto-drain period is a window that only certain number of servers are allowed to run auto-drain operations.
+	// When the period advances to the next one, servers currently running auto-drain will stop and some other
+	// servers are going to run auto-drain.
 	AutoDrainRunPeriod Duration `toml:"auto_drain_run_period"`
 	// Limits the number of servers that are going to run auto-drain simultaneously.
 	// If this number is 10, 10% of the servers run auto-drain.
