@@ -47,6 +47,10 @@ func (s *Server) autoDrain() {
 			// load on tracker. Beside, it is not an information that changes frequently and auto-drainer
 			// will run for a limited period of time.
 			d.Dest = s.filterDevicesForAutoDrain(status)
+			if len(d.Dest) == 0 {
+				s.log.Warning("No devices available as auto-drain target")
+				continue
+			}
 
 			// Keep last fid to not selecting it again.
 			// Some files may not be movable due to a permission issue, etc.
