@@ -29,18 +29,11 @@ func (s *Server) autoDrain() {
 	for {
 		select {
 		case <-ticker.C:
-			if !s.shouldRunAutoDrain(time.Now()) {
+			runAutoDrain, status := s.shouldRunAutoDrain(time.Now())
+			if !runAutoDrain {
 				continue
 			}
 			s.log.Info("Auto-drain has started.")
-
-			// Get usage infa of all devices and total use percent.
-			status, err := d.client.fetchStatus()
-			if err != nil {
-				s.log.Errorln("Error while getting device statuses:", err)
-				raven.CaptureError(err, nil)
-				continue
-			}
 
 			// Set drainer target to devices with usage below total average + threshold.
 			// This is not need to be checked on every file moved because we don't want to create extra
@@ -56,7 +49,7 @@ func (s *Server) autoDrain() {
 			// Some files may not be movable due to a permission issue, etc.
 			var lastFid int64
 
-			for ok := true; ok; ok = s.shouldRunAutoDrain(time.Now()) {
+			for ok := true; ok; ok = s.shouldContinueAutoDrain(time.Now(), status.totalUse) {
 				fid, err := s.autoDrainGetNextFid(lastFid)
 				if err != nil {
 					s.log.Errorln("Error while getting next fid for auto-drain operation:", err)
@@ -78,24 +71,28 @@ func (s *Server) autoDrain() {
 	}
 }
 
-func (s *Server) shouldRunAutoDrain(now time.Time) bool {
+func (s *Server) isMyAutoDrainPeriod(now time.Time) bool {
 	period := now.UTC().UnixNano() / int64(s.config.Server.AutoDrainRunPeriod)
 	devid := hashDevid(s.devid)
 	ratio := int64(s.config.Server.AutoDrainDeviceRatio)
-	if (period+devid)%ratio != 0 {
+	return (period+devid)%ratio == 0
+}
+
+func (s *Server) shouldRunAutoDrain(now time.Time) (bool, *efesStatus) {
+	if !s.isMyAutoDrainPeriod(now) {
 		// Not our turn, other servers should be running.
 		// We will check again on next period.
-		return false
+		return false, nil
 	}
 	client, err := NewClient(s.config)
 	if err != nil {
 		s.log.Errorln("Error while creating client:", err)
-		return false
+		return false, nil
 	}
 	status, err := client.fetchStatus()
 	if err != nil {
 		s.log.Errorln("Error while getting device statuses:", err)
-		return false
+		return false, nil
 	}
 
 	// Find usage info of current device from tracker response.
@@ -110,10 +107,17 @@ func (s *Server) shouldRunAutoDrain(now time.Time) bool {
 	if currentDevice.Devid == 0 {
 		// Cannot find current device in tracker response.
 		// This cannot happen but let's be cautious.
-		return false
+		s.log.Errorln("Current device not found in tracker response")
+		return false, nil
 	}
 
-	return deviceUse(currentDevice) > status.totalUse+int64(s.config.Server.AutoDrainThreshold)
+	return deviceUse(currentDevice) > status.totalUse+int64(s.config.Server.AutoDrainThreshold), status
+}
+
+// shouldContinueAutoDrain is similar to shouldRunAutoDrain but,
+// instead of asking tracker for disk stats, it queries the local disk to reduce load tracker.
+func (s *Server) shouldContinueAutoDrain(now time.Time, totalUse int64) bool {
+	return s.isMyAutoDrainPeriod(now) && s.getDiskUse() > totalUse+int64(s.config.Server.AutoDrainThreshold)
 }
 
 // deviceUse returns usage percentage of a device from tracker response.
@@ -126,7 +130,7 @@ func deviceUse(d deviceStatus) int64 {
 
 func (s *Server) filterDevicesForAutoDrain(status *efesStatus) []int64 {
 	ret := make([]int64, 0)
-	target := status.totalUse + int64(s.config.Server.AutoDrainThreshold)
+	target := status.totalUse - int64(s.config.Server.AutoDrainThreshold)
 	for _, d := range status.devices {
 		if d.Status != "alive" { // nolint:goconst
 			continue

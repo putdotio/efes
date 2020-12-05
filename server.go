@@ -220,6 +220,14 @@ func (s *Server) getDiskUsage() (total, used, free sql.NullInt64) {
 	return
 }
 
+func (s *Server) getDiskUse() int64 {
+	total, used, _ := s.getDiskUsage()
+	if total.Valid && used.Valid {
+		return (used.Int64 * 100) / total.Int64
+	}
+	return -1
+}
+
 func (s *Server) getDiskUtilization(iostat *IOStat) (utilization sql.NullInt64) {
 	if iostat == nil {
 		return
