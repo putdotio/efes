@@ -133,6 +133,8 @@ func deviceUse(d deviceStatus) int64 {
 	return (*d.BytesUsed * 100) / *d.BytesTotal
 }
 
+// filterDevicesForAutoDrain returns devices only below the target use percentage.
+// Target percentage is calculated as TotalUseOfCluster - AutoDrainThreshold.
 func (s *Server) filterDevicesForAutoDrain(status *efesStatus) []int64 {
 	ret := make([]int64, 0)
 	target := status.totalUse - int64(s.config.Server.AutoDrainThreshold)
