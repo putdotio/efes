@@ -29,6 +29,24 @@ func (s *Server) autoDrain() {
 	for {
 		select {
 		case <-ticker.C:
+			manualDrain, err := s.isManualDrainEnabled()
+			if err != nil {
+				s.log.Errorln("Cannot determine drain status:", err)
+				continue
+			}
+			if manualDrain {
+				s.log.Info("Drain has started.")
+
+				// No particular destination. Destination will be selected randomly.
+				// Clearing it because it may be set before by auto-drain.
+				d.Dest = nil
+
+				s.drainFiles(d, s.shouldContinueManualDrain)
+
+				s.log.Info("Drain has stopped.")
+				continue
+			}
+
 			runAutoDrain, status := s.shouldRunAutoDrain()
 			if !runAutoDrain {
 				continue
@@ -45,28 +63,38 @@ func (s *Server) autoDrain() {
 				continue
 			}
 
-			// Keep last fid to not selecting it again.
-			// Some files may not be movable due to a permission issue, etc.
-			var lastFid int64
+			s.drainFiles(d, func() bool { return s.shouldContinueAutoDrain((status.totalUse)) })
 
-			for ok := true; ok; ok = s.shouldContinueAutoDrain(status.totalUse) {
-				fid, err := s.autoDrainGetNextFid(lastFid)
-				if err != nil {
-					s.log.Errorln("Error while getting next fid for auto-drain operation:", err)
-					raven.CaptureError(err, nil)
-					continue
-				}
-				lastFid = fid
-				err = d.moveFile(fid)
-				if err != nil {
-					s.log.Errorln("Error while auto-drain is moving a file:", err)
-					raven.CaptureError(err, nil)
-					continue
-				}
-			}
 			s.log.Info("Auto-drain has stopped. Waiting for next run period.")
 		case <-s.shutdown:
 			return
+		}
+	}
+}
+
+func (s *Server) drainFiles(drainer *Drainer, condition func() bool) {
+	// Keep last fid to not selecting it again.
+	// Some files may not be movable due to a permission issue, etc.
+	var lastFid int64
+
+	for ok := true; ok; ok = condition() {
+		fid, err := s.getNextFidForDrain(lastFid)
+		if err != nil {
+			s.log.Errorln("Error while getting next fid for drain operation:", err)
+			raven.CaptureError(err, nil)
+
+			// Stop draining because the error may repeat.
+			// Drain will be triggered again with Ticker.
+			return
+		}
+		lastFid = fid
+		err = drainer.moveFile(fid)
+		if err != nil {
+			s.log.Errorln("Error while drain is moving a file:", err)
+			raven.CaptureError(err, nil)
+
+			// We can continue with the next file.
+			continue
 		}
 	}
 }
@@ -175,11 +203,23 @@ func hashDevid(devid int64) int64 {
 	return devid
 }
 
-// autoDrainGetNextFid always selects the minimum fid number.
+// getNextFidForDrain always selects the minimum fid number.
 // After the file is moved, fid is assigned to another device so it is going to select the next one in next call.
-func (s *Server) autoDrainGetNextFid(lastFid int64) (int64, error) {
+func (s *Server) getNextFidForDrain(lastFid int64) (int64, error) {
 	row := s.db.QueryRow("select min(fid) from file_on where devid=? and fid>?", s.devid, lastFid)
 	var fid int64
 	err := row.Scan(&fid)
 	return fid, err
+}
+
+func (s *Server) isManualDrainEnabled() (bool, error) {
+	row := s.db.QueryRow("select status from device where devid=?", s.devid)
+	var status string
+	err := row.Scan(&status)
+	return status == "drain", err
+}
+
+func (s *Server) shouldContinueManualDrain() bool {
+	drainEnabled, _ := s.isManualDrainEnabled()
+	return drainEnabled
 }

@@ -5,8 +5,6 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -201,34 +199,6 @@ func main() {
 					return err
 				}
 				s.Print()
-				return nil
-			},
-		},
-		{
-			Name:  "drain",
-			Usage: "drain device by moving files to another device",
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "dest, d",
-					Usage: "move files to given devices",
-				},
-			},
-			Action: func(c *cli.Context) error {
-				d, err := NewDrainer(cfg)
-				if err != nil {
-					return err
-				}
-				destFlag := c.String("dest")
-				if destFlag != "" {
-					for _, devidString := range strings.Split(destFlag, ",") {
-						devid, err := strconv.ParseInt(strings.TrimSpace(devidString), 10, 64)
-						if err != nil {
-							return err
-						}
-						d.Dest = append(d.Dest, devid)
-					}
-				}
-				runUntilInterrupt(d)
 				return nil
 			},
 		},
