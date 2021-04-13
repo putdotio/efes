@@ -57,7 +57,12 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m.HandleFunc("/create-close", t.createClose)
 	m.HandleFunc("/delete", t.deleteFile)
 	m.HandleFunc("/iter-files", t.iterFiles)
-	t.server.Handler = http.HandlerFunc(raven.RecoveryHandler(addVersion(m)))
+	t.server = http.Server{
+		Handler:      http.HandlerFunc(raven.RecoveryHandler(addVersion(m))),
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
 	if t.config.Debug {
 		t.log.SetLevel(log.DEBUG)
 	}
