@@ -146,7 +146,7 @@ func (t *Tracker) internalServerError(message string, err error, r *http.Request
 func (t *Tracker) getPath(w http.ResponseWriter, r *http.Request) {
 	var response GetPath
 	key := r.FormValue("key")
-	row := t.db.QueryRow("select h.hostname, d.read_port, d.devid, f.fid, f.created_at "+
+	row := t.db.QueryRowContext(r.Context(), "select h.hostname, d.read_port, d.devid, f.fid, f.created_at "+
 		"from file f "+
 		"join file_on fo on f.fid=fo.fid "+
 		"join device d on d.devid=fo.devid "+
@@ -180,7 +180,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		Paths: make([]GetPath, 0),
 	}
 	key := r.FormValue("key")
-	rows, err := t.db.Query("select h.hostname, d.read_port, d.devid, f.fid, f.created_at "+
+	rows, err := t.db.QueryContext(r.Context(), "select h.hostname, d.read_port, d.devid, f.fid, f.created_at "+
 		"from file f "+
 		"join file_on fo on f.fid=fo.fid "+
 		"join device d on d.devid=fo.devid "+
@@ -250,7 +250,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot find a device", err, r, w)
 		return
 	}
-	res, err := t.db.Exec("insert into tempfile(devid) values(?)", d.devid)
+	res, err := t.db.ExecContext(r.Context(), "insert into tempfile(devid) values(?)", d.devid)
 	if err != nil {
 		t.internalServerError("cannot insert tempfile", err, r, w)
 		return
@@ -446,7 +446,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "required parameter: key", http.StatusBadRequest)
 		return
 	}
-	tx, err := t.db.Begin()
+	tx, err := t.db.BeginTx(r.Context(), nil)
 	if err != nil {
 		t.internalServerError("cannot begin transaction", err, r, w)
 		return
@@ -535,7 +535,7 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "required parameter: key or fid", http.StatusBadRequest)
 		return
 	}
-	tx, err := t.db.Begin()
+	tx, err := t.db.BeginTx(r.Context(), nil)
 	if err != nil {
 		t.internalServerError("cannot begin transaction", err, r, w)
 		return
@@ -649,7 +649,7 @@ func (t *Tracker) getDevices(w http.ResponseWriter, r *http.Request) {
 	var err error
 	devices := make([]Device, 0)
 
-	rows, err := t.db.Query("select d.devid, d.hostid, h.hostname, h.status, h.rackid, r.name, r.zoneid, z.name, d.status, d.bytes_total, d.bytes_used, d.bytes_free, unix_timestamp(d.updated_at), d.io_utilization from device d join host h on h.hostid=d.hostid join rack r on r.rackid=h.rackid join zone z on z.zoneid=r.zoneid")
+	rows, err := t.db.QueryContext(r.Context(), "select d.devid, d.hostid, h.hostname, h.status, h.rackid, r.name, r.zoneid, z.name, d.status, d.bytes_total, d.bytes_used, d.bytes_free, unix_timestamp(d.updated_at), d.io_utilization from device d join host h on h.hostid=d.hostid join rack r on r.rackid=h.rackid join zone z on z.zoneid=r.zoneid")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -703,7 +703,7 @@ func (t *Tracker) getHosts(w http.ResponseWriter, r *http.Request) {
 	hosts := make([]Host, 0)
 
 	var rows *sql.Rows
-	rows, err = t.db.Query("select hostid, status, hostname, hostip from host")
+	rows, err = t.db.QueryContext(r.Context(), "select hostid, status, hostname, hostip from host")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -743,7 +743,7 @@ func (t *Tracker) getRacks(w http.ResponseWriter, r *http.Request) {
 	racks := make([]Rack, 0)
 
 	var rows *sql.Rows
-	rows, err = t.db.Query("select rackid, zoneid, name from rack")
+	rows, err = t.db.QueryContext(r.Context(), "select rackid, zoneid, name from rack")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
@@ -783,7 +783,7 @@ func (t *Tracker) getZones(w http.ResponseWriter, r *http.Request) {
 	zones := make([]Zone, 0)
 
 	var rows *sql.Rows
-	rows, err = t.db.Query("select zoneid, name from zone")
+	rows, err = t.db.QueryContext(r.Context(), "select zoneid, name from zone")
 	if err != nil {
 		t.internalServerError("cannot select rows", err, r, w)
 		return
