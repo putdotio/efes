@@ -13,6 +13,7 @@ up:
 test:
 	docker build -t efes-base -f ./Docker/efes-base/Dockerfile .
 	docker-compose -f ./Docker/docker-compose-test.yml rm -fsv
+	docker-compose -f ./Docker/docker-compose-test.yml build
 	docker-compose -f ./Docker/docker-compose-test.yml run --rm test
 
 lint:

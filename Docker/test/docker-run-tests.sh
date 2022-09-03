@@ -7,4 +7,5 @@ until "${mysql[@]}" -e "select 1" &>/dev/null ; do
 done
 echo "MySQL is ready."
 
+golangci-lint run
 exec go test -v -race ./...
