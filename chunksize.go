@@ -1,6 +1,7 @@
 package main
 
 import "strconv"
+import "fmt"
 
 const (
 	K = 1024
