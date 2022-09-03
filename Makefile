@@ -7,10 +7,10 @@ build:
 
 build-docker:
 	docker build -t efes-base -f ./Docker/efes-base/Dockerfile .
-	$(eval CONTAINER_ID=$(shell docker create efes-base))
-	mkdir ./bin
-	docker cp $(CONTAINER_ID):/usr/local/bin/efes - > ./bin/efes
-	docker rm -v $(CONTAINER_ID)
+	$(eval CONTAINER_ID:=$(shell docker create efes-base))
+	mkdir -p ./bin
+	docker cp ${CONTAINER_ID}:/usr/local/bin/efes - > ./bin/efes
+	docker rm -v ${CONTAINER_ID}
 
 up:
 	docker build -t efes-base -f ./Docker/efes-base/Dockerfile .
