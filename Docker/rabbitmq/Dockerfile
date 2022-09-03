@@ -11,7 +11,7 @@ ENV RABBITMQ_NODENAME=efes@localhost
 RUN rabbitmq-plugins enable --offline rabbitmq_management
 EXPOSE 15671 15672
 
-ADD docker-init-rabbitmq.sh /tmp/
-RUN ["bash", "/tmp/docker-init-rabbitmq.sh"]
+ADD init.sh /tmp/
+RUN ["bash", "/tmp/init.sh"]
 
 ENTRYPOINT ["rabbitmq-server", "--hostname", "localhost"]

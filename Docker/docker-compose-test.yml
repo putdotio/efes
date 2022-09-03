@@ -1,0 +1,35 @@
+version: '3.9'
+services:
+  mysql:
+    build:
+      context: ./Docker/mysql
+    environment:
+      MYSQL_USER: efes
+      MYSQL_PASSWORD: 123
+      MYSQL_DATABASE: efes
+  rabbitmq:
+    build:
+      context: ./Docker/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: efes
+      RABBITMQ_DEFAULT_PASS: 123
+      RABBITMQ_NODENAME: efes@localhost
+    logging:
+      driver: none
+  tracker:
+    build:
+      context: ./Docker/efes-tracker
+    depends_on:
+      - mysql
+      - rabbitmq
+    volumes:
+      - ../config/test.toml:/etc/efes.toml
+  test:
+    build:
+      dockerfile: ./Docker/test/Dockerfile
+      context: ..
+    depends_on:
+      - tracker
+    volumes:
+      - ../config/test.toml:/etc/efes.toml
+    tty: true

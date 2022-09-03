@@ -6,13 +6,14 @@ build:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $(NAME)
 
 up:
-	docker build -t $(NAME) -f Dockerfile .
-	docker-compose rm -fsv
-	docker-compose up --build
+	docker build -t efes-base -f ./Docker/efes-base/Dockerfile .
+	docker-compose -f ./Docker/docker-compose.yml rm -fsv
+	docker-compose -f ./Docker/docker-compose.yml up --build
 
 test:
-	docker-compose rm -fsv
-	docker-compose -f docker-compose-test.yml up --build --exit-code-from test --abort-on-container-exit
+	docker build -t efes-base -f ./Docker/efes-base/Dockerfile .
+	docker-compose -f ./Docker/docker-compose-test.yml rm -fsv
+	docker-compose -f ./Docker/docker-compose-test.yml run --rm test
 
 lint:
 	golangci-lint run

@@ -11,18 +11,19 @@ RUN apt-get update && apt-get install -y mysql-server mysql-client && rm -rf /va
 ARG MYSQL_USER=efes
 ARG MYSQL_PASSWORD=123
 ARG MYSQL_DATABASE=efes
+ARG MYSQL_SQL_FILE=/tmp/schema.sql
 
 # Load schema.
-ADD docker-init-mysql.sh /tmp/
+ADD init.sh /tmp/
 ADD schema.sql /tmp/
-RUN ["bash", "/tmp/docker-init-mysql.sh"]
+RUN ["bash", "/tmp/init.sh"]
 
 # Print logs to stderr.
 RUN ln -sf /dev/stderr /var/log/mysql/error.log
 
 # Wrapper to catch SIGINT and forward as SIGTERM.
-COPY run.sh run.sh
-ENTRYPOINT ["/bin/bash", "/run.sh"]
+COPY entrypoint.sh entrypoint.sh
+ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]
 
 CMD ["mysqld", "--user=root"]
 
