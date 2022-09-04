@@ -10,5 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run linter and tests
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v3
+        with:
+           version: v1.33.0
+      - name: Run tests
         run: make test
