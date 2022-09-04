@@ -23,8 +23,6 @@ services:
       - mysql
     tty: true
     privileged: true
-    volumes:
-      - ../config/example.toml:/etc/efes.toml
   server1:
     build:
       context: ./Docker/efes-server
@@ -32,5 +30,3 @@ services:
     depends_on:
       - mysql
     tty: true
-    volumes:
-      - ../config/example.toml:/etc/efes.toml

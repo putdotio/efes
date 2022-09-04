@@ -7,21 +7,22 @@ build:
 
 build-docker:
 	docker build -t efes-base -f ./Docker/efes-base/Dockerfile .
-	$(eval CONTAINER_ID:=$(shell docker create efes-base))
 	mkdir -p ./bin
-	docker cp ${CONTAINER_ID}:/usr/local/bin/efes - > ./bin/efes
+	$(eval CONTAINER_ID:=$(shell docker create efes-base)) \
+	docker cp ${CONTAINER_ID}:/usr/local/bin/efes - > ./bin/efes; \
 	docker rm -v ${CONTAINER_ID}
 
+MAIN_COMPOSE := docker-compose -f ./Docker/docker-compose.yml
 up:
 	docker build -t efes-base -f ./Docker/efes-base/Dockerfile .
-	docker-compose -f ./Docker/docker-compose.yml rm -fsv
-	docker-compose -f ./Docker/docker-compose.yml up --build
+	$(MAIN_COMPOSE) rm -fsv
+	$(MAIN_COMPOSE) up --build
 
+TEST_COMPOSE := docker-compose -f ./Docker/docker-compose-test.yml
 test:
 	docker build -t efes-base -f ./Docker/efes-base/Dockerfile .
-	docker-compose -f ./Docker/docker-compose-test.yml rm -fsv
-	docker-compose -f ./Docker/docker-compose-test.yml build
-	docker-compose -f ./Docker/docker-compose-test.yml run --rm test
+	$(TEST_COMPOSE) rm -fsv
+	$(TEST_COMPOSE) up --build --exit-code-from test --abort-on-container-exit
 
 lint:
 	golangci-lint run

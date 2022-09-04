@@ -16,20 +16,11 @@ services:
       RABBITMQ_NODENAME: efes@localhost
     logging:
       driver: none
-  tracker:
-    build:
-      context: ./efes-tracker
-    depends_on:
-      - mysql
-      - rabbitmq
-    volumes:
-      - ../config/test.toml:/etc/efes.toml
   test:
     build:
       dockerfile: ./Docker/test/Dockerfile
       context: ..
     depends_on:
-      - tracker
-    volumes:
-      - ../config/test.toml:/etc/efes.toml
+      - mysql
+      - rabbitmq
     tty: true
