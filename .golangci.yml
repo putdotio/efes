@@ -1,24 +1,4 @@
 linters:
-  enable-all: true
-  disable:
-    - maligned
-    - lll
-    - gochecknoglobals
-    - gochecknoinits
-    - gocyclo
-    - nakedret
-    - dupl
-    - wsl
-    - funlen
-    - gocognit
-    - goerr113
-    - gomnd
-    - testpackage
-    - nlreturn
-    - errorlint
-    - exhaustivestruct
-    - paralleltest
-    - wrapcheck
 issues:
   exclude-rules:
     - path: _test\.go
@@ -26,7 +6,3 @@ issues:
         - goconst
         - errcheck
         - noctx
-run:
-  skip-files:
-    - crc32
-    - sha1
