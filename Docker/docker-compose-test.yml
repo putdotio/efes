@@ -1,0 +1,26 @@
+version: '3.9'
+services:
+  mysql:
+    build:
+      context: ./mysql
+    environment:
+      MYSQL_USER: efes
+      MYSQL_PASSWORD: 123
+      MYSQL_DATABASE: efes
+  rabbitmq:
+    build:
+      context: ./rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: efes
+      RABBITMQ_DEFAULT_PASS: 123
+      RABBITMQ_NODENAME: efes@localhost
+    logging:
+      driver: none
+  test:
+    build:
+      dockerfile: ./Docker/test/Dockerfile
+      context: ..
+    depends_on:
+      - mysql
+      - rabbitmq
+    tty: true
