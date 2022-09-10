@@ -7,6 +7,9 @@ services:
       MYSQL_USER: efes
       MYSQL_PASSWORD: 123
       MYSQL_DATABASE: efes
+      MYSQL_RANDOM_ROOT_PASSWORD: 1
+      # MYSQL_ALLOW_EMPTY_PASSWORD: 1
+      # MYSQL_ROOT_PASSWORD: 123
   rabbitmq:
     build:
       context: ./Docker/rabbitmq

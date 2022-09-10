@@ -1,5 +1,6 @@
 #!/bin/bash
-# A wrapper around CMD to trap the SIGINT signal (Ctrl+C) and forwards it to the mysql daemon
+# https://github.com/docker-library/mysql/issues/47#issuecomment-147397851
+# A wrapper around /entrypoint.sh to trap the SIGINT signal (Ctrl+C) and forwards it to the mysql daemon
 # In other words : traps SIGINT and SIGTERM signals and forwards them to the child process as SIGTERM signals
 
 asyncRun() {
@@ -13,4 +14,4 @@ asyncRun() {
         wait
     done
 }
-asyncRun $@
+asyncRun /entrypoint.sh $@

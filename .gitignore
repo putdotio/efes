@@ -15,6 +15,7 @@ _test
 .idea
 vendor
 data
+coverage
 
 # Architecture specific extensions/prefixes
 *.[568vq]
