@@ -9,8 +9,8 @@ build-docker:
 	docker build -t efes-base -f ./Docker/efes-base/Dockerfile .
 	mkdir -p ./bin
 	$(eval CONTAINER_ID:=$(shell docker create efes-base)) \
-	docker cp ${CONTAINER_ID}:/usr/local/bin/efes - > ./bin/efes; \
-	docker rm -v ${CONTAINER_ID}
+	docker cp $(CONTAINER_ID):/usr/local/bin/efes - > ./bin/efes; \
+	docker rm -v $(CONTAINER_ID)
 
 MAIN_COMPOSE := docker-compose -f ./Docker/docker-compose.yml
 up:
