@@ -7,5 +7,4 @@ until "${mysql[@]}" -e "select 1" &>/dev/null ; do
 done
 echo "MySQL is ready."
 
-go test -v -race -covermode atomic -coverprofile=covprofile ./...
-mv ./covprofile /coverage/covprofile
+exec go test -v -race -covermode atomic -coverprofile=/coverage/covprofile ./...
