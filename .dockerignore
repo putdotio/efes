@@ -4,3 +4,5 @@ docker-compose*.yml
 .git
 data
 Makefile
+bin/
+efes
