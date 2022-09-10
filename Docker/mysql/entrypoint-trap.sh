@@ -14,4 +14,5 @@ asyncRun() {
         wait
     done
 }
+# call base entrypoint.sh that is already included in the image
 asyncRun /entrypoint.sh $@
