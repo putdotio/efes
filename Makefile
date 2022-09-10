@@ -22,6 +22,7 @@ TEST_COMPOSE := docker-compose -f ./Docker/docker-compose-test.yml
 test:
 	docker build -t efes-base -f ./Docker/efes-base/Dockerfile .
 	$(TEST_COMPOSE) rm -fsv
+	mkdir -p ./coverage
 	$(TEST_COMPOSE) up --build --exit-code-from test --abort-on-container-exit
 
 lint:
