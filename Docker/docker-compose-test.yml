@@ -8,8 +8,7 @@ services:
       MYSQL_PASSWORD: 123
       MYSQL_DATABASE: efes
   rabbitmq:
-    build:
-      context: ./rabbitmq
+    image: rabbitmq:3-management
     environment:
       RABBITMQ_DEFAULT_USER: efes
       RABBITMQ_DEFAULT_PASS: 123
