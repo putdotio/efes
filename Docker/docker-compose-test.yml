@@ -24,3 +24,5 @@ services:
       - mysql
       - rabbitmq
     tty: true
+    volumes:
+      - ../coverage:/coverage
