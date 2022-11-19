@@ -15,13 +15,15 @@ import (
 type efesStatus struct {
 	devices    []deviceStatus
 	serverTime time.Time
+	totalUsed  int64 // data in bytes
+	totalSize  int64 // total capacity of all devices
+	totalFree  int64 // does not includes free space for devices in "drain" mode
+	totalUse   int64 // percent of used space calculated using `totalFree`
 }
 
 type deviceStatus struct {
 	Device
-	Hostname   string
-	HostStatus string
-	UpdatedAt  time.Time
+	UpdatedAt time.Time
 }
 
 func (d deviceStatus) Size() string {
@@ -91,31 +93,6 @@ func colorStatus(status string) string {
 }
 
 func (s *efesStatus) Print() {
-	// Sum totals
-	var totalUsed, totalSize, totalFree int64 // in MB
-	for _, d := range s.devices {
-		if d.BytesUsed != nil {
-			totalUsed += *d.BytesUsed
-		}
-		if d.BytesTotal != nil {
-			totalSize += *d.BytesTotal
-		}
-		if d.BytesFree != nil && d.Status == "alive" {
-			totalFree += *d.BytesFree
-		}
-	}
-	var totalUse int64
-	if totalSize == 0 {
-		totalUse = 0
-	} else {
-		totalUse = 100 - (100*totalFree)/totalSize
-	}
-
-	// Convert to GB
-	totalUsed /= G
-	totalFree /= G
-	totalSize /= G
-
 	// Setup table
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetBorder(false)
@@ -143,7 +120,7 @@ func (s *efesStatus) Print() {
 		data[i] = []string{
 			d.ZoneName,
 			d.RackName,
-			d.Hostname,
+			d.HostName,
 			colorStatus(d.HostStatus),
 			strconv.FormatInt(d.Devid, 10),
 			colorStatus(d.Status),
@@ -160,17 +137,16 @@ func (s *efesStatus) Print() {
 	table.SetFooter([]string{
 		"", "", "", "", "",
 		"Total:",
-		humanize.Comma(totalSize),
-		humanize.Comma(totalUsed),
-		humanize.Comma(totalFree),
-		strconv.FormatInt(totalUse, 10),
+		humanize.Comma(s.totalSize / G),
+		humanize.Comma(s.totalUsed / G),
+		humanize.Comma(s.totalFree / G),
+		strconv.FormatInt(s.totalUse, 10),
 		"", "",
 	})
 	table.Render()
 }
 
-// nolint
-func (c *Client) Status(sortBy string) (*efesStatus, error) {
+func (c *Client) fetchStatus() (*efesStatus, error) {
 	ret := &efesStatus{
 		devices: make([]deviceStatus, 0),
 	}
@@ -189,12 +165,36 @@ func (c *Client) Status(sortBy string) (*efesStatus, error) {
 			continue
 		}
 		ds := deviceStatus{
-			Device:     d,
-			Hostname:   d.HostName,
-			HostStatus: d.HostStatus,
-			UpdatedAt:  time.Unix(d.UpdatedAt, 0),
+			Device:    d,
+			UpdatedAt: time.Unix(d.UpdatedAt, 0),
 		}
 		ret.devices = append(ret.devices, ds)
+	}
+	// Sum totals
+	for _, d := range ret.devices {
+		if d.BytesUsed != nil {
+			ret.totalUsed += *d.BytesUsed
+		}
+		if d.BytesTotal != nil {
+			ret.totalSize += *d.BytesTotal
+		}
+		if d.BytesFree != nil && d.Status == "alive" {
+			ret.totalFree += *d.BytesFree
+		}
+	}
+	if ret.totalSize == 0 {
+		ret.totalUse = 0
+	} else {
+		ret.totalUse = 100 - (100*ret.totalFree)/ret.totalSize
+	}
+	return ret, nil
+}
+
+// nolint
+func (c *Client) Status(sortBy string) (*efesStatus, error) {
+	ret, err := c.fetchStatus()
+	if err != nil {
+		return nil, err
 	}
 	switch sortBy {
 	case "zone":

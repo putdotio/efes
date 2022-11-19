@@ -241,7 +241,7 @@ func (t *Tracker) createOpen(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	d, err := findAliveDevice(t.db, int64(size), nil, getClientIP(r))
+	d, err := findAliveDevice(t.db, int64(size), nil, 0, getClientIP(r))
 	if err == errNoDeviceAvailable {
 		http.Error(w, "no device available", http.StatusServiceUnavailable)
 		return
@@ -285,7 +285,7 @@ func (d *aliveDevice) PatchURL(fid int64) string {
 	return fmt.Sprintf("http://%s:%d/dev%d/%s", d.hostname, d.httpPort, d.devid, vivify(fid))
 }
 
-func findAliveDevice(db *sql.DB, size int64, devids []int64, clientIP string) (*aliveDevice, error) {
+func findAliveDevice(db *sql.DB, size int64, devids []int64, source int64, clientIP string) (*aliveDevice, error) {
 	var devidsSQL string
 	if len(devids) > 0 {
 		var devidsString []string
@@ -295,6 +295,9 @@ func findAliveDevice(db *sql.DB, size int64, devids []int64, clientIP string) (*
 		devidsSQL = "and d.status in ('alive', 'drain') and d.devid in (" + strings.Join(devidsString, ",") + ") "
 	} else {
 		devidsSQL = "and d.status='alive' "
+	}
+	if source > 0 {
+		devidsSQL += "and d.devid != " + strconv.FormatInt(source, 10) + " "
 	}
 	rows, err := db.Query("select z.zoneid, r.rackid, h.hostid, h.hostip, h.hostname, d.devid, d.write_port "+ // nolint: gosec
 		"from device d "+
