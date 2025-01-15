@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -12,7 +11,7 @@ func TestSha1File(t *testing.T) {
 	content := "the quick brown fox jumps over the lazy dog\n"
 	expectedSha1 := "5d2781d78fa5a97b7bafa849fe933dfc9dc93eba"
 
-	f, err := ioutil.TempFile("", "test-sha1-file-")
+	f, err := os.CreateTemp("", "test-sha1-file-")
 	if err != nil {
 		t.Fatal(err)
 	}

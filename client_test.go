@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,7 +9,7 @@ import (
 
 func createTempfile(t *testing.T, content string) string {
 	t.Helper()
-	f, err := ioutil.TempFile("", "efestest")
+	f, err := os.CreateTemp("", "efestest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +56,7 @@ func TestClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tempDir, err := ioutil.TempDir("", "efes-test-")
+	tempDir, err := os.MkdirTemp("", "efes-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +112,7 @@ func TestClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	copyContent, err := ioutil.ReadFile(copied)
+	copyContent, err := os.ReadFile(copied)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +133,7 @@ func TestClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	copyContent2, err := ioutil.ReadFile(copied2)
+	copyContent2, err := os.ReadFile(copied2)
 	if err != nil {
 		t.Fatal(err)
 	}

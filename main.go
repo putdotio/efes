@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"math/rand"
 	"os"
 	"os/signal"
 	"strconv"
@@ -28,8 +27,6 @@ func init() {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	cfg := NewConfig()
 	chunkSize := ChunkSize(1 * M)
 

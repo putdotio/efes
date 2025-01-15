@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,7 +11,7 @@ import (
 func setupServer(t *testing.T, ttl time.Duration) (s *Server, closeFunc func()) {
 	t.Helper()
 
-	tempDir, err := ioutil.TempDir("", "efes-test-")
+	tempDir, err := os.MkdirTemp("", "efes-test-")
 	if err != nil {
 		t.Fatal(err)
 	}

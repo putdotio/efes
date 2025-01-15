@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,7 +20,7 @@ var (
 
 func setup(t *testing.T) {
 	var err error
-	tempdir, err = ioutil.TempDir("", "efes-file-receiver-test")
+	tempdir, err = os.MkdirTemp("", "efes-file-receiver-test")
 	if err != nil {
 		t.Fatal(err)
 	}

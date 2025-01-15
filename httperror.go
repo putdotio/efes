@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -29,7 +29,7 @@ type HTTPError struct {
 }
 
 func newHTTPError(resp *http.Response) *HTTPError {
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	message := string(body)
 	if err != nil {
 		message = "incomplete: " + message

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -37,7 +36,7 @@ func TestDrain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tempDir, err := ioutil.TempDir("", "efes-test-")
+	tempDir, err := os.MkdirTemp("", "efes-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +115,7 @@ func TestDrain(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	copyContent, err := ioutil.ReadFile(copied)
+	copyContent, err := os.ReadFile(copied)
 	if err != nil {
 		t.Fatal(err)
 	}
