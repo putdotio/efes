@@ -1,6 +1,6 @@
 module github.com/putdotio/efes
 
-go 1.19
+go 1.23
 
 require (
 	bazil.org/fuse v0.0.0-20160811212531-371fbbdaa898
