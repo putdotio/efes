@@ -1,33 +1,27 @@
 version: '3.9'
 services:
   mysql:
-    image: mysql:8
-    environment:
-      MYSQL_USER: efes
-      MYSQL_PASSWORD: 123
-      MYSQL_DATABASE: efes
-      MYSQL_RANDOM_ROOT_PASSWORD: 1
-    volumes:
-      - ./mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    build:
+      dockerfile: ./Docker/mysql/Dockerfile
+      context: ..
   rabbitmq:
     image: rabbitmq:3-management
     environment:
       RABBITMQ_DEFAULT_USER: efes
       RABBITMQ_DEFAULT_PASS: 123
       RABBITMQ_NODENAME: efes@localhost
-    logging:
-      driver: none
   tracker:
     build:
-      context: ./Docker/efes-tracker
+      dockerfile: ./Docker/efes-tracker/Dockerfile
+      context: ..
     depends_on:
       - mysql
     tty: true
     privileged: true
   server1:
     build:
-      context: ./Docker/efes-server
-    command: ["1"]
+      dockerfile: ./Docker/efes-server/Dockerfile
+      context: ..
     depends_on:
       - mysql
     tty: true

@@ -13,10 +13,10 @@ sqlrack="REPLACE INTO rack (rackid, zoneid, name) VALUES ($rackid, $zoneid, 'rac
 sqlhost="REPLACE INTO host (hostid, rackid, status, hostname, hostip) VALUES ($hostid, $rackid, 'alive', '$HOSTNAME', '$ip')"
 sqldevice="REPLACE INTO device (devid, hostid, status) VALUES ($devid, $hostid, 'alive')"
 
-efes ready mysql --exec "$sqlzone" 2>/dev/null
-efes ready mysql --exec "$sqlrack" 2>/dev/null
-efes ready mysql --exec "$sqlhost" 2>/dev/null
-efes ready mysql --exec "$sqldevice" 2>/dev/null
-efes ready rabbitmq 2>/dev/null
+efes ready mysql --exec "$sqlzone"
+efes ready mysql --exec "$sqlrack"
+efes ready mysql --exec "$sqlhost"
+efes ready mysql --exec "$sqldevice"
+efes ready rabbitmq
 
 exec efes server $datadir

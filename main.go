@@ -235,7 +235,7 @@ func main() {
 			Flags: []cli.Flag{
 				cli.DurationFlag{
 					Name:  "timeout",
-					Value: 10 * time.Second,
+					Value: 30 * time.Second,
 				},
 			},
 			Subcommands: []cli.Command{
