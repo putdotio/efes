@@ -1,14 +1,9 @@
 version: '3.9'
 services:
   mysql:
-    image: mysql:8
-    environment:
-      MYSQL_USER: efes
-      MYSQL_PASSWORD: 123
-      MYSQL_DATABASE: efes
-      MYSQL_RANDOM_ROOT_PASSWORD: 1
-    volumes:
-      - ./mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    build:
+      dockerfile: ./Docker/mysql/Dockerfile
+      context: ..
   rabbitmq:
     image: rabbitmq:3-management
     environment:
