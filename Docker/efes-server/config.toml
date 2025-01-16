@@ -14,9 +14,10 @@ listen_address = "0.0.0.0:8501"
 shutdown_timeout = "10s"
 clean_disk_file_ttl = "60s"
 clean_disk_run_period = "30s"
+
 [amqp]
 url = "amqp://efes:123@rabbitmq:5672/"
 
 [client]
-tracker_url = "http://tracker:8001"
+tracker_url = "http://efes-tracker:8001"
 chunk_size = "1M"
