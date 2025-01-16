@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/cenkalti/log"
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
 )
 
 // FileReceiver implements http.Handler for receiving files from clients in chunks.
@@ -32,7 +32,8 @@ func newFileReceiver(dir string, logger log.Logger, db *sql.DB) *FileReceiver {
 }
 
 func (f *FileReceiver) internalServerError(message string, err error, r *http.Request, w http.ResponseWriter) {
-	raven.CaptureError(err, nil, &raven.Message{Message: message})
+	sentry.CaptureException(err)
+	sentry.CaptureMessage(message)
 	message = message + ": " + err.Error()
 	f.log.Error(message + "; " + r.URL.Path)
 	http.Error(w, message, http.StatusInternalServerError)

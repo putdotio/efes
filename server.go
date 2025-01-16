@@ -15,9 +15,10 @@ import (
 
 	"github.com/cenkalti/log"
 	"github.com/cenkalti/redialer/amqpredialer"
-	"github.com/getsentry/raven-go"
-	"github.com/shirou/gopsutil/disk"
-	"github.com/streadway/amqp"
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/shirou/gopsutil/v4/disk"
 )
 
 // Server runs on storage servers.
@@ -76,9 +77,14 @@ func NewServer(c *Config) (*Server, error) {
 		deviceCleanStopped:  make(chan struct{}),
 		amqpRedialerStopped: make(chan struct{}),
 	}
+	sentryHandler := sentryhttp.New(sentryhttp.Options{
+		Repanic:         false,
+		WaitForDelivery: true,
+	})
 	devicePrefix := "/" + filepath.Base(s.config.Server.DataDir)
 	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.config.Server.DataDir, s.log, s.db))
-	s.writeServer.Handler = http.HandlerFunc(raven.RecoveryHandler(addVersion(s.writeServer.Handler)))
+	s.writeServer.Handler = http.HandlerFunc(sentryHandler.HandleFunc(addVersion(s.writeServer.Handler)))
+
 	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(s.config.Server.DataDir)))
 	if s.config.Debug {
 		s.log.SetLevel(log.DEBUG)
@@ -263,7 +269,7 @@ func (s *Server) consumeDeleteQueue() {
 			err := s.processDeleteTasks(conn)
 			if err != nil {
 				s.log.Error("Error while processing delete task", err)
-				raven.CaptureError(err, nil)
+				sentry.CaptureException(err)
 			}
 		}
 	}

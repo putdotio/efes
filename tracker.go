@@ -15,9 +15,10 @@ import (
 
 	"github.com/cenkalti/log"
 	"github.com/cenkalti/redialer/amqpredialer"
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-sql-driver/mysql"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // Tracker tracks the info of files in database.
@@ -57,12 +58,19 @@ func NewTracker(c *Config) (*Tracker, error) {
 	m.HandleFunc("/create-close", t.createClose)
 	m.HandleFunc("/delete", t.deleteFile)
 	m.HandleFunc("/iter-files", t.iterFiles)
+
+	sentryHandler := sentryhttp.New(sentryhttp.Options{
+		Repanic:         false,
+		WaitForDelivery: true,
+	})
+
 	t.server = http.Server{
-		Handler:      http.HandlerFunc(raven.RecoveryHandler(addVersion(m))),
+		Handler:      sentryHandler.HandleFunc(addVersion(m)),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
+
 	if t.config.Debug {
 		t.log.SetLevel(log.DEBUG)
 	}
@@ -137,7 +145,8 @@ func (t *Tracker) ping(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *Tracker) internalServerError(message string, err error, r *http.Request, w http.ResponseWriter) {
-	raven.CaptureError(err, nil, &raven.Message{Message: message})
+	sentry.CaptureException(err)
+	sentry.CaptureMessage(message)
 	message = message + ": " + err.Error()
 	t.log.Error(message + "; " + r.URL.Path)
 	http.Error(w, message, http.StatusInternalServerError)
@@ -610,7 +619,11 @@ func (t *Tracker) publishDeleteTask(devids []int64, fid int64) {
 
 func publishDeleteTask(ch *amqp.Channel, devid int64, fileID int64) error {
 	body := strconv.FormatInt(fileID, 10)
-	return ch.Publish(
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+	return ch.PublishWithContext(
+		ctx,
 		"",                     // exchange
 		deleteQueueName(devid), // routing key
 		false,                  // mandatory

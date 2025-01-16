@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/log"
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
 
 	// Register MySQL database driver.
 	_ "github.com/go-sql-driver/mysql"
@@ -60,11 +60,14 @@ func main() {
 		if c.IsSet("no-debug") {
 			cfg.Debug = false
 		}
-		err = raven.SetDSN(cfg.SentryDSN)
+
+		err = sentry.Init(sentry.ClientOptions{
+			Dsn:     cfg.SentryDSN,
+			Release: Version,
+		})
 		if err != nil {
 			log.Warningln("Cannot set Sentry DSN:", err)
 		}
-		raven.SetRelease(Version)
 		return nil
 	}
 	app.Commands = []cli.Command{

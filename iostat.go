@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v4/disk"
 )
 
 // IOStat implements some functionality of the "iostat" command.

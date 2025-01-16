@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
 )
 
 func (s *Server) cleanDisk() {
@@ -36,7 +36,7 @@ func (s *Server) cleanDisk() {
 			err = filepath.Walk(s.config.Server.DataDir, s.visitFile)
 			if err != nil {
 				s.log.Errorln("Error in data directory cleanup:", err)
-				raven.CaptureError(err, nil)
+				sentry.CaptureException(err)
 			} else {
 				s.log.Infoln("Data directory cleanup has finished successfully.")
 			}

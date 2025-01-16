@@ -4,30 +4,33 @@ go 1.23
 
 require (
 	bazil.org/fuse v0.0.0-20160811212531-371fbbdaa898
-	github.com/BurntSushi/toml v0.0.0-20170626110600-a368813c5e64
-	github.com/cenkalti/backoff v2.0.0+incompatible
-	github.com/cenkalti/log v0.0.0-20160701141658-958ee7afc008
-	github.com/cenkalti/redialer v0.0.0-20161130144139-a6cc66445f92
-	github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4
-	github.com/fatih/color v1.6.0
-	github.com/getsentry/raven-go v0.0.0-20171206001108-32a13797442c
+	github.com/BurntSushi/toml v1.4.0
+	github.com/cenkalti/backoff/v3 v3.0.0
+	github.com/cenkalti/log v1.0.0
+	github.com/cenkalti/redialer v1.0.1
+	github.com/dustin/go-humanize v1.0.1
+	github.com/fatih/color v1.18.0
+	github.com/getsentry/sentry-go v0.31.1
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/olekukonko/tablewriter v0.0.0-20171203151007-65fec0d89a57
-	github.com/shirou/gopsutil v0.0.0-20171130135017-5c46042e0db5
-	github.com/streadway/amqp v0.0.0-20171101222333-ff791c2d22d3
-	github.com/urfave/cli v0.0.0-20171203214237-119bb6564841
+	github.com/olekukonko/tablewriter v0.0.5
+	github.com/rabbitmq/amqp091-go v1.9.0
+	github.com/shirou/gopsutil/v4 v4.24.12
+	github.com/urfave/cli v1.22.14
 )
 
 require (
-	github.com/StackExchange/wmi v0.0.0-20170410192909-ea383cf3ba6e // indirect
-	github.com/certifi/gocertifi v0.0.0-20171105132559-a4ab0227d360 // indirect
-	github.com/go-ole/go-ole v1.2.0 // indirect
-	github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce // indirect
-	github.com/hashicorp/go-multierror v0.0.0-20171204182908-b7773ae21874 // indirect
-	github.com/mattn/go-colorable v0.0.9 // indirect
-	github.com/mattn/go-isatty v0.0.3 // indirect
-	github.com/mattn/go-runewidth v0.0.2 // indirect
-	github.com/pkg/errors v0.8.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
+	github.com/ebitengine/purego v0.8.1 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/net v0.0.0-20171212005608-d866cfc389ce // indirect
-	golang.org/x/sys v0.0.0-20171130163741-8b4580aae2a0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 )

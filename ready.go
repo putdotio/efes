@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/log"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func readyMysql(cfg DatabaseConfig, timeout time.Duration, exec string) error {

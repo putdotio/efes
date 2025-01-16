@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
 )
 
 func (s *Server) cleanDevice() {
@@ -39,7 +39,7 @@ func (s *Server) cleanDevice() {
 			err = s.walkOnDeviceFiles()
 			if err != nil {
 				s.log.Errorln("Error in database table cleanup:", err)
-				raven.CaptureError(err, nil)
+				sentry.CaptureException(err)
 			} else {
 				s.log.Info("Database table cleanup has finished successfully.")
 			}

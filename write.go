@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v3"
 )
 
 func (c *Client) Write(key, path string) error {

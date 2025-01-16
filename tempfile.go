@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
 )
 
 type Tempfile struct {
@@ -22,7 +22,7 @@ func (t *Tracker) tempfileCleaner() {
 			err := t.removeOldTempfiles()
 			if err != nil {
 				t.log.Errorln("cannot delete old tempfile records:", err.Error())
-				raven.CaptureError(err, nil)
+				sentry.CaptureException(err)
 			}
 		case <-t.shutdown:
 			close(t.tempfileCleanerStopped)
