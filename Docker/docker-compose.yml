@@ -43,6 +43,8 @@ services:
       - "8500:8500"
       - "8501:8501"
     tty: true
+    volumes:
+      - "/srv/efes/dev1"
   efes-base:
     image: efes/base
     container_name: efes-base
