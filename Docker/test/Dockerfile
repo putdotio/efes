@@ -7,8 +7,8 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 
-COPY ./Docker/test/docker-run-tests.sh /root/run-tests.sh
+COPY ./Docker/test/entrypoint.sh /root/entrypoint.sh
 COPY . .
 COPY ./Docker/test/config.toml /etc/efes.toml
 
-ENTRYPOINT ["/bin/bash", "/root/run-tests.sh"]
+ENTRYPOINT ["/bin/bash", "/root/entrypoint.sh"]

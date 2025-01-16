@@ -1,18 +1,23 @@
 version: '3.9'
 services:
   mysql:
+    image: efes/mysql
+    container_name: efes-mysql
     build:
       dockerfile: ./Docker/mysql/Dockerfile
       context: ..
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: efes-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: efes
       RABBITMQ_DEFAULT_PASS: 123
       RABBITMQ_NODENAME: efes@localhost
     logging:
       driver: none
-  test:
+  efes-test:
+    image: efes/test
+    container_name: efes-test
     build:
       dockerfile: ./Docker/test/Dockerfile
       context: ..
@@ -22,3 +27,12 @@ services:
     tty: true
     volumes:
       - ../coverage:/coverage
+  efes-base:
+    image: efes/base
+    container_name: efes-base
+    build:
+      dockerfile: ./Docker/efes-base/Dockerfile
+      context: ..
+    depends_on:
+      - mysql
+    tty: true

@@ -1,27 +1,52 @@
 version: '3.9'
 services:
   mysql:
+    image: efes/mysql
+    container_name: efes-mysql
     build:
       dockerfile: ./Docker/mysql/Dockerfile
       context: ..
+    ports:
+      - "3306:3306"
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: efes-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: efes
       RABBITMQ_DEFAULT_PASS: 123
       RABBITMQ_NODENAME: efes@localhost
-  tracker:
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "15692:15692"
+  efes-tracker:
+    image: efes/tracker
+    container_name: efes-tracker
     build:
       dockerfile: ./Docker/efes-tracker/Dockerfile
       context: ..
     depends_on:
       - mysql
+      - rabbitmq
+    ports:
+      - "8001:8001"
     tty: true
-    privileged: true
-  server1:
+  efes-server:
+    image: efes/server
+    container_name: efes-server
     build:
       dockerfile: ./Docker/efes-server/Dockerfile
       context: ..
     depends_on:
       - mysql
+    ports:
+      - "8500:8500"
+      - "8501:8501"
+    tty: true
+  efes-base:
+    image: efes/base
+    container_name: efes-base
+    build:
+      dockerfile: ./Docker/efes-base/Dockerfile
+      context: ..
     tty: true

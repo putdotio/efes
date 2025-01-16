@@ -1,9 +1,12 @@
 debug = true
+
 [tracker]
 listen_address = "0.0.0.0:8001"
 shutdown_timeout = "5s"
+
 [database]
 dsn = "efes:123@(mysql:3306)/efes"
+
 [server]
 datadir = "/srv/efes/dev1"
 listen_address_for_read = "0.0.0.0:8500"
@@ -13,6 +16,7 @@ clean_disk_file_ttl = "60s"
 clean_disk_run_period = "30s"
 [amqp]
 url = "amqp://efes:123@rabbitmq:5672/"
+
 [client]
 tracker_url = "http://tracker:8001"
 chunk_size = "1M"

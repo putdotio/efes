@@ -8,6 +8,10 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go install .
 
-FROM ubuntu:xenial
+################################
+
+FROM ubuntu:22.04
+
 COPY --from=builder /go/bin/efes /usr/local/bin/efes
+
 ENTRYPOINT ["efes"]
