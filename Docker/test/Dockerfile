@@ -1,7 +1,7 @@
 FROM golang:1.23.1 AS builder
 
 RUN apt-get update && apt-get install -y default-mysql-client
-WORKDIR /go/src/github.com/putdotio/efes/
+WORKDIR /efes
 
 COPY go.mod .
 COPY go.sum .

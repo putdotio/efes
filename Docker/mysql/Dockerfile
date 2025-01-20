@@ -1,7 +1,5 @@
 FROM mysql:8
 
-WORKDIR /go/src/github.com/putdotio/efes/
-
 ENV MYSQL_USER=efes \
     MYSQL_PASSWORD=123 \
     MYSQL_DATABASE=efes \
