@@ -19,7 +19,6 @@ up:
 
 TEST_COMPOSE := docker-compose -f ./Docker/docker-compose-test.yml
 test:
-	$(TEST_COMPOSE) build efes-base
 	$(TEST_COMPOSE) rm -fsv
 	mkdir -p ./coverage
 	$(TEST_COMPOSE) up efes-test --build --exit-code-from efes-test --abort-on-container-exit

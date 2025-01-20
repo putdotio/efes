@@ -27,12 +27,3 @@ services:
     tty: true
     volumes:
       - ../coverage:/coverage
-  efes-base:
-    image: efes/base
-    container_name: efes-base
-    build:
-      dockerfile: ./Docker/efes-base/Dockerfile
-      context: ..
-    depends_on:
-      - mysql
-    tty: true
