@@ -27,3 +27,7 @@ services:
     tty: true
     volumes:
       - ../coverage:/coverage
+      - "efes-test:/tmp"
+
+volumes:
+  efes-test:

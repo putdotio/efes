@@ -95,6 +95,15 @@ func insertToDB(t *testing.T, db *sql.DB, fid, devid int64, key string) {
 	}
 }
 
+func existOnDB(t *testing.T, db *sql.DB, fid, devid int64) bool {
+	var exists bool
+	err := db.QueryRow("select exists(select 1 from file_on where devid=? and fid=?)", devid, fid).Scan(&exists)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return exists
+}
+
 func writeToDisk(t *testing.T, s *Server, fid int64, ext string, modTime time.Time) string {
 	t.Helper()
 	fidPath := filepath.Join(s.config.Server.DataDir, vivifyExt(fid, ext))
@@ -225,6 +234,23 @@ func TestShouldDeleteJunkNew(t *testing.T) {
 	}
 }
 
+func TestCleanDiskDryRunEnabled(t *testing.T) {
+	s, rm := setupServer(t, 300*time.Second)
+	s.config.Server.CleanDiskDryRun = true
+	defer rm()
+
+	fidPath := writeToDisk(t, s, 1, "fid", time.Now().Add(-400*time.Second))
+
+	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = os.Stat(fidPath)
+	if os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+}
 func TestDeleteFidOnDisk(t *testing.T) {
 	s, rm := setupServer(t, 1)
 	defer rm()
@@ -248,5 +274,49 @@ func TestDeleteFidOnDisk(t *testing.T) {
 	_, err = os.Stat(path)
 	if !os.IsNotExist(err) {
 		t.Error("File should be deleted but exists on disk!")
+	}
+}
+
+func TestCleanDevice(t *testing.T) {
+	s, rm := setupServer(t, 300*time.Second)
+	defer rm()
+
+	// Create on both DB and disk
+	insertToDB(t, s.db, 1, s.devid, "foo")
+	_ = writeToDisk(t, s, 1, "fid", time.Now().Add(-400*time.Second))
+
+	_ = s.walkOnDeviceFiles()
+
+	if !existOnDB(t, s.db, 1, s.devid) {
+		t.Error("File should not be deleted from DB!")
+	}
+}
+
+func TestCleanDeviceShouldDelete(t *testing.T) {
+	s, rm := setupServer(t, 300*time.Second)
+	defer rm()
+
+	// Create only on DB (missing on disk)
+	insertToDB(t, s.db, 1, s.devid, "foo")
+
+	_ = s.walkOnDeviceFiles()
+
+	if existOnDB(t, s.db, 1, s.devid) {
+		t.Error("File should be deleted from DB!")
+	}
+}
+
+func TestCleanDeviceShouldDeleteButDryRunEnabled(t *testing.T) {
+	s, rm := setupServer(t, 300*time.Second)
+	s.config.Server.CleanDeviceDryRun = true
+	defer rm()
+
+	// Create only on DB (missing on disk)
+	insertToDB(t, s.db, 1, s.devid, "foo")
+
+	_ = s.walkOnDeviceFiles()
+
+	if !existOnDB(t, s.db, 1, s.devid) {
+		t.Error("File should not be deleted from DB because of dry-run!")
 	}
 }

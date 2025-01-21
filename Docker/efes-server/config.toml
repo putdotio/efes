@@ -14,6 +14,9 @@ listen_address = "0.0.0.0:8501"
 shutdown_timeout = "10s"
 clean_disk_file_ttl = "60s"
 clean_disk_run_period = "30s"
+clean_disk_dry_run = true
+clean_device_run_period= "30s"
+clean_device_dry_run = true
 
 [amqp]
 url = "amqp://efes:123@rabbitmq:5672/"

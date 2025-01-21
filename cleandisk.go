@@ -78,7 +78,7 @@ func (s *Server) visitFile(path string, f os.FileInfo, err error) error {
 	ext := filepath.Ext(path)
 	if ext != ".fid" && ext != ".info" {
 		s.log.Infoln("extension is not \".fid\" or \".info\":", path, "; removing...")
-		err = os.Remove(path)
+		err = s.deletePath(path)
 		if err != nil {
 			s.log.Errorln("Cannot remove file:", err.Error())
 		}
@@ -100,11 +100,19 @@ func (s *Server) visitFile(path string, f os.FileInfo, err error) error {
 		return nil
 	}
 	s.log.Infof("Fid %d is too old and there is no record on DB for it. Deleting...", fileID)
-	err = os.Remove(path)
+	err = s.deletePath(path)
 	if err != nil {
 		s.log.Errorln("Cannot remove file:", err.Error())
 	}
 	return nil
+}
+
+func (s *Server) deletePath(path string) error {
+	if s.config.Server.CleanDiskDryRun {
+		s.log.Infof("Dry run: deleting path: %s", path)
+		return nil
+	}
+	return os.Remove(path)
 }
 
 func (s *Server) fidExistsOnDatabase(fileID int64) (bool, error) {

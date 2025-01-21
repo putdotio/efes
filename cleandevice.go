@@ -108,11 +108,7 @@ func (s *Server) checkFid(fid int64) error {
 	if os.IsNotExist(err) {
 		// delete from file_on for current devid
 		s.log.Warningf("Deleting fid [%d] from current device", fid)
-		_, err = tx.Exec("delete from file_on where fid=? and devid=?", fid, s.devid)
-		if err != nil {
-			return err
-		}
-		return tx.Commit()
+		return s.deleteFidFromCurrentDevice(tx, fid)
 	} else if err != nil {
 		return err
 	}
@@ -122,12 +118,20 @@ func (s *Server) checkFid(fid int64) error {
 		return tx.Commit()
 	}
 	// remove fid from other disks
+	return s.deleteFidFromOtherDevices(tx, otherDevids, fid)
+}
+
+func (s *Server) deleteFidFromOtherDevices(tx *sql.Tx, otherDevids []int64, fid int64) error {
+	if s.config.Server.CleanDeviceDryRun {
+		s.log.Infof("Dry run: deleting fid [%d] from other devices: %v", fid, otherDevids)
+		return nil
+	}
 	s.log.Warningf("Deleting fid [%d] from other devices: %v", fid, otherDevids)
 	otherDevidsString := make([]string, len(otherDevids))
 	for i, devid := range otherDevids {
 		otherDevidsString[i] = strconv.FormatInt(devid, 10)
 	}
-	_, err = tx.Exec("delete from file_on where fid=? and devid in ("+strings.Join(otherDevidsString, ",")+")", fid)
+	_, err := tx.Exec("delete from file_on where fid=? and devid in ("+strings.Join(otherDevidsString, ",")+")", fid)
 	if err != nil {
 		return err
 	}
@@ -137,6 +141,18 @@ func (s *Server) checkFid(fid int64) error {
 	}
 	go s.publishDeleteTask(otherDevids, fid)
 	return nil
+}
+
+func (s *Server) deleteFidFromCurrentDevice(tx *sql.Tx, fid int64) error {
+	if s.config.Server.CleanDeviceDryRun {
+		s.log.Infof("Dry run: deleting fid [%d] from current device", fid)
+		return nil
+	}
+	_, err := tx.Exec("delete from file_on where fid=? and devid=?", fid, s.devid)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func inList(value int64, list []int64) bool {

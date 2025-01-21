@@ -34,7 +34,9 @@ type ServerConfig struct {
 	ShutdownTimeout      Duration `toml:"shutdown_timeout"`
 	CleanDiskRunPeriod   Duration `toml:"clean_disk_run_period"`
 	CleanDiskFileTTL     Duration `toml:"clean_disk_file_ttl"`
+	CleanDiskDryRun      bool     `toml:"clean_disk_dry_run"`
 	CleanDeviceRunPeriod Duration `toml:"clean_device_run_period"`
+	CleanDeviceDryRun    bool     `toml:"clean_device_dry_run"`
 }
 
 // ClientConfig holds configuration values for Client.
