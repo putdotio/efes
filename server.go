@@ -255,7 +255,7 @@ func deleteQueueName(devid int64) string {
 }
 
 func (s *Server) consumeDeleteQueue() {
-	s.log.Debug("Starting delete queue consumer..")
+	s.log.Info("Starting delete queue consumer..")
 	for {
 		select {
 		case <-s.shutdown:
@@ -334,17 +334,17 @@ func (s *Server) processDeleteTasks(conn *amqp.Connection) error {
 }
 
 func (s *Server) deleteFidOnDisk(fileID int64) error {
-	s.log.Debug("Deleting fid on disk ", fileID)
+	s.log.Info("Deleting fid on disk ", fileID)
 	path := filepath.Join(s.config.Server.DataDir, vivify(fileID))
 	err := os.Remove(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			s.log.Debugf("Fid path does not exist %s. ", path)
+			s.log.Infof("Fid path does not exist %s. ", path)
 			return nil
 		}
 		return err
 	}
-	s.log.Debugf("Fid %d deleted. ", fileID)
+	s.log.Infof("Fid %d deleted. ", fileID)
 	return nil
 }
 

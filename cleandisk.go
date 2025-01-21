@@ -72,7 +72,7 @@ func (s *Server) visitFile(path string, f os.FileInfo, err error) error {
 	}
 	ttl := time.Duration(s.config.Server.CleanDiskFileTTL)
 	if time.Since(f.ModTime()) < ttl {
-		s.log.Debugln("File is newer than", ttl)
+		s.log.Debugf("File [%s] is newer than ttl [%v]", path, ttl)
 		return nil
 	}
 	ext := filepath.Ext(path)
