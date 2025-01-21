@@ -8,6 +8,8 @@ services:
       context: ..
     ports:
       - "3306:3306"
+    volumes:
+      - "mysql:/var/lib/mysql"
   rabbitmq:
     image: rabbitmq:3-management
     container_name: efes-rabbitmq
@@ -19,6 +21,8 @@ services:
       - "5672:5672"
       - "15672:15672"
       - "15692:15692"
+    volumes:
+      - "rabbitmq:/var/lib/rabbitmq"
   efes-tracker:
     image: efes/tracker
     container_name: efes-tracker
@@ -44,7 +48,7 @@ services:
       - "8501:8501"
     tty: true
     volumes:
-      - "/srv/efes/dev1"
+      - "efes-server:/srv/efes/dev1"
   efes-base:
     image: efes/base
     container_name: efes-base
@@ -52,3 +56,9 @@ services:
       dockerfile: ./Docker/efes-base/Dockerfile
       context: ..
     tty: true
+
+
+volumes:
+  mysql:
+  rabbitmq:
+  efes-server:
