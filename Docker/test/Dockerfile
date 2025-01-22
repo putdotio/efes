@@ -1,6 +1,9 @@
 FROM golang:1.23.1 AS builder
 
-RUN apt-get update && apt-get install -y default-mysql-client
+# Install mysql
+RUN apt-get update && \
+    apt-get -y install --no-install-recommends default-mysql-client && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /efes
 
