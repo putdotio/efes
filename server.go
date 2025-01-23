@@ -17,6 +17,7 @@ import (
 	"github.com/cenkalti/redialer/amqpredialer"
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/shirou/gopsutil/v4/disk"
 )
@@ -28,6 +29,7 @@ type Server struct {
 	log                  log.Logger
 	readServer           http.Server
 	writeServer          http.Server
+	metricsServer        http.Server
 	amqp                 *amqpredialer.AMQPRedialer
 	onceDiskStatsUpdated sync.Once
 	devid                int64
@@ -81,11 +83,18 @@ func NewServer(c *Config) (*Server, error) {
 		Repanic:         false,
 		WaitForDelivery: true,
 	})
+	// write server
 	devicePrefix := "/" + filepath.Base(s.config.Server.DataDir)
 	s.writeServer.Handler = http.StripPrefix(devicePrefix, newFileReceiver(s.config.Server.DataDir, s.log, s.db))
 	s.writeServer.Handler = http.HandlerFunc(sentryHandler.HandleFunc(addVersion(s.writeServer.Handler)))
 
+	// read server
 	s.readServer.Handler = http.StripPrefix(devicePrefix, http.FileServer(http.Dir(s.config.Server.DataDir)))
+
+	// metrics server
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	s.metricsServer.Handler = mux
 	if s.config.Debug {
 		s.log.SetLevel(log.DEBUG)
 	}
@@ -106,13 +115,18 @@ func (s *Server) Run() error {
 	if err != nil {
 		return err
 	}
+	metricsListener, err := net.Listen("tcp", s.config.Server.ListenAddressForMetrics)
+	if err != nil {
+		return err
+	}
+	s.log.Notice("Starting background tasks...")
 	go s.cleanDisk()
 	go s.cleanDevice()
 	go s.updateDiskStats()
 	go s.consumeDeleteQueue()
-	s.log.Notice("Server is started.")
-	errCh := make(chan error, 2)
+	errCh := make(chan error, 3)
 	go func() {
+		s.log.Noticef("Starting write server on %v", writeListener.Addr())
 		err2 := s.writeServer.Serve(writeListener)
 		if err2 == http.ErrServerClosed {
 			s.log.Notice("Write server is shutting down.")
@@ -120,6 +134,7 @@ func (s *Server) Run() error {
 		errCh <- err2
 	}()
 	go func() {
+		s.log.Noticef("Starting read server on %v", readListener.Addr())
 		err2 := s.readServer.Serve(readListener)
 		if err2 == http.ErrServerClosed {
 			s.log.Notice("Read server is shutting down.")
@@ -127,16 +142,27 @@ func (s *Server) Run() error {
 		errCh <- err2
 	}()
 	go func() {
+		s.log.Noticef("Starting metrics server on %v", metricsListener.Addr())
+		err2 := s.metricsServer.Serve(metricsListener)
+		if err2 == http.ErrServerClosed {
+			s.log.Notice("Metrics server is shutting down.")
+		}
+		errCh <- err2
+	}()
+
+	go func() {
 		s.amqp.Run()
 		close(s.amqpRedialerStopped)
 	}()
+
 	go s.notifyReady()
-	err = <-errCh
-	if err != nil {
-		return err
+
+	for i := 0; i < 3; i++ {
+		if err := <-errCh; err != nil {
+			return err
+		}
 	}
-	err = <-errCh
-	return err
+	return nil
 }
 
 func (s *Server) notifyReady() {
@@ -167,6 +193,12 @@ func (s *Server) Shutdown() error {
 		return err
 	}
 
+	err = s.metricsServer.Shutdown(ctx)
+	if err != nil {
+		s.log.Error("Error while shutting down metrics HTTP server")
+		return err
+	}
+
 	<-s.diskStatsStopped
 	<-s.diskCleanStopped
 
@@ -184,6 +216,7 @@ func (s *Server) Shutdown() error {
 }
 
 func (s *Server) updateDiskStats() {
+	s.log.Notice("Starting updateDiskStats...")
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	iostat, err := newIOStat(s.config.Server.DataDir, 10*time.Second)

@@ -2,6 +2,7 @@ debug = true
 
 [tracker]
 listen_address = "0.0.0.0:8001"
+listen_address_for_metrics = "0.0.0.0:9114"
 shutdown_timeout = "5s"
 
 [database]

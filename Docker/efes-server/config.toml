@@ -10,6 +10,7 @@ dsn = "efes:123@(mysql:3306)/efes"
 [server]
 datadir = "/srv/efes/dev1"
 listen_address_for_read = "0.0.0.0:8500"
+listen_address_for_metrics = "0.0.0.0:9115"
 listen_address = "0.0.0.0:8501"
 shutdown_timeout = "10s"
 clean_disk_file_ttl = "60s"

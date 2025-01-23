@@ -18,6 +18,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-sql-driver/mysql"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -29,6 +30,7 @@ type Tracker struct {
 	db                     *sql.DB
 	log                    log.Logger
 	server                 http.Server
+	metricsServer          http.Server
 	amqp                   *amqpredialer.AMQPRedialer
 	shutdown               chan struct{}
 	Ready                  chan struct{}
@@ -64,11 +66,19 @@ func NewTracker(c *Config) (*Tracker, error) {
 		WaitForDelivery: true,
 	})
 
+	// main server
 	t.server = http.Server{
 		Handler:      sentryHandler.HandleFunc(addVersion(m)),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
+	}
+
+	// metrics server
+	metricsMux := http.NewServeMux()
+	metricsMux.Handle("/metrics", promhttp.Handler())
+	t.metricsServer = http.Server{
+		Handler: metricsMux,
 	}
 
 	if t.config.Debug {
@@ -99,19 +109,43 @@ func (t *Tracker) Run() error {
 	if err != nil {
 		return err
 	}
-	t.log.Notice("Tracker is started.")
+	metricsListener, err := net.Listen("tcp", t.config.Tracker.ListenAddressForMetrics)
+	if err != nil {
+		return err
+	}
+	t.log.Notice("Starting tempfile cleaner...")
 	go t.tempfileCleaner()
 	go func() {
+		t.log.Notice("Running amqp redialer...")
 		t.amqp.Run()
 		close(t.amqpRedialerStopped)
 	}()
 	close(t.Ready)
-	err = t.server.Serve(listener)
-	if err == http.ErrServerClosed {
-		t.log.Notice("Tracker is shutting down.")
-		return nil
+
+	errCh := make(chan error, 2)
+	go func() {
+		t.log.Noticef("Starting metrics server on %v", metricsListener.Addr())
+		err2 := t.metricsServer.Serve(metricsListener)
+		if err2 == http.ErrServerClosed {
+			t.log.Notice("Metrics server is shutting down.")
+		}
+		errCh <- err2
+	}()
+	go func() {
+		t.log.Noticef("Starting HTTP server on %v", listener.Addr())
+		err2 := t.server.Serve(listener)
+		if err2 == http.ErrServerClosed {
+			t.log.Notice("Read server is shutting down.")
+		}
+		errCh <- err2
+	}()
+
+	for i := 0; i < 2; i++ {
+		if err := <-errCh; err != nil {
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Shutdown the tracker.
@@ -123,6 +157,12 @@ func (t *Tracker) Shutdown() error {
 	err := t.server.Shutdown(ctx)
 	if err != nil {
 		t.log.Error("Error while shutting down HTTP server")
+		return err
+	}
+
+	err = t.metricsServer.Shutdown(ctx)
+	if err != nil {
+		t.log.Error("Error while shutting down metrics HTTP server")
 		return err
 	}
 

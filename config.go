@@ -8,9 +8,10 @@ import (
 
 // TrackerConfig holds configuration values for Tracker.
 type TrackerConfig struct {
-	ListenAddress   string   `toml:"listen_address"`
-	ShutdownTimeout Duration `toml:"shutdown_timeout"`
-	TempfileTooOld  Duration `toml:"tempfile_too_old"`
+	ListenAddress           string   `toml:"listen_address"`
+	ListenAddressForMetrics string   `toml:"listen_address_for_metrics"`
+	ShutdownTimeout         Duration `toml:"shutdown_timeout"`
+	TempfileTooOld          Duration `toml:"tempfile_too_old"`
 }
 
 // DatabaseConfig holds configuration values for database.
@@ -28,15 +29,16 @@ type AMQPConfig struct {
 
 // ServerConfig holds configuration values for Server.
 type ServerConfig struct {
-	DataDir              string   `toml:"datadir"`
-	ListenAddress        string   `toml:"listen_address"`
-	ListenAddressForRead string   `toml:"listen_address_for_read"`
-	ShutdownTimeout      Duration `toml:"shutdown_timeout"`
-	CleanDiskRunPeriod   Duration `toml:"clean_disk_run_period"`
-	CleanDiskFileTTL     Duration `toml:"clean_disk_file_ttl"`
-	CleanDiskDryRun      bool     `toml:"clean_disk_dry_run"`
-	CleanDeviceRunPeriod Duration `toml:"clean_device_run_period"`
-	CleanDeviceDryRun    bool     `toml:"clean_device_dry_run"`
+	DataDir                 string   `toml:"datadir"`
+	ListenAddress           string   `toml:"listen_address"`
+	ListenAddressForRead    string   `toml:"listen_address_for_read"`
+	ListenAddressForMetrics string   `toml:"listen_address_for_metrics"`
+	ShutdownTimeout         Duration `toml:"shutdown_timeout"`
+	CleanDiskRunPeriod      Duration `toml:"clean_disk_run_period"`
+	CleanDiskFileTTL        Duration `toml:"clean_disk_file_ttl"`
+	CleanDiskDryRun         bool     `toml:"clean_disk_dry_run"`
+	CleanDeviceRunPeriod    Duration `toml:"clean_device_run_period"`
+	CleanDeviceDryRun       bool     `toml:"clean_device_dry_run"`
 }
 
 // ClientConfig holds configuration values for Client.

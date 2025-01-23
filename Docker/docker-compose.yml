@@ -34,6 +34,7 @@ services:
       - rabbitmq
     ports:
       - "8001:8001"
+      - "9114:9114"
     tty: true
   efes-server:
     image: efes/server
@@ -46,6 +47,7 @@ services:
     ports:
       - "8500:8500"
       - "8501:8501"
+      - "9115:9115"
     tty: true
     volumes:
       - "efes-server:/srv/efes/dev1"
