@@ -17,7 +17,6 @@ import (
 	"github.com/cenkalti/redialer/amqpredialer"
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
-	"github.com/go-sql-driver/mysql"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -207,7 +206,7 @@ func (t *Tracker) getPath(w http.ResponseWriter, r *http.Request) {
 	var httpPort int64
 	var devid int64
 	var fid int64
-	var createdAt mysql.NullTime
+	var createdAt sql.NullTime
 	err := row.Scan(&hostname, &httpPort, &devid, &fid, &createdAt)
 	if err == sql.ErrNoRows {
 		http.Error(w, "file not found", http.StatusNotFound)
@@ -247,7 +246,7 @@ func (t *Tracker) getPaths(w http.ResponseWriter, r *http.Request) {
 		var httpPort int64
 		var devid int64
 		var fid int64
-		var createdAt mysql.NullTime
+		var createdAt sql.NullTime
 		err = rows.Scan(&hostname, &httpPort, &devid, &fid, &createdAt)
 		if err == sql.ErrNoRows {
 			http.Error(w, "file not found", http.StatusNotFound)

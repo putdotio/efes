@@ -1,12 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/go-sql-driver/mysql"
 )
 
 func (t *Tracker) iterFiles(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +44,7 @@ func (t *Tracker) iterFiles(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 	for rows.Next() {
 		var f file
-		var createdAt mysql.NullTime
+		var createdAt sql.NullTime
 		err = rows.Scan(&f.ID, &f.Key, &createdAt)
 		if err != nil {
 			t.internalServerError("cannot scan row", err, r, w)
