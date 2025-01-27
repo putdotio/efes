@@ -15,7 +15,7 @@ MAIN_COMPOSE := docker-compose -f ./Docker/docker-compose.yml
 up:
 	$(MAIN_COMPOSE) build efes-base
 	$(MAIN_COMPOSE) rm -fsv
-	$(MAIN_COMPOSE) up efes-tracker efes-server --build
+	$(MAIN_COMPOSE) up efes-tracker efes-server --build --abort-on-container-exit
 
 TEST_COMPOSE := docker-compose -f ./Docker/docker-compose-test.yml
 test:
