@@ -88,7 +88,7 @@ func TestDrain(t *testing.T) {
 	config2 := *testConfig
 	config2.Server.DataDir = devPath
 	config2.Server.ListenAddressForRead = "0.0.0.0:8502"
-	config2.Server.ListenAddress = "0.0.0.0:8503"
+	config2.Server.ListenAddressForWrite = "0.0.0.0:8503"
 	config2.Server.ListenAddressForMetrics = "0.0.0.0:9116"
 	srv2, err := NewServer(&config2)
 	if err != nil {

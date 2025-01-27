@@ -107,7 +107,7 @@ func NewServer(c *Config) (*Server, error) {
 
 // Run this server in a blocking manner. Running server can be stopped with Shutdown().
 func (s *Server) Run() error {
-	writeListener, err := net.Listen("tcp", s.config.Server.ListenAddress)
+	writeListener, err := net.Listen("tcp", s.config.Server.ListenAddressForWrite)
 	if err != nil {
 		return err
 	}

@@ -30,7 +30,7 @@ type AMQPConfig struct {
 // ServerConfig holds configuration values for Server.
 type ServerConfig struct {
 	DataDir                 string   `toml:"datadir"`
-	ListenAddress           string   `toml:"listen_address"`
+	ListenAddressForWrite   string   `toml:"listen_address_for_write"`
 	ListenAddressForRead    string   `toml:"listen_address_for_read"`
 	ListenAddressForMetrics string   `toml:"listen_address_for_metrics"`
 	ShutdownTimeout         Duration `toml:"shutdown_timeout"`
@@ -67,13 +67,13 @@ var defaultConfig = Config{
 		TempfileTooOld:  Duration(24 * time.Hour),
 	},
 	Server: ServerConfig{
-		DataDir:              "/srv/efes/dev1",
-		ListenAddress:        "0.0.0.0:8501",
-		ListenAddressForRead: "0.0.0.0:8500",
-		ShutdownTimeout:      Duration(10 * time.Second),
-		CleanDiskFileTTL:     Duration(24 * time.Hour),
-		CleanDiskRunPeriod:   Duration(7 * 24 * time.Hour),
-		CleanDeviceRunPeriod: Duration(7 * 24 * time.Hour),
+		DataDir:               "/srv/efes/dev1",
+		ListenAddressForWrite: "0.0.0.0:8501",
+		ListenAddressForRead:  "0.0.0.0:8500",
+		ShutdownTimeout:       Duration(10 * time.Second),
+		CleanDiskFileTTL:      Duration(24 * time.Hour),
+		CleanDiskRunPeriod:    Duration(7 * 24 * time.Hour),
+		CleanDeviceRunPeriod:  Duration(7 * 24 * time.Hour),
 	},
 	Client: ClientConfig{
 		TrackerURL:   "http://127.0.0.1:8001",
