@@ -239,13 +239,22 @@ func TestCleanDiskDryRunEnabled(t *testing.T) {
 	s.config.Server.CleanDiskDryRun = true
 	defer rm()
 
+	// Crate only on disk (missing on DB)
 	fidPath := writeToDisk(t, s, 1, "fid", time.Now().Add(-400*time.Second))
 
-	err := filepath.Walk(s.config.Server.DataDir, s.visitFile)
+	// Must be created on disk
+	_, err := os.Stat(fidPath)
+	if os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+
+	// start cleaning
+	err = filepath.Walk(s.config.Server.DataDir, s.visitFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// We are in dry-run mode, so file must be exist on disk
 	_, err = os.Stat(fidPath)
 	if os.IsNotExist(err) {
 		t.Fatal(err)
@@ -269,11 +278,11 @@ func TestDeleteFidOnDisk(t *testing.T) {
 
 	err = s.deleteFidOnDisk(fid)
 	if err != nil {
-		t.Error("File should be deleted but returned not to!")
+		t.Error("File must be deleted but returned not to!")
 	}
 	_, err = os.Stat(path)
 	if !os.IsNotExist(err) {
-		t.Error("File should be deleted but exists on disk!")
+		t.Error("File must be deleted but exists on disk!")
 	}
 }
 
@@ -283,12 +292,25 @@ func TestCleanDevice(t *testing.T) {
 
 	// Create on both DB and disk
 	insertToDB(t, s.db, 1, s.devid, "foo")
-	_ = writeToDisk(t, s, 1, "fid", time.Now().Add(-400*time.Second))
+	fidPath := writeToDisk(t, s, 1, "fid", time.Now().Add(-400*time.Second))
 
+	// Must be created on DB
+	if !existOnDB(t, s.db, 1, s.devid) {
+		t.Error("File must exist on DB!")
+	}
+
+	// Must be created on disk
+	_, err := os.Stat(fidPath)
+	if os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+
+	// start cleaning
 	_ = s.walkOnDeviceFiles()
 
+	// File must be deleted from DB
 	if !existOnDB(t, s.db, 1, s.devid) {
-		t.Error("File should not be deleted from DB!")
+		t.Error("File must not be deleted from DB!")
 	}
 }
 
@@ -299,10 +321,17 @@ func TestCleanDeviceShouldDelete(t *testing.T) {
 	// Create only on DB (missing on disk)
 	insertToDB(t, s.db, 1, s.devid, "foo")
 
+	// Must be created on DB
+	if !existOnDB(t, s.db, 1, s.devid) {
+		t.Error("File must exist on DB!")
+	}
+
+	// start cleaning
 	_ = s.walkOnDeviceFiles()
 
+	// File must be deleted from DB
 	if existOnDB(t, s.db, 1, s.devid) {
-		t.Error("File should be deleted from DB!")
+		t.Error("File must be deleted from DB!")
 	}
 }
 
@@ -314,9 +343,16 @@ func TestCleanDeviceShouldDeleteButDryRunEnabled(t *testing.T) {
 	// Create only on DB (missing on disk)
 	insertToDB(t, s.db, 1, s.devid, "foo")
 
+	// Must be created on DB
+	if !existOnDB(t, s.db, 1, s.devid) {
+		t.Error("File must exist on DB!")
+	}
+
+	// start cleaning
 	_ = s.walkOnDeviceFiles()
 
+	// We are in dry-run mode, so file must be exist on DB
 	if !existOnDB(t, s.db, 1, s.devid) {
-		t.Error("File should not be deleted from DB because of dry-run!")
+		t.Error("File must not be deleted from DB because of dry-run!")
 	}
 }
