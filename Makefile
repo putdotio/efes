@@ -5,10 +5,12 @@ NAME := efes
 build:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $(NAME)
 
+MAIN_COMPOSE := docker-compose -f ./Docker/docker-compose.yml
 build-docker:
-	docker-compose build efes-base
+	$(MAIN_COMPOSE) build efes-base
 	mkdir -p ./bin
-	docker cp efes-builder:/usr/local/bin/efes - > ./bin/efes; \
+	docker create --name efes-builder efes/base
+	docker cp efes-builder:/usr/local/bin/efes - > ./bin/efes
 	docker rm -v efes-builder
 
 MAIN_COMPOSE := docker-compose -f ./Docker/docker-compose.yml
