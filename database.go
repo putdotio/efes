@@ -16,7 +16,6 @@ func openDatabase(config DatabaseConfig) (*sql.DB, error) {
 
 	// Add the parsing parameters
 	cfg.ParseTime = true
-	cfg.Loc = time.Local
 
 	// Format back to DSN string
 	dsn := cfg.FormatDSN()
