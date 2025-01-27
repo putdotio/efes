@@ -12,7 +12,7 @@ import (
 )
 
 func (s *Server) cleanDevice() {
-	s.log.Notice("Starting cleanDevice...")
+	s.log.Notice("Starting device cleaner...")
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 	period := time.Duration(s.config.Server.CleanDeviceRunPeriod) / time.Second

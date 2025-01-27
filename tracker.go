@@ -112,7 +112,6 @@ func (t *Tracker) Run() error {
 	if err != nil {
 		return err
 	}
-	t.log.Notice("Starting tempfile cleaner...")
 	go t.tempfileCleaner()
 	go func() {
 		t.log.Notice("Running amqp redialer...")
@@ -563,6 +562,7 @@ func (t *Tracker) createClose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if olddevids != nil {
+		t.log.Debugf("Publishing delete task because of create-close. olddevids: %v oldfid: %v", olddevids, oldfid)
 		go t.publishDeleteTask(olddevids, oldfid)
 	}
 	w.Header().Set("content-type", "application/json")
@@ -610,6 +610,7 @@ func (t *Tracker) deleteFile(w http.ResponseWriter, r *http.Request) {
 		t.internalServerError("cannot commit transaction", err, r, w)
 		return
 	}
+	t.log.Debugf("Publishing delete task because of file deletion. devids: %v fid: %v", devids, fid)
 	go t.publishDeleteTask(devids, fid)
 }
 

@@ -216,7 +216,7 @@ func (s *Server) Shutdown() error {
 }
 
 func (s *Server) updateDiskStats() {
-	s.log.Notice("Starting updateDiskStats...")
+	s.log.Notice("Starting disk stats updater...")
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	iostat, err := newIOStat(s.config.Server.DataDir, 10*time.Second)
@@ -288,7 +288,7 @@ func deleteQueueName(devid int64) string {
 }
 
 func (s *Server) consumeDeleteQueue() {
-	s.log.Info("Starting delete queue consumer..")
+	s.log.Info("Starting delete queue consumer...")
 	for {
 		select {
 		case <-s.shutdown:

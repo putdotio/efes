@@ -14,6 +14,7 @@ type Tempfile struct {
 }
 
 func (t *Tracker) tempfileCleaner() {
+	t.log.Notice("Starting tempfile cleaner...")
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 	for {

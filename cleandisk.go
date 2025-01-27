@@ -13,7 +13,7 @@ import (
 )
 
 func (s *Server) cleanDisk() {
-	s.log.Notice("Starting cleanDisk...")
+	s.log.Notice("Starting disk cleaner...")
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 	period := time.Duration(s.config.Server.CleanDiskRunPeriod) / time.Second
