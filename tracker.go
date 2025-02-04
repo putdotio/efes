@@ -97,7 +97,7 @@ func NewTracker(c *Config) (*Tracker, error) {
 
 func addVersion(h http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("efes-version", Version)
+		w.Header().Set("efes-version", version)
 		h.ServeHTTP(w, r)
 	})
 }

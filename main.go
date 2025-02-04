@@ -17,12 +17,12 @@ import (
 	"github.com/urfave/cli"
 )
 
-var Version string
+var version string
 
 func init() {
 	log.DefaultHandler.SetLevel(log.DEBUG)
-	if Version == "" {
-		Version = "v0.0.0"
+	if version == "" {
+		version = "v0.0.0"
 	}
 }
 
@@ -31,7 +31,7 @@ func main() {
 	chunkSize := ChunkSize(1 * M)
 
 	app := cli.NewApp()
-	app.Version = Version
+	app.Version = version
 	app.Usage = "Simple yet powerful distributed file system"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -63,7 +63,7 @@ func main() {
 
 		err = sentry.Init(sentry.ClientOptions{
 			Dsn:     cfg.SentryDSN,
-			Release: Version,
+			Release: version,
 		})
 		if err != nil {
 			log.Warningln("Cannot set Sentry DSN:", err)
