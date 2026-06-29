@@ -106,7 +106,7 @@ func (d *Drainer) moveFile(fid int64) error {
 	fidpath := filepath.Join(d.config.Server.DataDir, vivify(fid))
 	f, err := os.Open(fidpath)
 	if os.IsNotExist(err) {
-		d.log.Warningf("file (%s) does not exist on disk; removing fid (%d) from device (%d)", fidpath, fid, d.devid)
+		d.log.Warningf("file (%s) does not exist on disk", fidpath)
 		return err
 	}
 	if err != nil {
