@@ -107,7 +107,6 @@ func (d *Drainer) moveFile(fid int64) error {
 	f, err := os.Open(fidpath)
 	if os.IsNotExist(err) {
 		d.log.Warningf("file (%s) does not exist on disk; removing fid (%d) from device (%d)", fidpath, fid, d.devid)
-		_, err = d.db.Exec("delete from file_on where fid=? and devid=?", fid, d.devid)
 		return err
 	}
 	if err != nil {
